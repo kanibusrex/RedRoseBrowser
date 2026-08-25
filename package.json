@@ -1,6 +1,6 @@
 {
   "name": "redrose-browser",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "RedRose Browser — a minimal, secure, Chromium-based desktop browser built with Electron.",
   "author": "Michael Alexander",
   "license": "GPL-3.0",

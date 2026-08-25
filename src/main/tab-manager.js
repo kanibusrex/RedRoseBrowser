@@ -493,7 +493,7 @@ class TabManager {
     const tab = this.tabs.get(tabId);
     if (!tab) return;
     const target = resolveNavigationTarget(input);
-    const verdict = classifyNavigation(target);
+    const verdict = classifyNavigation(target, tab.view.webContents.getURL());
     if (verdict !== 'ok') {
       this._showBlockedError(tab, target, verdict);
       return;

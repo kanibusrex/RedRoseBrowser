@@ -31,7 +31,10 @@ function resolveNavigationTarget(input) {
  */
 function attachNavigationPolicy(webContents, { onOpenNewTab, onBlocked } = {}) {
   const guard = (event, targetUrl) => {
-    const verdict = classifyNavigation(targetUrl);
+    // getURL() at this point (will-navigate/will-redirect fire before the
+    // navigation commits) still reflects the page navigating away — the
+    // source, for the same-extension exception in classifyNavigation.
+    const verdict = classifyNavigation(targetUrl, webContents.getURL());
     if (verdict !== 'ok') {
       event.preventDefault();
       if (typeof onBlocked === 'function') onBlocked(targetUrl, verdict);
@@ -42,7 +45,7 @@ function attachNavigationPolicy(webContents, { onOpenNewTab, onBlocked } = {}) {
   webContents.on('will-redirect', guard);
 
   webContents.setWindowOpenHandler(({ url }) => {
-    const verdict = classifyNavigation(url);
+    const verdict = classifyNavigation(url, webContents.getURL());
     if (verdict !== 'ok') {
       if (typeof onBlocked === 'function') onBlocked(url, verdict);
       return { action: 'deny' };

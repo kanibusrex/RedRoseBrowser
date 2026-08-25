@@ -1142,3 +1142,36 @@ startup (reaching this profile's extension-loading code, which only
 runs after the window's `did-finish-load` — i.e. after the window was
 created and actually loaded its content), where it didn't before.
 Shipped as v1.0.1.
+
+### 8.14 Extension-internal navigation — the other half of §8.9's trust boundary
+
+§8.9 added a trusted path for *opening* an extension's popup/options
+page, but not for navigating *within* that extension afterward — found
+when 1Password's real settings link (`chrome-extension://<id>/popup/
+index.html`'s gear icon, going to `chrome-extension://<id>/app/
+app.html#/page/settings` — a different document, same extension, so a
+real cross-document navigation, not an in-page hash change) hit the
+same "blocked for your safety" page §7.8's scheme blocklist was always
+going to show any `chrome-extension:` target, popup or not.
+
+The distinction that was missing: `classifyNavigation` only ever looked
+at the *target* URL's scheme. What `chrome-extension:` actually needs
+blocked is a *different* origin — an ordinary web page, or a different
+extension — reaching into extension-privileged space; an extension
+navigating within its own pages is normal (real Chrome allows it) and
+was never the threat model. Fixed by giving `classifyNavigation` (and
+`isNavigationAllowed`) an optional second `currentUrl` parameter: if
+both current and target are `chrome-extension:` with the *same*
+hostname (extension ID), the navigation is allowed regardless of scheme
+policy. Wired at all three sites that can trigger it — `will-navigate`/
+`will-redirect`/`setWindowOpenHandler` in `navigation.js` (via
+`webContents.getURL()`, which at `will-navigate` time still reflects
+the page navigating *away*, i.e. the source) and `TabManager.navigate`
+(the address bar). `createTab` needed no change — a brand new tab has
+no prior extension context for the exception to apply to; that's what
+§8.9's separate `trusted` flag already covers.
+
+Verified against the real reported case, not a synthetic one — using
+the same 1Password install and its actual (real, signed-in) account:
+triggering that exact navigation used to show the blocked-page; after
+the fix it correctly lands on 1Password's real settings UI.
