@@ -1175,3 +1175,29 @@ Verified against the real reported case, not a synthetic one — using
 the same 1Password install and its actual (real, signed-in) account:
 triggering that exact navigation used to show the blocked-page; after
 the fix it correctly lands on 1Password's real settings UI.
+
+**v1.0.2 turned out to only cover half of this.** The user still hit
+the block after upgrading. §8.13's fix covers same-tab navigation
+(`will-navigate`) — but 1Password's settings link opens as a *new tab*
+(`target="_blank"`/`window.open`), which is a separate code path:
+`attachNavigationPolicy`'s `setWindowOpenHandler` correctly classified
+it as allowed (same fix, same success), but then handed the URL to
+`onOpenNewTab`, which called `TabManager.createTab(url)` — no `trusted`
+flag — so `createTab` ran its *own*, separate `classifyNavigation(url)`
+call with no `currentUrl` at all, and blocked it right back, having no
+way to know this exact URL had already been vetted one call up the
+stack. Reproduced in complete isolation (a minimal two-page test
+extension, no 1Password/real-account involved) before touching
+anything, to rule out the account/session noise that complicated
+diagnosing this the first time.
+
+Fixed by having `onOpenNewTab` call `createTab(url, { trusted: true
+})` — safe specifically *because* `attachNavigationPolicy` only ever
+invokes `onOpenNewTab` after its own `classifyNavigation` already
+returned `'ok'` for that exact URL; re-running the same pure check
+again with less context could only make the answer *worse*, never
+better, so skipping the redundant re-check isn't a weaker boundary.
+Verified both directions in the same test: the same-extension
+new-tab case now succeeds, and — unchanged — a page trying to
+`target="_blank"` open a `file://` URL still doesn't create a tab at
+all. Shipped as v1.0.3.

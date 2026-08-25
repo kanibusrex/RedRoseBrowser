@@ -577,7 +577,14 @@ class TabManager {
     const wc = tab.view.webContents;
 
     attachNavigationPolicy(wc, {
-      onOpenNewTab: (url) => this.createTab(url),
+      // attachNavigationPolicy only ever calls this once its own
+      // classifyNavigation(url, sourceUrl) already came back 'ok' —
+      // including the same-extension chrome-extension: exception (§8.13)
+      // — so createTab() here must not silently re-run that check with
+      // no source context, or a same-extension link that opens as a new
+      // tab (target="_blank"/window.open, e.g. 1Password's settings
+      // link) gets blocked anyway despite already being verified safe.
+      onOpenNewTab: (url) => this.createTab(url, { trusted: true }),
       onBlocked: (url, reason) => this._showBlockedError(tab, url, reason),
     });
 
