@@ -1,0 +1,4220 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="ember">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home</title>
+<meta name="theme-color" id="themeColorMeta" content="#0a0606">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Home">
+<link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0606'/%3E%3Cpath d='M16 34 32 20l16 14v14a2 2 0 0 1-2 2H34V40h-4v10H18a2 2 0 0 1-2-2z' fill='%23e0362b'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --radius: 14px;
+  }
+
+  html[data-theme="ember"] {
+    --bg: #0a0606;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #2a0d0d, #0a0606 65%);
+    --surface: #160b0b;
+    --surface-hover: #220f0f;
+    --border: #3a1414;
+    --text: #f3e6e0;
+    --text-dim: #b3897f;
+    --accent: #e0362b;
+    --accent-2: #ff8552;
+    --shadow: rgba(224, 54, 43, 0.35);
+    --clock: #ff9d6e;
+    --clock-2: #e8483a;
+  }
+
+  html[data-theme="noir"] {
+    --bg: #0b0b0d;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #1c1d22, #0b0b0d 65%);
+    --surface: #17181b;
+    --surface-hover: #202126;
+    --border: #2c2d33;
+    --text: #e9e9ec;
+    --text-dim: #8d8d95;
+    --accent: #cfd6e4;
+    --accent-2: #6ea8ff;
+    --shadow: rgba(110, 168, 255, 0.18);
+    --clock: #e3e9f5;
+    --clock-2: #7fb3ff;
+  }
+
+  html[data-theme="daybreak"] {
+    --bg: #faf6ef;
+    --bg-gradient: linear-gradient(180deg, #fffaf1, #faf6ef 70%);
+    --surface: #ffffff;
+    --surface-hover: #fdf2df;
+    --border: #e8ddc7;
+    --text: #2b2620;
+    --text-dim: #7d7362;
+    --accent: #b8842c;
+    --accent-2: #d9a441;
+    --shadow: rgba(184, 132, 44, 0.18);
+    --clock: #7a5312;
+    --clock-2: #a5711b;
+  }
+
+  html[data-theme="frost"] {
+    --bg: #f2f5f8;
+    --bg-gradient: linear-gradient(180deg, #ffffff, #f2f5f8 70%);
+    --surface: #ffffff;
+    --surface-hover: #eaf1f7;
+    --border: #dbe4ec;
+    --text: #1d2733;
+    --text-dim: #677583;
+    --accent: #2563eb;
+    --accent-2: #0891b2;
+    --shadow: rgba(37, 99, 235, 0.15);
+    --clock: #16408f;
+    --clock-2: #0e7490;
+  }
+
+  html[data-theme="aurora"] {
+    --bg: #050b0d;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #0d2a26, #050b0d 65%);
+    --surface: #0d1a1c;
+    --surface-hover: #123033;
+    --border: #1f3a3d;
+    --text: #e4f5f0;
+    --text-dim: #7fa89f;
+    --accent: #34d399;
+    --accent-2: #a78bfa;
+    --shadow: rgba(167, 139, 250, 0.25);
+    --clock: #5eead4;
+    --clock-2: #a78bfa;
+  }
+
+  html[data-theme="forest"] {
+    --bg: #070d08;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #142016, #070d08 65%);
+    --surface: #101a12;
+    --surface-hover: #17251a;
+    --border: #233828;
+    --text: #e6f0e2;
+    --text-dim: #8fa888;
+    --accent: #7cbf6a;
+    --accent-2: #d4e157;
+    --shadow: rgba(212, 225, 87, 0.2);
+    --clock: #a8e08a;
+    --clock-2: #d9ed5e;
+  }
+
+  html[data-theme="sunset"] {
+    --bg: #fdf1e7;
+    --bg-gradient: linear-gradient(180deg, #ffe3d1, #fdf1e7 70%);
+    --surface: #fffaf5;
+    --surface-hover: #ffece0;
+    --border: #f3d9c4;
+    --text: #3a2a22;
+    --text-dim: #846d60;
+    --accent: #e2596b;
+    --accent-2: #f4a259;
+    --shadow: rgba(226, 89, 107, 0.18);
+    --clock: #b0324a;
+    --clock-2: #c4552b;
+  }
+
+  html[data-theme="bloom"] {
+    --bg: #f7f1f9;
+    --bg-gradient: linear-gradient(180deg, #fdf5fb, #f7f1f9 70%);
+    --surface: #ffffff;
+    --surface-hover: #f7e9f5;
+    --border: #e9d5e8;
+    --text: #332638;
+    --text-dim: #826e88;
+    --accent: #b565a7;
+    --accent-2: #f2a6c9;
+    --shadow: rgba(181, 101, 167, 0.18);
+    --clock: #8e3a82;
+    --clock-2: #bd5fa6;
+  }
+
+  html[data-theme="matrix"] {
+    --bg: #000500;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #04220b, #000500 65%);
+    --surface: #04140a;
+    --surface-hover: #07200f;
+    --border: #0e3f1c;
+    --text: #c8facd;
+    --text-dim: #4f9c5f;
+    --accent: #00ff41;
+    --accent-2: #7dff9b;
+    --shadow: rgba(0, 255, 65, 0.3);
+    --clock: #7dff9b;
+    --clock-2: #00c62f;
+  }
+
+  html[data-theme="embermatrix"] {
+    --bg: #0a0300;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #2c0d02, #0a0300 65%);
+    --surface: #170a03;
+    --surface-hover: #221105;
+    --border: #3d1a08;
+    --text: #ffe3c9;
+    --text-dim: #b3805f;
+    --accent: #ff5a1f;
+    --accent-2: #ffb347;
+    --shadow: rgba(255, 90, 31, 0.32);
+    --clock: #ffb347;
+    --clock-2: #ff6a1f;
+  }
+
+  html[data-theme="synthwave"] {
+    --bg: #12002e;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #330a5c, #12002e 65%);
+    --surface: #1c0640;
+    --surface-hover: #290a55;
+    --border: #45108a;
+    --text: #f7e6ff;
+    --text-dim: #a97fd0;
+    --accent: #ff2e97;
+    --accent-2: #00e5ff;
+    --shadow: rgba(255, 46, 151, 0.35);
+    --clock: #00e5ff;
+    --clock-2: #ff5cae;
+  }
+
+  html[data-theme="cosmos"] {
+    --bg: #05060f;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #151c40, #05060f 65%);
+    --surface: #0d1024;
+    --surface-hover: #161b3a;
+    --border: #232a52;
+    --text: #e6e9ff;
+    --text-dim: #8b93c4;
+    --accent: #8b9dff;
+    --accent-2: #d8b4fe;
+    --shadow: rgba(139, 157, 255, 0.28);
+    --clock: #b9c4ff;
+    --clock-2: #d8b4fe;
+  }
+
+  html[data-theme="storm"] {
+    --bg: #0a0f14;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #17242f, #0a0f14 65%);
+    --surface: #101820;
+    --surface-hover: #17222d;
+    --border: #24323f;
+    --text: #dde7f0;
+    --text-dim: #7d8fa3;
+    --accent: #5eb8f0;
+    --accent-2: #9fd4ff;
+    --shadow: rgba(94, 184, 240, 0.25);
+    --clock: #9fd4ff;
+    --clock-2: #4fa8e0;
+  }
+
+  html[data-theme="abyss"] {
+    --bg: #020c12;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #06283a, #020c12 65%);
+    --surface: #061821;
+    --surface-hover: #0a2430;
+    --border: #10394a;
+    --text: #d6f2f7;
+    --text-dim: #6b9bab;
+    --accent: #22d3ee;
+    --accent-2: #67e8f9;
+    --shadow: rgba(34, 211, 238, 0.28);
+    --clock: #7fe9f7;
+    --clock-2: #22b8d4;
+  }
+
+  html[data-theme="circuit"] {
+    --bg: #070b0d;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #0e1f1d, #070b0d 65%);
+    --surface: #0c1416;
+    --surface-hover: #121e21;
+    --border: #1c3033;
+    --text: #d8f0ee;
+    --text-dim: #6f9a96;
+    --accent: #22e0b0;
+    --accent-2: #a3e635;
+    --shadow: rgba(34, 224, 176, 0.25);
+    --clock: #8ff0d4;
+    --clock-2: #22c99e;
+  }
+
+  html[data-theme="terminal"] {
+    --bg: #0d0803;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #2a1905, #0d0803 65%);
+    --surface: #150d04;
+    --surface-hover: #1e1206;
+    --border: #3a2409;
+    --text: #ffd08a;
+    --text-dim: #a87b3c;
+    --accent: #ffb000;
+    --accent-2: #ffd76a;
+    --shadow: rgba(255, 176, 0, 0.3);
+    --clock: #ffd76a;
+    --clock-2: #ff9d00;
+  }
+
+  html[data-theme="festival"] {
+    --bg: #05070f;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #111c38, #05070f 65%);
+    --surface: #0c1122;
+    --surface-hover: #141c33;
+    --border: #212c4d;
+    --text: #e8ecff;
+    --text-dim: #8792bd;
+    --accent: #ffd166;
+    --accent-2: #ef476f;
+    --shadow: rgba(239, 71, 111, 0.28);
+    --clock: #ffd9a0;
+    --clock-2: #ff8fa8;
+  }
+
+  html[data-theme="ripple"] {
+    --bg: #eef4f8;
+    --bg-gradient: linear-gradient(180deg, #ffffff, #eef4f8 70%);
+    --surface: #ffffff;
+    --surface-hover: #e6eff6;
+    --border: #d5e3ee;
+    --text: #172733;
+    --text-dim: #62778a;
+    --accent: #0e7490;
+    --accent-2: #38bdf8;
+    --shadow: rgba(14, 116, 144, 0.15);
+    --clock: #0b4f63;
+    --clock-2: #0e7490;
+  }
+
+  html[data-theme="lava"] {
+    --bg: #0d0410;
+    --bg-gradient: radial-gradient(ellipse 80% 60% at 50% -10%, #2a0a20, #0d0410 65%);
+    --surface: #170720;
+    --surface-hover: #210c2d;
+    --border: #3b1543;
+    --text: #ffe3f3;
+    --text-dim: #b083a8;
+    --accent: #ff4d8d;
+    --accent-2: #ffa14a;
+    --shadow: rgba(255, 77, 141, 0.3);
+    --clock: #ffb3d0;
+    --clock-2: #ff6ea3;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: var(--bg-gradient), var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background 0.4s ease, color 0.4s ease;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+  }
+
+  .ember-particle {
+    position: absolute;
+    bottom: -10px;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    box-shadow: 0 0 6px 1px var(--accent-2);
+    opacity: 0;
+    animation: rise linear infinite;
+  }
+
+  @keyframes rise {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    8% { opacity: 0.9; }
+    100% { transform: translateY(-100vh) translateX(var(--drift, 20px)); opacity: 0; }
+  }
+
+  .fall-particle {
+    position: absolute;
+    top: -10px;
+    border-radius: 50%;
+    background: var(--particle-color, #fff);
+    box-shadow: 0 0 5px 1px var(--particle-color, #fff);
+    opacity: 0;
+    animation: fall linear infinite;
+  }
+  .fall-particle.petal {
+    border-radius: 60% 10% 60% 10%;
+    box-shadow: none;
+  }
+
+  @keyframes fall {
+    0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.85; }
+    100% { transform: translateY(110vh) translateX(var(--drift, 20px)) rotate(var(--spin, 0deg)); opacity: 0; }
+  }
+
+  .star {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    animation: twinkle ease-in-out infinite;
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.1; }
+    50% { opacity: 1; }
+  }
+
+  .firefly {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--particle-color, #fff);
+    box-shadow: 0 0 8px 2px var(--particle-color, #fff);
+    animation: firefly-drift ease-in-out infinite, twinkle ease-in-out infinite;
+  }
+
+  @keyframes firefly-drift {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(var(--fx1, 20px), var(--fy1, -15px)); }
+    50% { transform: translate(var(--fx2, -15px), var(--fy2, -30px)); }
+    75% { transform: translate(var(--fx3, -25px), var(--fy3, 10px)); }
+    100% { transform: translate(0, 0); }
+  }
+
+  .cloud {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--accent-2);
+    opacity: 0.16;
+    filter: blur(30px);
+    animation: cloud-drift linear infinite;
+  }
+
+  @keyframes cloud-drift {
+    0% { transform: translateX(-20vw); }
+    100% { transform: translateX(120vw); }
+  }
+
+  .aurora-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    mix-blend-mode: screen;
+    animation: aurora-wave ease-in-out infinite alternate;
+  }
+
+  @keyframes aurora-wave {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(6vw, 3vh) scale(1.15); }
+    100% { transform: translate(-5vw, -2vh) scale(0.95); }
+  }
+
+  /* ---- Matrix: digital rain ---- */
+  /* Each column is one string of glyphs scrolling past, masked so it fades out
+     at the top. The trailing glyph is the bright "head" of the drop. */
+  .rain-column {
+    position: absolute;
+    top: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    line-height: 1.15;
+    white-space: pre;
+    color: var(--accent);
+    text-shadow: 0 0 6px var(--accent);
+    opacity: 0.55;
+    will-change: transform;
+    animation: rain-fall linear infinite;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%);
+    mask-image: linear-gradient(to bottom, transparent, #000 45%);
+  }
+
+  .rain-head {
+    color: #ffffff;
+    text-shadow: 0 0 10px var(--accent), 0 0 18px var(--accent);
+  }
+
+  @keyframes rain-fall {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+
+  /* ---- Synthwave: perspective grid and striped sun ---- */
+  .synth-grid {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 320vw;
+    height: 100vh;
+    margin-left: -160vw;
+    /* Perspective and angle set where the horizon lands: roughly
+       perspective / tan(angle) above the bottom edge. */
+    transform: perspective(650px) rotateX(68deg);
+    transform-origin: bottom center;
+    background-image:
+      repeating-linear-gradient(to right, var(--accent) 0 1px, transparent 1px 64px),
+      repeating-linear-gradient(to bottom, var(--accent) 0 2px, transparent 2px 64px);
+    opacity: 0.4;
+    animation: synth-scroll 1.8s linear infinite;
+    -webkit-mask-image: linear-gradient(to top, #000 25%, transparent 85%);
+    mask-image: linear-gradient(to top, #000 25%, transparent 85%);
+  }
+
+  @keyframes synth-scroll {
+    0% { background-position: 0 0, 0 0; }
+    100% { background-position: 0 0, 0 64px; }
+  }
+
+  .synth-sun {
+    position: absolute;
+    left: 50%;
+    bottom: 15vh;
+    width: 240px;
+    height: 240px;
+    margin-left: -120px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, var(--accent-2), var(--accent) 55%, #ff8a3d);
+    opacity: 0.5;
+    filter: blur(0.5px);
+    -webkit-mask-image: repeating-linear-gradient(to bottom, #000 0 12px, transparent 12px 19px);
+    mask-image: repeating-linear-gradient(to bottom, #000 0 12px, transparent 12px 19px);
+    animation: synth-sun-pulse 6s ease-in-out infinite alternate;
+  }
+
+  @keyframes synth-sun-pulse {
+    0% { opacity: 0.38; }
+    100% { opacity: 0.6; }
+  }
+
+  /* ---- Cosmos: shooting stars over the shared starfield ---- */
+  .shooting-star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 6px 1px #fff;
+    opacity: 0;
+    animation: shoot linear forwards;
+  }
+
+  .shooting-star::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 90px;
+    height: 1px;
+    transform: translateY(-50%);
+    background: linear-gradient(to left, #ffffff, transparent);
+  }
+
+  @keyframes shoot {
+    0% { transform: translate(0, 0) rotate(20deg); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translate(60vw, 34vh) rotate(20deg); opacity: 0; }
+  }
+
+  /* ---- Storm: rain streaks and lightning ---- */
+  .rain-streak {
+    position: absolute;
+    top: -12vh;
+    width: 1px;
+    border-radius: 0;
+    background: linear-gradient(to bottom, transparent, var(--accent-2));
+    opacity: 0;
+    animation: streak linear infinite;
+  }
+
+  /* The tilt leans the streak into its drift direction so it reads as driving
+     rain rather than a static line. */
+  @keyframes streak {
+    0% { transform: translate(0, 0) rotate(9deg); opacity: 0; }
+    10% { opacity: 0.55; }
+    100% { transform: translate(var(--drift, -12vw), 115vh) rotate(9deg); opacity: 0; }
+  }
+
+  .lightning {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 50% at 50% 0%, #ffffff, transparent 70%);
+    opacity: 0;
+    animation: flash 220ms ease-out;
+  }
+
+  @keyframes flash {
+    0% { opacity: 0; }
+    15% { opacity: 0.28; }
+    30% { opacity: 0.05; }
+    45% { opacity: 0.22; }
+    100% { opacity: 0; }
+  }
+
+  /* ---- Abyss: buoyant bubbles under swaying light shafts ---- */
+  .bubble {
+    position: absolute;
+    bottom: -60px;
+    border-radius: 50%;
+    border: 1px solid var(--accent-2);
+    background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.4), transparent 55%);
+    opacity: 0;
+    animation: bubble-rise linear infinite;
+  }
+
+  /* Wobbles one way on the way up and back the other, like real buoyancy. */
+  @keyframes bubble-rise {
+    0% { transform: translate(0, 0) scale(0.8); opacity: 0; }
+    12% { opacity: 0.75; }
+    50% { transform: translate(var(--wobble, 16px), -55vh) scale(1); }
+    88% { opacity: 0.5; }
+    100% { transform: translate(calc(var(--wobble, 16px) * -1), -115vh) scale(1.12); opacity: 0; }
+  }
+
+  .water-ray {
+    position: absolute;
+    top: -15vh;
+    width: 90px;
+    height: 130vh;
+    background: linear-gradient(to bottom, var(--accent), transparent 72%);
+    opacity: 0.09;
+    filter: blur(22px);
+    transform-origin: top center;
+    animation: ray-sway ease-in-out infinite alternate;
+  }
+
+  @keyframes ray-sway {
+    0% { transform: rotate(5deg) scaleX(1); opacity: 0.06; }
+    100% { transform: rotate(13deg) scaleX(1.4); opacity: 0.13; }
+  }
+
+  /* ---- Circuit: pulses travelling along etched traces ---- */
+  .circuit-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .circuit-trace {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1;
+    opacity: 0.12;
+  }
+
+  .circuit-pulse {
+    fill: none;
+    stroke: var(--accent-2);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 4px var(--accent-2));
+    animation: trace-pulse linear infinite;
+  }
+
+  /* --dash is the full travel distance, set per-path from getTotalLength(). */
+  @keyframes trace-pulse {
+    from { stroke-dashoffset: 0; }
+    to { stroke-dashoffset: var(--dash); }
+  }
+
+  .circuit-node {
+    fill: var(--accent);
+    opacity: 0.3;
+    animation: node-pulse ease-in-out infinite alternate;
+  }
+
+  @keyframes node-pulse {
+    0% { opacity: 0.15; }
+    100% { opacity: 0.7; }
+  }
+
+  /* ---- Terminal: amber CRT ---- */
+  .crt-scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.55) 0 1px, transparent 1px 3px);
+    opacity: 0.55;
+  }
+
+  .crt-roll {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 22vh;
+    background: linear-gradient(to bottom, transparent, rgba(255, 208, 138, 0.06), transparent);
+    animation: crt-roll 7s linear infinite;
+  }
+
+  @keyframes crt-roll {
+    0% { top: -25vh; }
+    100% { top: 105vh; }
+  }
+
+  .crt-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 55% at 50% 40%, var(--accent), transparent 75%);
+    opacity: 0.05;
+    animation: crt-flicker 3.2s steps(1, end) infinite;
+  }
+
+  @keyframes crt-flicker {
+    0%, 92%, 100% { opacity: 0.05; }
+    93% { opacity: 0.09; }
+    95% { opacity: 0.03; }
+    97% { opacity: 0.08; }
+  }
+
+  .crt-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 85% 75% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.75));
+  }
+
+  /* ---- Festival: rockets and bursts ---- */
+  .rocket {
+    position: absolute;
+    width: 2px;
+    height: 20px;
+    border-radius: 2px;
+    background: linear-gradient(to bottom, var(--spark-color, #fff), transparent);
+    box-shadow: 0 0 8px 1px var(--spark-color, #fff);
+    animation: rocket-climb cubic-bezier(0.15, 0.6, 0.55, 1) forwards;
+  }
+
+  @keyframes rocket-climb {
+    0% { transform: translateY(0); opacity: 0; }
+    12% { opacity: 1; }
+    100% { transform: translateY(var(--climb, -40vh)); opacity: 0.9; }
+  }
+
+  .spark {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--spark-color, #fff);
+    box-shadow: 0 0 9px 2px var(--spark-color, #fff);
+    animation: spark-burst cubic-bezier(0.1, 0.7, 0.3, 1) forwards;
+  }
+
+  /* The extra downward offset at the end is the gravity droop. */
+  @keyframes spark-burst {
+    0% { transform: translate(0, 0) scale(1.3); opacity: 1; }
+    70% { opacity: 0.9; }
+    100% { transform: translate(var(--dx, 0), calc(var(--dy, 0) + 70px)) scale(0.25); opacity: 0; }
+  }
+
+  .burst-flash {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    margin: -45px 0 0 -45px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--spark-color, #fff), transparent 65%);
+    animation: burst-flash 420ms ease-out forwards;
+  }
+
+  @keyframes burst-flash {
+    0% { opacity: 0.55; transform: scale(0.3); }
+    100% { opacity: 0; transform: scale(1.6); }
+  }
+
+  /* ---- Ripple: rain rings on still water ---- */
+  .ripple-ring {
+    position: absolute;
+    width: var(--r, 200px);
+    height: var(--r, 200px);
+    margin-left: calc(var(--r, 200px) / -2);
+    margin-top: calc(var(--r, 200px) / -2);
+    border: 1.5px solid var(--accent);
+    border-radius: 50%;
+    transform: scale(0);
+    opacity: 0.5;
+    animation: ripple-out ease-out forwards;
+  }
+
+  @keyframes ripple-out {
+    to { transform: scale(1); opacity: 0; }
+  }
+
+  /* ---- Lava: metaballs ---- */
+  /* The merge comes from an SVG filter that blurs then hard-thresholds the
+     ALPHA channel. CSS contrast() would do it on colour instead, which wrecks
+     the hue and leaves hard-edged rings rather than soft necks. */
+  .lava-field {
+    position: absolute;
+    inset: 0;
+    filter: url(#goo);
+    opacity: 0.45;
+  }
+
+  .lava-blob {
+    position: absolute;
+    border-radius: 50%;
+    animation: lava-float ease-in-out infinite alternate;
+  }
+
+  @keyframes lava-float {
+    0% { transform: translateY(8vh) scale(0.9); }
+    100% { transform: translateY(-70vh) scale(1.15); }
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 8vh 24px 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Zen mode: strip everything but the clock and search bar, dead-centered. */
+  body.zen .scratch-btn,
+  body.zen .edit-btn,
+  body.zen .settings-btn,
+  body.zen .greeting,
+  body.zen .date,
+  body.zen .clock-meta,
+  body.zen .today,
+  body.zen .shortcuts-wrap {
+    display: none;
+  }
+  body.zen .app {
+    min-height: 100vh;
+    justify-content: center;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  body.zen .search-wrap { margin-bottom: 0; }
+
+  .icon-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 17px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  .icon-btn:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--shadow);
+  }
+
+  .search-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 48px;
+    z-index: 4;
+  }
+
+  .results {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 16px 40px -12px rgba(0,0,0,0.5);
+  }
+  .results.hidden { display: none; }
+
+  .result {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 11px;
+    border-radius: 9px;
+    cursor: pointer;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .result.selected { background: var(--surface-hover); }
+  .result img { width: 17px; height: 17px; flex-shrink: 0; }
+
+  .result-fallback {
+    width: 17px;
+    height: 17px;
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .result-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .result-host {
+    color: var(--text-dim);
+    font-size: 11px;
+    margin-left: 8px;
+  }
+  .result-kind {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  .result-prefix {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    flex-shrink: 0;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 10px 10px 10px 20px;
+    font-size: 12.5px;
+    color: var(--text);
+    box-shadow: 0 14px 34px -12px rgba(0,0,0,0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    z-index: 40;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+  .toast button {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .tile-hotkey {
+    position: absolute;
+    top: 5px;
+    left: 7px;
+    font-size: 9.5px;
+    color: var(--text-dim);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  body.show-hotkeys .tile-hotkey { opacity: 0.8; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+    .particles { display: none; }
+  }
+
+  .panel-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .panel-btn:hover { border-color: var(--accent); background: var(--surface-hover); }
+
+  .stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+
+  kbd.k {
+    display: inline-block;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text);
+  }
+
+  .scratch-field {
+    position: relative;
+    border-radius: var(--radius);
+  }
+
+  .scratch-panel textarea {
+    display: block;
+    width: 100%;
+    height: calc(100vh - 190px);
+    resize: none;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    line-height: 1.7;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .scratch-field:focus-within textarea { border-color: #0a0a0a; }
+
+  .scratch-field::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: calc(var(--radius) + 1px);
+    padding: 2px;
+    background: conic-gradient(
+      from var(--glow-angle),
+      #0a0a0a 0deg,
+      #0a0a0a 40deg,
+      var(--accent) 85deg,
+      var(--accent-2) 110deg,
+      var(--accent) 135deg,
+      #0a0a0a 180deg,
+      #0a0a0a 360deg
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    filter: drop-shadow(0 0 4px var(--accent)) drop-shadow(0 0 9px var(--accent));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .scratch-field:focus-within::after {
+    opacity: 1;
+    animation: travel-glow 2.6s linear infinite;
+  }
+
+  .scratch-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .scratch-hint { margin-top: 10px; }
+
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .zen-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 5;
+  }
+  .settings-btn {
+    position: fixed;
+    top: 20px;
+    right: 72px;
+    z-index: 5;
+  }
+  .edit-btn {
+    position: fixed;
+    top: 20px;
+    right: 124px;
+    z-index: 5;
+  }
+  .scratch-btn {
+    position: fixed;
+    top: 20px;
+    right: 176px;
+    z-index: 5;
+  }
+  .scratch-btn.active,
+  .edit-btn.active,
+  .zen-btn.active {
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .hero {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 40px;
+    user-select: none;
+  }
+
+  .clock {
+    position: relative;
+    display: inline-block;
+    padding: 6px 20px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: clamp(58px, 13vw, 128px);
+    letter-spacing: 3px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Corner brackets, like a framed instrument readout. */
+  .clock::before,
+  .clock::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--accent);
+    opacity: 0.45;
+  }
+
+  .clock::before {
+    top: -8px;
+    left: -8px;
+    border-right: 0;
+    border-bottom: 0;
+  }
+
+  .clock::after {
+    bottom: -8px;
+    right: -8px;
+    border-left: 0;
+    border-top: 0;
+  }
+
+  /* The unlit segments sitting behind the live digits. */
+  .clock-ghost {
+    position: absolute;
+    top: 6px;
+    left: 20px;
+    color: var(--clock-2);
+    opacity: 0.11;
+    pointer-events: none;
+  }
+
+  /* Digits are filled with a theme gradient, so text-shadow can't be used for
+     the glow -- a transparent fill would let it show straight through. */
+  .clock-face {
+    position: relative;
+    color: var(--clock-2);
+    background: linear-gradient(160deg, var(--clock), var(--clock-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 30px var(--shadow));
+  }
+
+  /* Opt back out of the parent's gradient fill so these paint their own color
+     and the blink animation doesn't fight the background-clip. */
+  .clock-sep {
+    color: var(--accent);
+    -webkit-text-fill-color: var(--accent);
+    animation: clock-blink 2s steps(1, end) infinite;
+  }
+
+  @keyframes clock-blink {
+    0%, 49% { opacity: 0.3; }
+    50%, 100% { opacity: 1; }
+  }
+
+  .clock-secs {
+    position: relative;
+    top: -0.72em;
+    margin-left: 10px;
+    font-size: 0.3em;
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: var(--accent);
+    -webkit-text-fill-color: var(--accent);
+    text-shadow: 0 0 10px var(--shadow);
+  }
+
+  /* Sweeps once per minute, spanning the width of the readout. */
+  .clock-meter {
+    display: block;
+    width: 100%;
+    height: 2px;
+    margin-top: 14px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .clock-meter i {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transition: width 1s linear;
+  }
+
+  .clock-meter i.no-anim {
+    transition: none;
+  }
+
+  .greeting {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+
+  .greeting::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    vertical-align: middle;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .date {
+    margin-top: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .clock-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 18px;
+    margin-top: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+  }
+
+  .clock-meta span {
+    white-space: nowrap;
+  }
+
+  .clock-meta em {
+    font-style: normal;
+  }
+
+  .clock-meta b {
+    margin-right: 6px;
+    font-weight: 600;
+    color: var(--accent);
+    opacity: 0.75;
+  }
+
+  .today {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    margin: 26px auto 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 24px;
+  }
+  .today.hidden { display: none; }
+
+  .today::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: calc(var(--radius) + 1px);
+    padding: 2px;
+    background: conic-gradient(
+      from var(--glow-angle),
+      #0a0a0a 0deg,
+      #0a0a0a 40deg,
+      var(--accent) 85deg,
+      var(--accent-2) 110deg,
+      var(--accent) 135deg,
+      #0a0a0a 180deg,
+      #0a0a0a 360deg
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    filter: drop-shadow(0 0 4px var(--accent)) drop-shadow(0 0 9px var(--accent));
+    pointer-events: none;
+    animation: travel-glow 2.6s linear infinite;
+  }
+  .today-head {
+    font-size: 12px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .today-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .today-item {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+  .today-item.past { opacity: 0.4; }
+  .today-time {
+    flex-shrink: 0;
+    min-width: 78px;
+    text-align: right;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .today-title {
+    flex: 1;
+    min-width: 0;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .today-empty,
+  .today-connect,
+  .today-error {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14.5px;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 4px 0;
+  }
+  .today-connect-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14.5px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+
+  .panel-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    outline: none;
+  }
+  .panel-input:focus { border-color: var(--accent); }
+
+  .search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 6px 6px 20px;
+    transition: border-color 0.2s ease;
+  }
+  .search:focus-within {
+    border-color: #0a0a0a;
+  }
+
+  .search::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 999px;
+    padding: 2px;
+    background: conic-gradient(
+      from var(--glow-angle),
+      #0a0a0a 0deg,
+      #0a0a0a 40deg,
+      var(--accent) 85deg,
+      var(--accent-2) 110deg,
+      var(--accent) 135deg,
+      #0a0a0a 180deg,
+      #0a0a0a 360deg
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    filter: drop-shadow(0 0 4px var(--accent)) drop-shadow(0 0 9px var(--accent));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .search:focus-within::after {
+    opacity: 1;
+    animation: travel-glow 2.6s linear infinite;
+  }
+
+  .search select {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    cursor: pointer;
+    outline: none;
+    padding-right: 4px;
+    border-right: 1px solid var(--border);
+  }
+  .search select option { background: var(--surface); color: var(--text); }
+
+  .search-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .search input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    padding: 10px 4px;
+  }
+  .search input::placeholder { color: var(--text-dim); }
+
+  /* Stands in for placeholder text: a blinking, glowing cursor that steps
+     aside the instant real input starts (typing or focus takes over). */
+  .search-cursor {
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    width: 2px;
+    height: 1.15em;
+    transform: translateY(-50%);
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent), 0 0 12px var(--accent);
+    pointer-events: none;
+    animation: cursor-blink 1.1s steps(1, end) infinite;
+  }
+  .search-input-wrap:focus-within .search-cursor,
+  .search.has-value .search-cursor {
+    display: none;
+  }
+
+  @keyframes cursor-blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+
+  .key-hint {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+    user-select: none;
+    transition: opacity 0.2s ease;
+  }
+  .search:focus-within .key-hint, .search.has-value .key-hint { opacity: 0; }
+
+  .search .search-clear {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+  .search.has-value .search-clear { display: flex; }
+  .search .search-clear:hover { color: var(--text); background: var(--surface-hover); border-radius: 50%; transform: none; }
+
+  .search button {
+    background: var(--surface);
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    width: 38px;
+    height: 38px;
+    font-size: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+  }
+  .search button:hover { transform: scale(1.06); border-color: var(--accent); }
+
+  .shortcuts-wrap { width: 100%; }
+
+  .group-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+  .group-tabs.hidden { display: none; }
+
+  .group-tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  }
+  .group-tab:hover { color: var(--text); border-color: var(--accent); }
+  .group-tab.active {
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .group-tab-remove {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    font-size: 12px;
+    line-height: 1;
+  }
+  body.editing .group-tab-remove { display: flex; }
+  .group-tab-remove:hover { background: rgba(0, 0, 0, 0.2); }
+  .group-tab-add { border-style: dashed; }
+
+  .shortcuts-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 18px;
+    width: 100%;
+  }
+
+  .tile {
+    position: relative;
+    width: 84px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 8px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text);
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  }
+  .tile:hover {
+    transform: translateY(-3px);
+    background: var(--surface-hover);
+    border-color: #0a0a0a;
+  }
+
+  @property --glow-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
+
+  .tile::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: calc(var(--radius) + 1px);
+    padding: 2px;
+    background: conic-gradient(
+      from var(--glow-angle),
+      #0a0a0a 0deg,
+      #0a0a0a 40deg,
+      var(--accent) 85deg,
+      var(--accent-2) 110deg,
+      var(--accent) 135deg,
+      #0a0a0a 180deg,
+      #0a0a0a 360deg
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    filter: drop-shadow(0 0 4px var(--accent)) drop-shadow(0 0 9px var(--accent));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .tile:hover::after {
+    opacity: 1;
+    animation: travel-glow 2.6s linear infinite;
+  }
+
+  @keyframes travel-glow {
+    to { --glow-angle: 360deg; }
+  }
+
+  .tile-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: 'Sora', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--accent);
+  }
+  .tile-icon img { width: 20px; height: 20px; }
+
+  .tile-label {
+    font-size: 11.5px;
+    text-align: center;
+    color: var(--text-dim);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tile-remove {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    z-index: 2;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  body.editing .tile-remove { display: flex; }
+  body.editing .tile { cursor: grab; }
+  body.editing .tile.dragging { opacity: 0.4; }
+
+  .tile.add-tile {
+    border-style: dashed;
+    color: var(--text-dim);
+  }
+  .tile.add-tile .tile-icon { background: transparent; border: 1px dashed var(--border); font-size: 20px; }
+
+  .panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: min(320px, 100%);
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    padding: 28px 24px;
+    z-index: 20;
+    transform: translateX(0);
+    transition: transform 0.25s ease;
+    overflow-y: auto;
+  }
+  .panel.hidden { transform: translateX(100%); }
+
+  .panel h2 {
+    font-family: 'Sora', sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    margin: 0 0 20px;
+  }
+
+  .panel-close {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+  }
+
+  .panel-section { margin-bottom: 28px; }
+  .panel-section h3 {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 0 0 12px;
+    font-weight: 500;
+  }
+
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .swatch {
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 10px;
+    cursor: pointer;
+    background: #111;
+    text-align: left;
+    font-family: 'IBM Plex Mono', monospace;
+    color: #fff;
+    font-size: 11px;
+  }
+  .swatch.active { border-color: var(--accent); }
+  .swatch-preview {
+    height: 32px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+
+  .color-custom {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 12px;
+  }
+  .color-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+  .color-field input[type="color"] {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: none;
+    cursor: pointer;
+  }
+  .color-field input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+  .color-field input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
+  .color-field input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
+  .swatch[data-swatch="ember"] { background: #160b0b; }
+  .swatch[data-swatch="ember"] .swatch-preview { background: linear-gradient(135deg, #e0362b, #0a0606); }
+  .swatch[data-swatch="noir"] { background: #17181b; }
+  .swatch[data-swatch="noir"] .swatch-preview { background: linear-gradient(135deg, #6ea8ff, #0b0b0d); }
+  .swatch[data-swatch="daybreak"] { background: #fffaf1; color: #2b2620; }
+  .swatch[data-swatch="daybreak"] .swatch-preview { background: linear-gradient(135deg, #b8842c, #fdf2df); }
+  .swatch[data-swatch="frost"] { background: #ffffff; color: #1d2733; }
+  .swatch[data-swatch="frost"] .swatch-preview { background: linear-gradient(135deg, #2563eb, #eaf1f7); }
+  .swatch[data-swatch="aurora"] { background: #0d1a1c; }
+  .swatch[data-swatch="aurora"] .swatch-preview { background: linear-gradient(135deg, #34d399, #a78bfa); }
+  .swatch[data-swatch="forest"] { background: #101a12; }
+  .swatch[data-swatch="forest"] .swatch-preview { background: linear-gradient(135deg, #d4e157, #101a12); }
+  .swatch[data-swatch="sunset"] { background: #fffaf5; color: #3a2a22; }
+  .swatch[data-swatch="sunset"] .swatch-preview { background: linear-gradient(135deg, #e2596b, #f4a259); }
+  .swatch[data-swatch="bloom"] { background: #ffffff; color: #332638; }
+  .swatch[data-swatch="bloom"] .swatch-preview { background: linear-gradient(135deg, #b565a7, #f2a6c9); }
+  .swatch[data-swatch="matrix"] { background: #04140a; }
+  .swatch[data-swatch="matrix"] .swatch-preview { background: linear-gradient(135deg, #00ff41, #000500); }
+  .swatch[data-swatch="embermatrix"] { background: #170a03; }
+  .swatch[data-swatch="embermatrix"] .swatch-preview { background: linear-gradient(135deg, #ff5a1f, #0a0300); }
+  .swatch[data-swatch="synthwave"] { background: #1c0640; }
+  .swatch[data-swatch="synthwave"] .swatch-preview { background: linear-gradient(135deg, #ff2e97, #00e5ff); }
+  .swatch[data-swatch="cosmos"] { background: #0d1024; }
+  .swatch[data-swatch="cosmos"] .swatch-preview { background: linear-gradient(135deg, #d8b4fe, #05060f); }
+  .swatch[data-swatch="storm"] { background: #101820; }
+  .swatch[data-swatch="storm"] .swatch-preview { background: linear-gradient(135deg, #9fd4ff, #0a0f14); }
+  .swatch[data-swatch="abyss"] { background: #061821; }
+  .swatch[data-swatch="abyss"] .swatch-preview { background: linear-gradient(135deg, #67e8f9, #020c12); }
+  .swatch[data-swatch="circuit"] { background: #0c1416; }
+  .swatch[data-swatch="circuit"] .swatch-preview { background: linear-gradient(135deg, #a3e635, #22e0b0); }
+  .swatch[data-swatch="terminal"] { background: #150d04; }
+  .swatch[data-swatch="terminal"] .swatch-preview { background: linear-gradient(135deg, #ffb000, #0d0803); }
+  .swatch[data-swatch="festival"] { background: #0c1122; }
+  .swatch[data-swatch="festival"] .swatch-preview { background: linear-gradient(135deg, #ffd166, #ef476f); }
+  .swatch[data-swatch="ripple"] { background: #ffffff; color: #172733; }
+  .swatch[data-swatch="ripple"] .swatch-preview { background: linear-gradient(135deg, #38bdf8, #0e7490); }
+  .swatch[data-swatch="lava"] { background: #170720; }
+  .swatch[data-swatch="lava"] .swatch-preview { background: linear-gradient(135deg, #ffa14a, #ff4d8d); }
+
+  .hint { font-size: 11.5px; color: var(--text-dim); line-height: 1.6; }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+  }
+  .modal-overlay.hidden { display: none; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 320px;
+    max-width: 90vw;
+  }
+  .modal h3 {
+    font-family: 'Sora', sans-serif;
+    margin: 0 0 18px;
+    font-size: 16px;
+  }
+  .modal label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  .modal input,
+  .modal select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    outline: none;
+  }
+  .modal select { cursor: pointer; }
+  .modal input:focus, .modal select:focus { border-color: var(--accent); }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 22px;
+  }
+  .modal-actions button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .modal-actions .primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .modal-actions .danger { color: var(--accent); }
+  .modal-actions .hidden { display: none; }
+
+  @media (max-width: 480px) {
+    .settings-btn { right: 66px; }
+    .edit-btn { right: 112px; }
+    .scratch-btn { right: 158px; }
+    .tile { width: 72px; }
+    .search { padding-right: 8px; }
+    .search button { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="particles" id="particles"></div>
+
+<button class="icon-btn zen-btn" id="zenBtn" aria-label="Zen mode" title="Zen mode (Z)">&#9678;</button>
+<button class="icon-btn scratch-btn" id="scratchBtn" aria-label="Scratchpad" title="Scratchpad (Shift+S)">&#9636;</button>
+<button class="icon-btn edit-btn" id="editBtn" aria-label="Edit shortcuts" title="Edit shortcuts">&#9998;</button>
+<button class="icon-btn settings-btn" id="settingsBtn" aria-label="Settings" title="Settings">&#9881;</button>
+
+<div class="app">
+  <header class="hero">
+    <div class="greeting" id="greeting"></div>
+    <div class="clock" id="clock" role="timer">
+      <span class="clock-ghost" aria-hidden="true">88:88</span>
+      <span class="clock-face"><span id="clockH">--</span><span class="clock-sep">:</span><span id="clockM">--</span></span><span class="clock-secs" id="clockS">--</span>
+      <span class="clock-meter" aria-hidden="true"><i id="clockMeter"></i></span>
+    </div>
+    <div class="date" id="date"></div>
+    <div class="clock-meta" aria-hidden="true">
+      <span><b>ISO</b><em id="metaIso"></em></span>
+      <span><b>WK</b><em id="metaWeek"></em></span>
+      <span><b>DOY</b><em id="metaDoy"></em></span>
+      <span><b>TZ</b><em id="metaTz"></em></span>
+    </div>
+    <div class="today hidden" id="todaySection">
+      <div class="today-head">Today</div>
+      <div class="today-list" id="todayList"></div>
+    </div>
+  </header>
+
+  <div class="search-wrap">
+    <form class="search" id="searchForm">
+      <select id="engineSelect">
+        <option value="https://www.google.com/search?q=">Google</option>
+        <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
+        <option value="https://www.bing.com/search?q=">Bing</option>
+      </select>
+      <span class="search-input-wrap">
+        <input type="text" id="searchInput" autocomplete="off" aria-label="Search or jump to a site">
+        <span class="search-cursor" aria-hidden="true"></span>
+      </span>
+      <button type="button" class="search-clear" id="searchClear" aria-label="Clear search">&times;</button>
+      <kbd class="key-hint" id="keyHint">/</kbd>
+      <button type="submit" aria-label="Search">&#8594;</button>
+    </form>
+    <div class="results hidden" id="results"></div>
+  </div>
+
+  <main class="shortcuts-wrap">
+    <div class="group-tabs hidden" id="groupTabs"></div>
+    <div class="shortcuts-grid" id="shortcutsGrid"></div>
+  </main>
+</div>
+
+<div class="panel hidden" id="settingsPanel">
+  <button class="icon-btn panel-close" id="panelClose" aria-label="Close settings">&times;</button>
+  <h2>Settings</h2>
+  <div class="panel-section">
+    <h3>Theme</h3>
+    <div class="theme-grid" id="themeGrid">
+      <button class="swatch" data-swatch="ember"><div class="swatch-preview"></div>Ember</button>
+      <button class="swatch" data-swatch="noir"><div class="swatch-preview"></div>Noir</button>
+      <button class="swatch" data-swatch="aurora"><div class="swatch-preview"></div>Aurora</button>
+      <button class="swatch" data-swatch="forest"><div class="swatch-preview"></div>Forest</button>
+      <button class="swatch" data-swatch="daybreak"><div class="swatch-preview"></div>Daybreak</button>
+      <button class="swatch" data-swatch="frost"><div class="swatch-preview"></div>Frost</button>
+      <button class="swatch" data-swatch="sunset"><div class="swatch-preview"></div>Sunset</button>
+      <button class="swatch" data-swatch="bloom"><div class="swatch-preview"></div>Bloom</button>
+      <button class="swatch" data-swatch="matrix"><div class="swatch-preview"></div>Matrix</button>
+      <button class="swatch" data-swatch="embermatrix"><div class="swatch-preview"></div>Ember Matrix</button>
+      <button class="swatch" data-swatch="synthwave"><div class="swatch-preview"></div>Synthwave</button>
+      <button class="swatch" data-swatch="cosmos"><div class="swatch-preview"></div>Cosmos</button>
+      <button class="swatch" data-swatch="storm"><div class="swatch-preview"></div>Storm</button>
+      <button class="swatch" data-swatch="abyss"><div class="swatch-preview"></div>Abyss</button>
+      <button class="swatch" data-swatch="circuit"><div class="swatch-preview"></div>Circuit</button>
+      <button class="swatch" data-swatch="terminal"><div class="swatch-preview"></div>Terminal</button>
+      <button class="swatch" data-swatch="festival"><div class="swatch-preview"></div>Festival</button>
+      <button class="swatch" data-swatch="ripple"><div class="swatch-preview"></div>Ripple</button>
+      <button class="swatch" data-swatch="lava"><div class="swatch-preview"></div>Lava</button>
+    </div>
+    <div class="color-custom">
+      <div class="color-field">
+        <label for="colorAccent">Accent</label>
+        <input type="color" id="colorAccent">
+      </div>
+      <div class="color-field">
+        <label for="colorAccent2">Accent 2</label>
+        <input type="color" id="colorAccent2">
+      </div>
+      <button class="link-btn" id="colorReset">Reset colors</button>
+    </div>
+    <p class="hint">Recolors the current theme's accents, glow, and clock. Saved per theme.</p>
+  </div>
+  <div class="panel-section">
+    <h3>Backup</h3>
+    <div class="stack">
+      <button class="panel-btn" id="exportBtn">Export settings</button>
+      <button class="panel-btn" id="importBtn">Import settings</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="hint" id="backupStatus">Saves your shortcuts, theme, search engine, and notes to a JSON file you can move between browsers.</p>
+  </div>
+  <div class="panel-section">
+    <h3>Google Calendar</h3>
+    <p class="hint" id="gcalStatus">Not connected.</p>
+    <div class="stack">
+      <input class="panel-input" id="gcalClientId" placeholder="Google OAuth Client ID">
+      <button class="panel-btn" id="gcalConnectBtn">Connect</button>
+    </div>
+    <p class="hint">Shows today's events above the search bar. This page has no server, so it needs your own free OAuth client: in Google Cloud Console → APIs &amp; Services → Credentials, create an OAuth Client ID (type Web application), add this page's URL under Authorized JavaScript origins, then paste the Client ID above. Only your browser talks to Google — nothing passes through a server. Doesn't work from a file:// page; needs to be hosted over https.</p>
+  </div>
+  <div class="panel-section">
+    <h3>Keyboard</h3>
+    <p class="hint">
+      <kbd class="k">/</kbd> jump to search &nbsp;·&nbsp;
+      <kbd class="k">&#8593;</kbd><kbd class="k">&#8595;</kbd> pick a result &nbsp;·&nbsp;
+      <kbd class="k">Alt</kbd>+<kbd class="k">1</kbd>–<kbd class="k">9</kbd> open a tile &nbsp;·&nbsp;
+      <kbd class="k">Shift</kbd>+<kbd class="k">S</kbd> scratchpad &nbsp;·&nbsp;
+      <kbd class="k">Z</kbd> zen mode &nbsp;·&nbsp;
+      <kbd class="k">Esc</kbd> close
+    </p>
+  </div>
+  <div class="panel-section">
+    <h3>Search commands</h3>
+    <p class="hint">Start a search with a prefix to send it somewhere specific — <kbd class="k">gh react</kbd> searches GitHub.</p>
+    <p class="hint" id="commandList"></p>
+  </div>
+  <div class="panel-section">
+    <h3>Shortcuts</h3>
+    <p class="hint">Click the pencil icon to enter edit mode. In edit mode you can drag tiles to reorder, click a tile to rename or change its URL, and tap the × to remove it. Use the + tile to add a new one.</p>
+  </div>
+</div>
+
+<div class="panel scratch-panel hidden" id="scratchPanel">
+  <button class="icon-btn panel-close" id="scratchClose" aria-label="Close scratchpad">&times;</button>
+  <h2>Scratchpad</h2>
+  <div class="scratch-field">
+    <textarea id="scratchText" placeholder="Anything you need to hang onto…"></textarea>
+  </div>
+  <div class="scratch-meta">
+    <span id="scratchStatus">Saved automatically</span>
+    <button class="link-btn" id="scratchClear">Clear</button>
+  </div>
+  <p class="hint scratch-hint">Lines starting with <kbd class="k">- [ ]</kbd> are checklist items — click the brackets to check them off.</p>
+</div>
+
+<div class="toast" id="toast">
+  <span id="toastMsg"></span>
+  <button id="toastAction">Undo</button>
+</div>
+
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Add shortcut</h3>
+    <label for="tileName">Name</label>
+    <input id="tileName" placeholder="e.g. GitHub">
+    <label for="tileUrl">URL</label>
+    <input id="tileUrl" placeholder="e.g. github.com">
+    <label for="tileGroup">Group</label>
+    <select id="tileGroup">
+      <option value="">No group</option>
+    </select>
+    <div class="modal-actions">
+      <button id="modalCancel">Cancel</button>
+      <button id="modalDelete" class="danger hidden">Delete</button>
+      <button id="modalSave" class="primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var STORAGE_SHORTCUTS = 'homepage.shortcuts';
+  var STORAGE_THEME = 'homepage.theme';
+  var STORAGE_ENGINE = 'homepage.engine';
+  var STORAGE_COLORS = 'homepage.themeColors';
+  var STORAGE_GROUPS = 'homepage.groups';
+  var STORAGE_ACTIVE_GROUP = 'homepage.activeGroup';
+
+  var defaultShortcuts = [
+    { name: 'GitHub', url: 'https://github.com' },
+    { name: 'YouTube', url: 'https://youtube.com' },
+    { name: 'Gmail', url: 'https://mail.google.com' },
+    { name: 'Reddit', url: 'https://reddit.com' }
+  ];
+
+  var editing = false;
+  var editingIndex = null;
+  var dragIndex = null;
+
+  var grid = document.getElementById('shortcutsGrid');
+  var groupTabsEl = document.getElementById('groupTabs');
+  var editBtn = document.getElementById('editBtn');
+  var settingsBtn = document.getElementById('settingsBtn');
+  var settingsPanel = document.getElementById('settingsPanel');
+  var panelClose = document.getElementById('panelClose');
+  var themeGrid = document.getElementById('themeGrid');
+  var modalOverlay = document.getElementById('modalOverlay');
+  var modalTitle = document.getElementById('modalTitle');
+  var tileNameInput = document.getElementById('tileName');
+  var tileUrlInput = document.getElementById('tileUrl');
+  var tileGroupSelect = document.getElementById('tileGroup');
+  var modalSave = document.getElementById('modalSave');
+  var modalCancel = document.getElementById('modalCancel');
+  var modalDelete = document.getElementById('modalDelete');
+  var searchForm = document.getElementById('searchForm');
+  var searchInput = document.getElementById('searchInput');
+  var searchClear = document.getElementById('searchClear');
+  var engineSelect = document.getElementById('engineSelect');
+
+  function loadShortcuts() {
+    try {
+      var raw = localStorage.getItem(STORAGE_SHORTCUTS);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return defaultShortcuts.slice();
+  }
+
+  function saveShortcuts(list) {
+    localStorage.setItem(STORAGE_SHORTCUTS, JSON.stringify(list));
+  }
+
+  function loadGroups() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(STORAGE_GROUPS));
+      if (Array.isArray(raw)) return raw;
+    } catch (e) {}
+    return [];
+  }
+
+  function saveGroups(list) {
+    localStorage.setItem(STORAGE_GROUPS, JSON.stringify(list));
+  }
+
+  var groups = loadGroups();
+  var activeGroup = localStorage.getItem(STORAGE_ACTIVE_GROUP) || 'all';
+  if (activeGroup !== 'all' && groups.indexOf(activeGroup) === -1) activeGroup = 'all';
+
+  var shortcuts = loadShortcuts();
+
+  // ---- Toast with undo ----
+  var toastEl = document.getElementById('toast');
+  var toastMsg = document.getElementById('toastMsg');
+  var toastAction = document.getElementById('toastAction');
+  var toastTimer = null;
+  var undoFn = null;
+
+  function showToast(msg, onUndo, actionLabel) {
+    toastMsg.textContent = msg;
+    undoFn = onUndo || null;
+    toastAction.textContent = actionLabel || 'Undo';
+    toastAction.style.display = undoFn ? '' : 'none';
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, 6000);
+  }
+
+  function hideToast() {
+    toastEl.classList.remove('show');
+    undoFn = null;
+  }
+
+  toastAction.addEventListener('click', function () {
+    if (undoFn) undoFn();
+    hideToast();
+  });
+
+  function normalizeUrl(input) {
+    var v = input.trim();
+    if (!v) return '';
+    if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+    return v;
+  }
+
+  function hostnameFor(url) {
+    try { return new URL(url).hostname; } catch (e) { return ''; }
+  }
+
+  function initialFor(name) {
+    return (name.trim().charAt(0) || '?').toUpperCase();
+  }
+
+  function removeShortcut(index) {
+    var removed = shortcuts[index];
+    shortcuts.splice(index, 1);
+    saveShortcuts(shortcuts);
+    renderShortcuts();
+    showToast('Removed ' + removed.name, function () {
+      shortcuts.splice(index, 0, removed);
+      saveShortcuts(shortcuts);
+      renderShortcuts();
+    });
+  }
+
+  function visibleShortcuts() {
+    return shortcuts
+      .map(function (s, i) { return { s: s, i: i }; })
+      .filter(function (e) { return activeGroup === 'all' || (e.s.group || '') === activeGroup; });
+  }
+
+  function renderGroupTabs() {
+    groupTabsEl.innerHTML = '';
+    groupTabsEl.classList.toggle('hidden', groups.length === 0 && !editing);
+
+    function setActiveGroup(id) {
+      activeGroup = id;
+      localStorage.setItem(STORAGE_ACTIVE_GROUP, activeGroup);
+      renderShortcuts();
+    }
+
+    function makeTab(id, label, removable) {
+      var btn = document.createElement('button');
+      btn.className = 'group-tab' + (activeGroup === id ? ' active' : '');
+      var text = document.createElement('span');
+      text.textContent = label;
+      btn.appendChild(text);
+
+      if (removable) {
+        var rm = document.createElement('span');
+        rm.className = 'group-tab-remove';
+        rm.textContent = '×';
+        rm.setAttribute('aria-label', 'Delete group ' + label);
+        rm.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (!confirm('Delete group "' + label + '"? Its shortcuts will become ungrouped.')) return;
+          groups = groups.filter(function (g) { return g !== id; });
+          shortcuts.forEach(function (s) { if (s.group === id) s.group = ''; });
+          saveShortcuts(shortcuts);
+          saveGroups(groups);
+          setActiveGroup(activeGroup === id ? 'all' : activeGroup);
+        });
+        btn.appendChild(rm);
+      }
+
+      btn.addEventListener('click', function () { setActiveGroup(id); });
+      return btn;
+    }
+
+    groupTabsEl.appendChild(makeTab('all', 'All', false));
+    groups.forEach(function (g) { groupTabsEl.appendChild(makeTab(g, g, true)); });
+
+    var addTab = document.createElement('button');
+    addTab.className = 'group-tab group-tab-add';
+    addTab.textContent = '+';
+    addTab.setAttribute('aria-label', 'Add group');
+    addTab.addEventListener('click', function () {
+      var name = prompt('New group name');
+      if (!name) return;
+      name = name.trim();
+      if (!name || name === 'all' || groups.indexOf(name) > -1) return;
+      groups.push(name);
+      saveGroups(groups);
+      setActiveGroup(name);
+    });
+    groupTabsEl.appendChild(addTab);
+  }
+
+  function renderShortcuts() {
+    renderGroupTabs();
+    grid.innerHTML = '';
+    visibleShortcuts().forEach(function (entry, viewIdx) {
+      var s = entry.s, i = entry.i;
+      var tile = document.createElement(editing ? 'div' : 'a');
+      tile.className = 'tile';
+      if (!editing) {
+        tile.href = s.url;
+        tile.target = '_blank';
+        tile.rel = 'noopener noreferrer';
+      }
+      tile.draggable = editing;
+      tile.dataset.index = i;
+
+      var icon = document.createElement('div');
+      icon.className = 'tile-icon';
+      var host = hostnameFor(s.url);
+      if (host) {
+        var img = document.createElement('img');
+        img.src = 'https://www.google.com/s2/favicons?sz=64&domain=' + host;
+        img.alt = '';
+        img.onerror = function () {
+          icon.innerHTML = '';
+          icon.textContent = initialFor(s.name);
+        };
+        icon.appendChild(img);
+      } else {
+        icon.textContent = initialFor(s.name);
+      }
+
+      var label = document.createElement('div');
+      label.className = 'tile-label';
+      label.textContent = s.name;
+
+      tile.appendChild(icon);
+      tile.appendChild(label);
+
+      if (viewIdx < 9) {
+        var hk = document.createElement('div');
+        hk.className = 'tile-hotkey';
+        hk.textContent = viewIdx + 1;
+        tile.appendChild(hk);
+      }
+
+      if (editing) {
+        var removeBtn = document.createElement('button');
+        removeBtn.className = 'tile-remove';
+        removeBtn.textContent = '\u00d7';
+        removeBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          removeShortcut(i);
+        });
+        tile.appendChild(removeBtn);
+
+        tile.addEventListener('click', function (e) {
+          e.preventDefault();
+          openModal(i);
+        });
+
+        tile.addEventListener('dragstart', function () {
+          dragIndex = i;
+          tile.classList.add('dragging');
+        });
+        tile.addEventListener('dragend', function () {
+          tile.classList.remove('dragging');
+        });
+        tile.addEventListener('dragover', function (e) {
+          e.preventDefault();
+        });
+        tile.addEventListener('drop', function (e) {
+          e.preventDefault();
+          if (dragIndex === null || dragIndex === i) return;
+          var moved = shortcuts.splice(dragIndex, 1)[0];
+          shortcuts.splice(i, 0, moved);
+          saveShortcuts(shortcuts);
+          dragIndex = null;
+          renderShortcuts();
+        });
+      }
+
+      grid.appendChild(tile);
+    });
+
+    var addTile = document.createElement('div');
+    addTile.className = 'tile add-tile';
+    var addIcon = document.createElement('div');
+    addIcon.className = 'tile-icon';
+    addIcon.textContent = '+';
+    var addLabel = document.createElement('div');
+    addLabel.className = 'tile-label';
+    addLabel.textContent = 'Add';
+    addTile.appendChild(addIcon);
+    addTile.appendChild(addLabel);
+    addTile.addEventListener('click', function () { openModal(null); });
+    grid.appendChild(addTile);
+  }
+
+  function populateGroupSelect(selected) {
+    tileGroupSelect.innerHTML = '<option value="">No group</option>';
+    groups.forEach(function (g) {
+      var opt = document.createElement('option');
+      opt.value = g;
+      opt.textContent = g;
+      tileGroupSelect.appendChild(opt);
+    });
+    tileGroupSelect.value = selected || '';
+  }
+
+  function openModal(index) {
+    editingIndex = index;
+    if (index === null) {
+      modalTitle.textContent = 'Add shortcut';
+      tileNameInput.value = '';
+      tileUrlInput.value = '';
+      populateGroupSelect(activeGroup === 'all' ? '' : activeGroup);
+      modalDelete.classList.add('hidden');
+    } else {
+      modalTitle.textContent = 'Edit shortcut';
+      tileNameInput.value = shortcuts[index].name;
+      tileUrlInput.value = shortcuts[index].url;
+      populateGroupSelect(shortcuts[index].group || '');
+      modalDelete.classList.remove('hidden');
+    }
+    modalOverlay.classList.remove('hidden');
+    tileNameInput.focus();
+  }
+
+  function closeModal() {
+    modalOverlay.classList.add('hidden');
+    editingIndex = null;
+  }
+
+  modalCancel.addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', function (e) {
+    if (e.target === modalOverlay) closeModal();
+  });
+
+  modalSave.addEventListener('click', function () {
+    var name = tileNameInput.value.trim();
+    var url = normalizeUrl(tileUrlInput.value);
+    if (!name || !url) return;
+
+    var host = hostnameFor(url).replace(/^www\./, '');
+    var dupe = shortcuts.findIndex(function (s, i) {
+      return i !== editingIndex && hostnameFor(s.url).replace(/^www\./, '') === host;
+    });
+    if (host && dupe > -1) {
+      if (!confirm(shortcuts[dupe].name + ' already points to ' + host + '. Add this anyway?')) return;
+    }
+
+    var group = tileGroupSelect.value;
+    if (editingIndex === null) {
+      shortcuts.push({ name: name, url: url, group: group });
+    } else {
+      shortcuts[editingIndex] = { name: name, url: url, group: group };
+    }
+    saveShortcuts(shortcuts);
+    closeModal();
+    renderShortcuts();
+  });
+
+  modalDelete.addEventListener('click', function () {
+    if (editingIndex === null) return;
+    var idx = editingIndex;
+    closeModal();
+    removeShortcut(idx);
+  });
+
+  editBtn.addEventListener('click', function () {
+    editing = !editing;
+    document.body.classList.toggle('editing', editing);
+    editBtn.classList.toggle('active', editing);
+    renderShortcuts();
+  });
+
+  settingsBtn.addEventListener('click', function () {
+    scratchPanel.classList.add('hidden');
+    scratchBtn.classList.remove('active');
+    settingsPanel.classList.remove('hidden');
+  });
+  panelClose.addEventListener('click', function () {
+    settingsPanel.classList.add('hidden');
+  });
+
+  // ---- Custom accent colors ----
+  // Overrides are stored per theme, keyed by theme name, so switching
+  // themes remembers whatever custom accents were set for each one.
+  var isHexColor = function (v) { return typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v); };
+
+  function loadColorOverrides() {
+    try {
+      var parsed = JSON.parse(localStorage.getItem(STORAGE_COLORS));
+      return (parsed && typeof parsed === 'object') ? parsed : {};
+    } catch (e) { return {}; }
+  }
+  var colorOverrides = loadColorOverrides();
+  function saveColorOverrides() {
+    localStorage.setItem(STORAGE_COLORS, JSON.stringify(colorOverrides));
+  }
+
+  function hexToRgba(hex, alpha) {
+    var v = hex.replace('#', '');
+    var num = parseInt(v, 16);
+    return 'rgba(' + ((num >> 16) & 255) + ',' + ((num >> 8) & 255) + ',' + (num & 255) + ',' + alpha + ')';
+  }
+
+  // Accent doubles as --clock-2 and accent-2 as --clock in every built-in
+  // theme, so a custom accent recolors the clock too instead of leaving it stale.
+  function applyColorOverrides(theme) {
+    var root = document.documentElement.style;
+    var ov = colorOverrides[theme];
+    if (ov && isHexColor(ov.accent)) {
+      root.setProperty('--accent', ov.accent);
+      root.setProperty('--clock-2', ov.accent);
+      root.setProperty('--shadow', hexToRgba(ov.accent, 0.3));
+    } else {
+      root.removeProperty('--accent');
+      root.removeProperty('--clock-2');
+      root.removeProperty('--shadow');
+    }
+    if (ov && isHexColor(ov.accent2)) {
+      root.setProperty('--accent-2', ov.accent2);
+      root.setProperty('--clock', ov.accent2);
+    } else {
+      root.removeProperty('--accent-2');
+      root.removeProperty('--clock');
+    }
+  }
+
+  var colorAccentInput = document.getElementById('colorAccent');
+  var colorAccent2Input = document.getElementById('colorAccent2');
+  var colorResetBtn = document.getElementById('colorReset');
+
+  function updateColorInputs() {
+    var cs = getComputedStyle(document.documentElement);
+    colorAccentInput.value = cs.getPropertyValue('--accent').trim();
+    colorAccent2Input.value = cs.getPropertyValue('--accent-2').trim();
+  }
+
+  function updateFaviconAndMeta() {
+    var cs = getComputedStyle(document.documentElement);
+    var bg = cs.getPropertyValue('--bg').trim();
+    var accent = cs.getPropertyValue('--accent').trim();
+    var meta = document.getElementById('themeColorMeta');
+    if (meta && bg) meta.setAttribute('content', bg);
+    var fav = document.getElementById('favicon');
+    if (fav && bg && accent) {
+      fav.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='"
+        + encodeURIComponent(bg)
+        + "'/%3E%3Cpath d='M16 34 32 20l16 14v14a2 2 0 0 1-2 2H34V40h-4v10H18a2 2 0 0 1-2-2z' fill='"
+        + encodeURIComponent(accent)
+        + "'/%3E%3C/svg%3E";
+    }
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(STORAGE_THEME, theme);
+    Array.prototype.forEach.call(themeGrid.children, function (btn) {
+      btn.classList.toggle('active', btn.dataset.swatch === theme);
+    });
+    applyColorOverrides(theme);
+    updateColorInputs();
+    updateFaviconAndMeta();
+    renderParticles(theme);
+  }
+
+  themeGrid.addEventListener('click', function (e) {
+    var btn = e.target.closest('.swatch');
+    if (!btn) return;
+    applyTheme(btn.dataset.swatch);
+  });
+
+  function onColorInputChange(key, input) {
+    return function () {
+      if (!isHexColor(input.value)) return;
+      var theme = document.documentElement.getAttribute('data-theme');
+      colorOverrides[theme] = colorOverrides[theme] || {};
+      colorOverrides[theme][key] = input.value;
+      saveColorOverrides();
+      applyColorOverrides(theme);
+      updateFaviconAndMeta();
+    };
+  }
+  colorAccentInput.addEventListener('input', onColorInputChange('accent', colorAccentInput));
+  colorAccent2Input.addEventListener('input', onColorInputChange('accent2', colorAccent2Input));
+
+  colorResetBtn.addEventListener('click', function () {
+    var theme = document.documentElement.getAttribute('data-theme');
+    delete colorOverrides[theme];
+    saveColorOverrides();
+    applyColorOverrides(theme);
+    updateColorInputs();
+    updateFaviconAndMeta();
+  });
+
+  var particlesEl = document.getElementById('particles');
+  // Some effects run more than one interval (a spawner plus glyph churn, say),
+  // so timers are tracked as a list and torn down together.
+  var particleTimers = [];
+
+  function addTimer(fn, ms) { particleTimers.push(setInterval(fn, ms)); }
+  function stopTimers() {
+    particleTimers.forEach(clearInterval);
+    particleTimers = [];
+  }
+
+  function rand(min, max) { return min + Math.random() * (max - min); }
+  function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+
+  var THEME_ANIM = {
+    ember:    { type: 'rise',    color: 'var(--accent-2)', size: [2, 4], duration: [6, 12],  interval: 850, seed: 6 },
+    forest:   { type: 'firefly', color: 'var(--accent-2)', count: 12,    size: [2, 4] },
+    noir:     { type: 'twinkle', count: 45,                size: [1, 2] },
+    aurora:   { type: 'aurora',  stars: 20 },
+    daybreak: { type: 'firefly', color: 'var(--accent-2)', count: 14,    size: [1.5, 3] },
+    frost:    { type: 'fall',    color: '#a9c9e6',         size: [2, 4], duration: [8, 15],  interval: 750, seed: 6 },
+    sunset:   { type: 'clouds' },
+    bloom:    { type: 'fall',    color: 'var(--accent-2)', size: [6, 10], duration: [9, 16],  interval: 1000, seed: 5, petal: true },
+    matrix:    { type: 'rain',   maxColumns: 600, length: [8, 26], duration: [6, 16], churn: 5 },
+    embermatrix: { type: 'rain', maxColumns: 600, length: [8, 26], duration: [6, 16], churn: 5 },
+    synthwave: { type: 'synth' },
+    cosmos:    { type: 'cosmos', stars: 60, shootInterval: 5200 },
+    storm:     { type: 'storm',  duration: [0.7, 1.4], interval: 60, seed: 30, flashChance: 0.45 },
+    abyss:     { type: 'bubbles', size: [4, 16], duration: [9, 18], interval: 700, seed: 18, rays: 4 },
+    circuit:   { type: 'circuit', traces: 14, nodes: 16 },
+    terminal:  { type: 'crt' },
+    festival:  { type: 'fireworks', interval: 1900, sparks: 22 },
+    ripple:    { type: 'ripple', interval: 1100 },
+    lava:      { type: 'lava', blobs: 6 }
+  };
+
+  function clearParticles() {
+    particlesEl.innerHTML = '';
+    stopTimers();
+  }
+
+  function spawnRiseOrFall(cfg, kind) {
+    function spawn() {
+      var p = document.createElement('div');
+      p.className = kind === 'rise' ? 'ember-particle' : ('fall-particle' + (cfg.petal ? ' petal' : ''));
+      var size = rand(cfg.size[0], cfg.size[1]);
+      var duration = rand(cfg.duration[0], cfg.duration[1]);
+      var drift = rand(-30, 30) + 'px';
+      p.style.left = rand(0, 100) + 'vw';
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.setProperty('--drift', drift);
+      p.style.setProperty('--particle-color', cfg.color);
+      if (cfg.petal) p.style.setProperty('--spin', rand(180, 540) + 'deg');
+      p.style.background = cfg.color;
+      p.style.boxShadow = cfg.petal ? 'none' : ('0 0 6px 1px ' + cfg.color);
+      p.style.animationDuration = duration + 's';
+      particlesEl.appendChild(p);
+      setTimeout(function () { p.remove(); }, duration * 1000);
+    }
+    for (var i = 0; i < cfg.seed; i++) setTimeout(spawn, i * (cfg.interval * 0.7));
+    addTimer(spawn, cfg.interval);
+  }
+
+  function spawnStars(count) {
+    for (var i = 0; i < count; i++) {
+      var s = document.createElement('div');
+      s.className = 'star';
+      var size = rand(1, 2.4);
+      s.style.left = rand(0, 100) + 'vw';
+      s.style.top = rand(0, 65) + 'vh';
+      s.style.width = size + 'px';
+      s.style.height = size + 'px';
+      s.style.animationDuration = rand(2, 5) + 's';
+      s.style.animationDelay = rand(0, 4) + 's';
+      particlesEl.appendChild(s);
+    }
+  }
+
+  function spawnFireflies(cfg) {
+    for (var i = 0; i < cfg.count; i++) {
+      var f = document.createElement('div');
+      f.className = 'firefly';
+      var size = rand(cfg.size[0], cfg.size[1]);
+      f.style.left = rand(0, 100) + 'vw';
+      f.style.top = rand(10, 85) + 'vh';
+      f.style.width = size + 'px';
+      f.style.height = size + 'px';
+      f.style.setProperty('--particle-color', cfg.color);
+      f.style.background = cfg.color;
+      f.style.setProperty('--fx1', rand(-30, 30) + 'px');
+      f.style.setProperty('--fy1', rand(-30, 30) + 'px');
+      f.style.setProperty('--fx2', rand(-30, 30) + 'px');
+      f.style.setProperty('--fy2', rand(-30, 30) + 'px');
+      f.style.setProperty('--fx3', rand(-30, 30) + 'px');
+      f.style.setProperty('--fy3', rand(-30, 30) + 'px');
+      f.style.animationDuration = rand(7, 13) + 's, ' + rand(2, 4) + 's';
+      f.style.animationDelay = rand(0, 4) + 's';
+      particlesEl.appendChild(f);
+    }
+  }
+
+  function buildClouds() {
+    var count = 4;
+    for (var i = 0; i < count; i++) {
+      var c = document.createElement('div');
+      c.className = 'cloud';
+      var size = rand(140, 300);
+      c.style.top = rand(4, 34) + 'vh';
+      c.style.width = size + 'px';
+      c.style.height = size * 0.5 + 'px';
+      c.style.animationDuration = rand(45, 80) + 's';
+      c.style.animationDelay = '-' + rand(0, 60) + 's';
+      particlesEl.appendChild(c);
+    }
+  }
+
+  function buildAurora() {
+    var colors = ['var(--accent)', 'var(--accent-2)', 'var(--accent)'];
+    for (var i = 0; i < 3; i++) {
+      var b = document.createElement('div');
+      b.className = 'aurora-blob';
+      var size = rand(260, 420);
+      b.style.width = size + 'px';
+      b.style.height = size + 'px';
+      b.style.left = rand(-10, 70) + 'vw';
+      b.style.top = rand(-10, 20) + 'vh';
+      b.style.background = colors[i];
+      b.style.opacity = 0.35;
+      b.style.animationDuration = rand(14, 22) + 's';
+      b.style.animationDelay = '-' + rand(0, 15) + 's';
+      particlesEl.appendChild(b);
+    }
+  }
+
+  // Half-width katakana, the glyphs the film's rain is built from, plus digits.
+  var RAIN_GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789';
+
+  function randGlyph() {
+    return RAIN_GLYPHS.charAt(Math.floor(Math.random() * RAIN_GLYPHS.length));
+  }
+
+  function buildRain(cfg) {
+    var colWidth = 10;
+    var cols = Math.min(cfg.maxColumns, Math.ceil(window.innerWidth / colWidth));
+    var columns = [];
+
+    for (var i = 0; i < cols; i++) {
+      var col = document.createElement('div');
+      col.className = 'rain-column';
+      col.style.left = (i * colWidth) + 'px';
+      col.style.animationDuration = rand(cfg.duration[0], cfg.duration[1]) + 's';
+      // Negative delays start each column mid-fall, so nothing lines up.
+      col.style.animationDelay = '-' + rand(0, 14) + 's';
+      col.style.opacity = rand(0.3, 0.62);
+
+      var len = randInt(cfg.length[0], cfg.length[1]);
+      var glyphs = [];
+      for (var j = 0; j < len; j++) glyphs.push(randGlyph());
+      col.dataset.len = len;
+      paintColumn(col, glyphs);
+      col._glyphs = glyphs;
+
+      particlesEl.appendChild(col);
+      columns.push(col);
+    }
+
+    // Churn a few glyphs per frame-ish rather than redrawing every column.
+    addTimer(function () {
+      for (var n = 0; n < cfg.churn; n++) {
+        var col = columns[Math.floor(Math.random() * columns.length)];
+        if (!col || !col._glyphs) continue;
+        col._glyphs[Math.floor(Math.random() * col._glyphs.length)] = randGlyph();
+        paintColumn(col, col._glyphs);
+      }
+    }, 120);
+  }
+
+  function paintColumn(col, glyphs) {
+    var body = glyphs.slice(0, -1).join('\n');
+    col.innerHTML = '';
+    col.appendChild(document.createTextNode(body + '\n'));
+    var head = document.createElement('span');
+    head.className = 'rain-head';
+    head.textContent = glyphs[glyphs.length - 1];
+    col.appendChild(head);
+  }
+
+  function buildSynthwave() {
+    var sun = document.createElement('div');
+    sun.className = 'synth-sun';
+    particlesEl.appendChild(sun);
+    var grid = document.createElement('div');
+    grid.className = 'synth-grid';
+    particlesEl.appendChild(grid);
+  }
+
+  function buildCosmos(cfg) {
+    spawnStars(cfg.stars);
+    for (var i = 0; i < 2; i++) {
+      var b = document.createElement('div');
+      b.className = 'aurora-blob';
+      var size = rand(300, 460);
+      b.style.width = size + 'px';
+      b.style.height = size + 'px';
+      b.style.left = rand(-5, 65) + 'vw';
+      b.style.top = rand(-15, 25) + 'vh';
+      b.style.background = i === 0 ? 'var(--accent)' : 'var(--accent-2)';
+      b.style.opacity = 0.22;
+      b.style.animationDuration = rand(20, 30) + 's';
+      b.style.animationDelay = '-' + rand(0, 20) + 's';
+      particlesEl.appendChild(b);
+    }
+    addTimer(function () {
+      var s = document.createElement('div');
+      s.className = 'shooting-star';
+      s.style.left = rand(-10, 45) + 'vw';
+      s.style.top = rand(2, 40) + 'vh';
+      var dur = rand(0.9, 1.6);
+      s.style.animationDuration = dur + 's';
+      particlesEl.appendChild(s);
+      setTimeout(function () { s.remove(); }, dur * 1000);
+    }, cfg.shootInterval);
+  }
+
+  function buildStorm(cfg) {
+    function spawn() {
+      var s = document.createElement('div');
+      s.className = 'rain-streak';
+      var duration = rand(cfg.duration[0], cfg.duration[1]);
+      s.style.left = rand(0, 120) + 'vw';
+      s.style.height = rand(40, 90) + 'px';
+      s.style.setProperty('--drift', rand(-16, -10) + 'vw');
+      s.style.animationDuration = duration + 's';
+      particlesEl.appendChild(s);
+      setTimeout(function () { s.remove(); }, duration * 1000);
+    }
+    for (var i = 0; i < cfg.seed; i++) setTimeout(spawn, i * 60);
+    addTimer(spawn, cfg.interval);
+
+    addTimer(function () {
+      if (Math.random() > cfg.flashChance) return;
+      var f = document.createElement('div');
+      f.className = 'lightning';
+      particlesEl.appendChild(f);
+      setTimeout(function () { f.remove(); }, 260);
+    }, 3000);
+  }
+
+  function buildAbyss(cfg) {
+    for (var r = 0; r < cfg.rays; r++) {
+      var ray = document.createElement('div');
+      ray.className = 'water-ray';
+      ray.style.left = rand(0, 95) + 'vw';
+      ray.style.animationDuration = rand(9, 16) + 's';
+      ray.style.animationDelay = '-' + rand(0, 10) + 's';
+      particlesEl.appendChild(ray);
+    }
+    // A bubble takes up to 18s to cross, so the seeded ones start mid-climb via
+    // a negative delay -- otherwise the water is empty for the first while.
+    function spawn(preroll) {
+      var b = document.createElement('div');
+      b.className = 'bubble';
+      var size = rand(cfg.size[0], cfg.size[1]);
+      var duration = rand(cfg.duration[0], cfg.duration[1]);
+      var offset = preroll === true ? rand(0, duration) : 0;
+      b.style.left = rand(0, 100) + 'vw';
+      b.style.width = size + 'px';
+      b.style.height = size + 'px';
+      b.style.setProperty('--wobble', rand(-28, 28) + 'px');
+      b.style.animationDuration = duration + 's';
+      if (offset) b.style.animationDelay = '-' + offset + 's';
+      particlesEl.appendChild(b);
+      setTimeout(function () { b.remove(); }, (duration - offset) * 1000);
+    }
+    for (var i = 0; i < cfg.seed; i++) spawn(true);
+    addTimer(spawn, cfg.interval);
+  }
+
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+
+  // Builds an orthogonal trace: a few right-angle segments, like a PCB track.
+  function tracePath(w, h) {
+    var x = Math.random() < 0.5 ? 0 : w;
+    var y = rand(0, h);
+    var d = 'M' + x.toFixed(1) + ' ' + y.toFixed(1);
+    var dir = x === 0 ? 1 : -1;
+    var segments = randInt(3, 6);
+    var pts = [];
+    for (var i = 0; i < segments; i++) {
+      x += dir * rand(w * 0.08, w * 0.22);
+      d += ' L' + x.toFixed(1) + ' ' + y.toFixed(1);
+      y += (Math.random() < 0.5 ? -1 : 1) * rand(h * 0.04, h * 0.16);
+      d += ' L' + x.toFixed(1) + ' ' + y.toFixed(1);
+      pts.push([x, y]);
+    }
+    return { d: d, points: pts };
+  }
+
+  function buildCircuit(cfg) {
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    var svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'circuit-svg');
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    var joints = [];
+    var pulses = [];
+
+    for (var i = 0; i < cfg.traces; i++) {
+      var t = tracePath(w, h);
+      joints = joints.concat(t.points);
+
+      var base = document.createElementNS(SVG_NS, 'path');
+      base.setAttribute('class', 'circuit-trace');
+      base.setAttribute('d', t.d);
+      svg.appendChild(base);
+
+      var pulse = document.createElementNS(SVG_NS, 'path');
+      pulse.setAttribute('class', 'circuit-pulse');
+      pulse.setAttribute('d', t.d);
+      svg.appendChild(pulse);
+
+      // getTotalLength needs the node in the document, so measure after append.
+      pulses.push(pulse);
+    }
+
+    particlesEl.appendChild(svg);
+
+    pulses.forEach(function (p) {
+      var len = p.getTotalLength();
+      var dash = 55;
+      p.style.strokeDasharray = dash + ' ' + len;
+      p.style.setProperty('--dash', -(len + dash) + 'px');
+      p.style.animationDuration = rand(3, 8) + 's';
+      p.style.animationDelay = '-' + rand(0, 6) + 's';
+    });
+
+    for (var n = 0; n < cfg.nodes && n < joints.length; n++) {
+      var j = joints[Math.floor(Math.random() * joints.length)];
+      var c = document.createElementNS(SVG_NS, 'circle');
+      c.setAttribute('class', 'circuit-node');
+      c.setAttribute('cx', j[0]);
+      c.setAttribute('cy', j[1]);
+      c.setAttribute('r', rand(2, 3.5));
+      c.style.animationDuration = rand(2, 5) + 's';
+      c.style.animationDelay = '-' + rand(0, 4) + 's';
+      svg.appendChild(c);
+    }
+  }
+
+  function buildCrt() {
+    ['crt-glow', 'crt-scanlines', 'crt-roll', 'crt-vignette'].forEach(function (cls) {
+      var el = document.createElement('div');
+      el.className = cls;
+      particlesEl.appendChild(el);
+    });
+  }
+
+  var FIREWORK_COLORS = ['#ffd166', '#ef476f', '#06d6a0', '#8ecae6', '#c77dff', '#ff9f1c'];
+
+  function buildFireworks(cfg) {
+    function burst(x, y, color) {
+      var flash = document.createElement('div');
+      flash.className = 'burst-flash';
+      flash.style.left = x + 'px';
+      flash.style.top = y + 'px';
+      flash.style.setProperty('--spark-color', color);
+      particlesEl.appendChild(flash);
+      setTimeout(function () { flash.remove(); }, 430);
+
+      for (var i = 0; i < cfg.sparks; i++) {
+        var angle = (Math.PI * 2 * i) / cfg.sparks + rand(-0.12, 0.12);
+        var dist = rand(75, 175);
+        var s = document.createElement('div');
+        s.className = 'spark';
+        s.style.left = x + 'px';
+        s.style.top = y + 'px';
+        s.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+        s.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+        s.style.setProperty('--spark-color', color);
+        var dur = rand(1.1, 1.8);
+        s.style.animationDuration = dur + 's';
+        particlesEl.appendChild(s);
+        (function (el, ms) { setTimeout(function () { el.remove(); }, ms); })(s, dur * 1000);
+      }
+    }
+
+    function launch() {
+      var color = FIREWORK_COLORS[Math.floor(Math.random() * FIREWORK_COLORS.length)];
+      var x = rand(window.innerWidth * 0.12, window.innerWidth * 0.88);
+      var peak = rand(window.innerHeight * 0.12, window.innerHeight * 0.45);
+      var climb = window.innerHeight - peak;
+      var r = document.createElement('div');
+      r.className = 'rocket';
+      r.style.left = x + 'px';
+      r.style.top = window.innerHeight + 'px';
+      r.style.setProperty('--climb', -climb + 'px');
+      r.style.setProperty('--spark-color', color);
+      var climbMs = rand(900, 1300);
+      r.style.animationDuration = climbMs + 'ms';
+      particlesEl.appendChild(r);
+      setTimeout(function () { r.remove(); burst(x, peak, color); }, climbMs);
+    }
+
+    launch();
+    addTimer(launch, cfg.interval);
+  }
+
+  function buildRipple(cfg) {
+    function drop() {
+      var x = rand(5, 95);
+      var y = rand(8, 92);
+      // Two rings offset in time read as one spreading disturbance.
+      for (var i = 0; i < 2; i++) {
+        var ring = document.createElement('div');
+        ring.className = 'ripple-ring';
+        var size = rand(160, 340);
+        var dur = rand(2.8, 4.4);
+        ring.style.left = x + 'vw';
+        ring.style.top = y + 'vh';
+        ring.style.setProperty('--r', size + 'px');
+        ring.style.animationDuration = dur + 's';
+        ring.style.animationDelay = (i * 0.35) + 's';
+        particlesEl.appendChild(ring);
+        (function (el, ms) { setTimeout(function () { el.remove(); }, ms); })(ring, (dur + i * 0.35) * 1000 + 100);
+      }
+    }
+    drop();
+    addTimer(drop, cfg.interval);
+  }
+
+  function buildLava(cfg) {
+    var defs = document.createElementNS(SVG_NS, 'svg');
+    defs.setAttribute('width', '0');
+    defs.setAttribute('height', '0');
+    defs.style.position = 'absolute';
+    defs.innerHTML =
+      '<defs><filter id="goo">' +
+      '<feGaussianBlur in="SourceGraphic" stdDeviation="16" result="blur"/>' +
+      '<feColorMatrix in="blur" mode="matrix" ' +
+      'values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo"/>' +
+      '<feBlend in="SourceGraphic" in2="goo"/>' +
+      '</filter></defs>';
+    particlesEl.appendChild(defs);
+
+    var field = document.createElement('div');
+    field.className = 'lava-field';
+    for (var i = 0; i < cfg.blobs; i++) {
+      var b = document.createElement('div');
+      b.className = 'lava-blob';
+      var size = rand(90, 190);
+      b.style.width = size + 'px';
+      b.style.height = size + 'px';
+      b.style.left = rand(2, 88) + 'vw';
+      b.style.bottom = rand(-20, 10) + 'vh';
+      b.style.background = i % 2 ? 'var(--accent-2)' : 'var(--accent)';
+      b.style.animationDuration = rand(14, 26) + 's';
+      b.style.animationDelay = '-' + rand(0, 14) + 's';
+      field.appendChild(b);
+    }
+    particlesEl.appendChild(field);
+  }
+
+  function renderParticles(theme) {
+    clearParticles();
+    var cfg = THEME_ANIM[theme];
+    if (!cfg) return;
+    if (cfg.type === 'rise' || cfg.type === 'fall') spawnRiseOrFall(cfg, cfg.type);
+    else if (cfg.type === 'twinkle') spawnStars(cfg.count);
+    else if (cfg.type === 'firefly') spawnFireflies(cfg);
+    else if (cfg.type === 'clouds') buildClouds();
+    else if (cfg.type === 'aurora') { buildAurora(); spawnStars(cfg.stars); }
+    else if (cfg.type === 'rain') buildRain(cfg);
+    else if (cfg.type === 'synth') buildSynthwave();
+    else if (cfg.type === 'cosmos') buildCosmos(cfg);
+    else if (cfg.type === 'storm') buildStorm(cfg);
+    else if (cfg.type === 'bubbles') buildAbyss(cfg);
+    else if (cfg.type === 'circuit') buildCircuit(cfg);
+    else if (cfg.type === 'crt') buildCrt();
+    else if (cfg.type === 'fireworks') buildFireworks(cfg);
+    else if (cfg.type === 'ripple') buildRipple(cfg);
+    else if (cfg.type === 'lava') buildLava(cfg);
+  }
+
+  function greetingFor(hour) {
+    if (hour >= 5 && hour < 12) return 'Good morning';
+    if (hour >= 12 && hour < 17) return 'Good afternoon';
+    if (hour >= 17 && hour < 21) return 'Good evening';
+    return 'Good night';
+  }
+
+  // Set to false for a 12-hour clock with an AM/PM suffix.
+  var CLOCK_24H = true;
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  // ISO-8601 week number: week 1 is the one holding the year's first Thursday.
+  function isoWeek(d) {
+    var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+    var yearStart = Date.UTC(t.getUTCFullYear(), 0, 1);
+    return Math.ceil(((t - yearStart) / 86400000 + 1) / 7);
+  }
+
+  function dayOfYear(d) {
+    return Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
+  }
+
+  function utcOffset(d) {
+    var mins = -d.getTimezoneOffset();
+    var sign = mins < 0 ? '-' : '+';
+    mins = Math.abs(mins);
+    return sign + pad2(Math.floor(mins / 60)) + ':' + pad2(mins % 60);
+  }
+
+  var clockH = document.getElementById('clockH');
+  var clockM = document.getElementById('clockM');
+  var clockS = document.getElementById('clockS');
+  var clockMeter = document.getElementById('clockMeter');
+  var clockGhost = document.querySelector('.clock-ghost');
+  var lastDateKey = '';
+  var lastGreeting = '';
+
+  function tick() {
+    var now = new Date();
+    var h = now.getHours();
+    var m = now.getMinutes();
+    var s = now.getSeconds();
+
+    var shown = CLOCK_24H ? h : (h % 12 === 0 ? 12 : h % 12);
+    clockH.textContent = CLOCK_24H ? pad2(shown) : String(shown);
+    clockM.textContent = pad2(m);
+    clockS.textContent = pad2(s) + (CLOCK_24H ? '' : (h < 12 ? ' AM' : ' PM'));
+    clockGhost.textContent = (CLOCK_24H || shown >= 10) ? '88:88' : '8:88';
+
+    // Skip the sweep animation across the :59 -> :00 wrap so it doesn't run backwards.
+    clockMeter.classList.toggle('no-anim', s === 0);
+    clockMeter.style.width = (s / 60 * 100) + '%';
+
+    if (s === 0) updateTodayPastState();
+
+    var greeting = greetingFor(h);
+    if (greeting !== lastGreeting) {
+      lastGreeting = greeting;
+      document.getElementById('greeting').textContent = greeting;
+    }
+
+    var dateKey = now.toDateString();
+    if (dateKey === lastDateKey) return;
+    lastDateKey = dateKey;
+
+    var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('date').textContent = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+
+    document.getElementById('metaIso').textContent =
+      now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
+    document.getElementById('metaWeek').textContent = pad2(isoWeek(now));
+    document.getElementById('metaDoy').textContent = dayOfYear(now);
+    document.getElementById('metaTz').textContent = 'UTC' + utcOffset(now);
+    refreshCalendarToday();
+  }
+
+  var clockTimer = null;
+  function startClock() {
+    tick();
+    if (!clockTimer) clockTimer = setInterval(tick, 1000);
+  }
+  function stopClock() {
+    if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
+  }
+
+  // ---- Google Calendar "Today" ----
+  // Declared before startClock() runs below: tick() calls refreshCalendarToday()
+  // on its very first (synchronous) invocation, so these need to exist first.
+  // No server exists to hold a client secret, so this uses Google Identity
+  // Services' token flow: a short-lived access token straight to the
+  // browser, refreshed silently while it can be, never persisted.
+  var STORAGE_GCAL_CLIENT_ID = 'homepage.gcalClientId';
+  var STORAGE_GCAL_CONNECTED = 'homepage.gcalConnected';
+  var STORAGE_GCAL_TOKEN = 'homepage.gcalToken';
+  var STORAGE_GCAL_TOKEN_EXPIRY = 'homepage.gcalTokenExpiry';
+  var GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar.events.readonly';
+
+  var todaySection = document.getElementById('todaySection');
+  var todayList = document.getElementById('todayList');
+  var gcalClientIdInput = document.getElementById('gcalClientId');
+  var gcalConnectBtn = document.getElementById('gcalConnectBtn');
+  var gcalStatus = document.getElementById('gcalStatus');
+
+  var gcalClientId = localStorage.getItem(STORAGE_GCAL_CLIENT_ID) || '';
+  var gcalWasConnected = localStorage.getItem(STORAGE_GCAL_CONNECTED) === '1';
+  var gcalTokenClient = null;
+  var gcalAccessToken = null;
+  var gcalTokenExpiry = 0;
+  var gcalGisLoading = null;
+
+  // Google's token popup only opens when triggered by a real click — an
+  // automatic request on page load gets silently blocked by the browser's
+  // popup blocker. Caching the token across reloads means most refreshes
+  // (within its ~1hr life) need no Google call, and thus no popup, at all.
+  (function loadCachedGcalToken() {
+    var expiry = Number(sessionStorage.getItem(STORAGE_GCAL_TOKEN_EXPIRY) || 0);
+    var token = sessionStorage.getItem(STORAGE_GCAL_TOKEN);
+    if (token && expiry > Date.now()) {
+      gcalAccessToken = token;
+      gcalTokenExpiry = expiry;
+    }
+  })();
+
+  function cacheGcalToken(token, expiry) {
+    sessionStorage.setItem(STORAGE_GCAL_TOKEN, token);
+    sessionStorage.setItem(STORAGE_GCAL_TOKEN_EXPIRY, String(expiry));
+  }
+
+  gcalClientIdInput.value = gcalClientId;
+
+  function loadGis() {
+    if (window.google && google.accounts && google.accounts.oauth2) return Promise.resolve();
+    if (!gcalGisLoading) {
+      gcalGisLoading = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://accounts.google.com/gsi/client';
+        s.async = true;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    return gcalGisLoading;
+  }
+
+  function ensureTokenClient() {
+    if (!gcalTokenClient) {
+      gcalTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: gcalClientId,
+        scope: GCAL_SCOPE,
+        callback: function () {}
+      });
+    }
+    return gcalTokenClient;
+  }
+
+  function requestGcalToken(interactive) {
+    return loadGis().then(function () {
+      return new Promise(function (resolve, reject) {
+        var client = ensureTokenClient();
+        client.callback = function (resp) {
+          if (resp && resp.access_token) {
+            gcalAccessToken = resp.access_token;
+            gcalTokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000;
+            cacheGcalToken(gcalAccessToken, gcalTokenExpiry);
+            resolve(gcalAccessToken);
+          } else {
+            reject(new Error('no access token'));
+          }
+        };
+        client.error_callback = function (err) { reject(err); };
+        client.requestAccessToken(interactive ? { prompt: 'consent' } : { prompt: '' });
+      });
+    });
+  }
+
+  function updateGcalConnectBtn() {
+    gcalConnectBtn.textContent = gcalWasConnected ? 'Disconnect' : 'Connect';
+  }
+
+  function formatEventTime(dateObj) {
+    var h = dateObj.getHours(), m = dateObj.getMinutes();
+    if (CLOCK_24H) return pad2(h) + ':' + pad2(m);
+    var shown = h % 12 === 0 ? 12 : h % 12;
+    return shown + ':' + pad2(m) + (h < 12 ? 'am' : 'pm');
+  }
+
+  function fetchTodayEvents(token) {
+    var now = new Date();
+    var startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    var endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    var params = new URLSearchParams({
+      timeMin: startOfDay.toISOString(),
+      timeMax: endOfDay.toISOString(),
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: '20'
+    });
+    return fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?' + params.toString(), {
+      headers: { Authorization: 'Bearer ' + token }
+    }).then(function (res) {
+      if (!res.ok) throw new Error('gcal fetch failed: ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      return (data.items || [])
+        .filter(function (ev) { return ev.status !== 'cancelled'; })
+        .map(function (ev) {
+          var allDay = !ev.start.dateTime;
+          var startDate = allDay ? null : new Date(ev.start.dateTime);
+          return {
+            title: ev.summary || '(untitled)',
+            time: allDay ? 'All day' : formatEventTime(startDate),
+            startMs: allDay ? null : startDate.getTime()
+          };
+        });
+    });
+  }
+
+  function renderTodayState(kind, events) {
+    todaySection.classList.remove('hidden');
+    if (kind === 'connect') {
+      var connectMsg = document.createElement('div');
+      connectMsg.className = 'today-connect';
+      var connectBtn = document.createElement('button');
+      connectBtn.className = 'today-connect-btn';
+      connectBtn.textContent = 'Connect Google Calendar';
+      connectBtn.addEventListener('click', function () { connectGcal(true); });
+      connectMsg.appendChild(connectBtn);
+      todayList.innerHTML = '';
+      todayList.appendChild(connectMsg);
+    } else if (kind === 'loading') {
+      todayList.innerHTML = '<div class="today-empty">Loading today’s events…</div>';
+    } else if (kind === 'empty') {
+      todayList.innerHTML = '<div class="today-empty">No events today.</div>';
+    } else if (kind === 'error') {
+      var errEl = document.createElement('div');
+      errEl.className = 'today-error';
+      errEl.textContent = 'Couldn’t load your calendar. ';
+      var retryBtn = document.createElement('button');
+      retryBtn.className = 'today-connect-btn';
+      retryBtn.textContent = 'Retry';
+      retryBtn.addEventListener('click', function () { refreshCalendarToday(); });
+      errEl.appendChild(retryBtn);
+      todayList.innerHTML = '';
+      todayList.appendChild(errEl);
+    } else if (kind === 'events') {
+      todayList.innerHTML = '';
+      events.forEach(function (ev) {
+        var row = document.createElement('div');
+        var isPast = ev.startMs != null && ev.startMs <= Date.now();
+        row.className = 'today-item' + (isPast ? ' past' : '');
+        if (ev.startMs != null) row.dataset.start = ev.startMs;
+        var time = document.createElement('div');
+        time.className = 'today-time';
+        time.textContent = ev.time;
+        var title = document.createElement('div');
+        title.className = 'today-title';
+        title.textContent = ev.title;
+        row.appendChild(time);
+        row.appendChild(title);
+        todayList.appendChild(row);
+      });
+    }
+  }
+
+  // Dims events once their start time passes, without waiting for the next
+  // 15-minute calendar refetch — just re-checks timestamps already in hand.
+  function updateTodayPastState() {
+    Array.prototype.forEach.call(todayList.querySelectorAll('.today-item[data-start]'), function (el) {
+      el.classList.toggle('past', Number(el.dataset.start) <= Date.now());
+    });
+  }
+
+  // Google's silent token request opens a popup under the hood, so a call
+  // that isn't itself inside a user gesture (page load, the 15-minute
+  // timer) gets blocked by the browser and always fails — confirmed via
+  // "Failed to open popup window ... Maybe blocked by the browser?" in the
+  // console. Rather than making the user hunt down the visible Retry
+  // button, arm a one-time listener that retries on the user's very next
+  // click or keypress anywhere on the page, since that click carries the
+  // activation the popup needs.
+  var gcalGestureArmed = false;
+  function armGcalGestureRetry() {
+    if (gcalGestureArmed) return;
+    gcalGestureArmed = true;
+    var handler = function () {
+      document.removeEventListener('click', handler, true);
+      document.removeEventListener('keydown', handler, true);
+      gcalGestureArmed = false;
+      refreshCalendarToday();
+    };
+    document.addEventListener('click', handler, true);
+    document.addEventListener('keydown', handler, true);
+  }
+
+  // Guards against the retry button's own click and the armed gesture
+  // listener both firing for the same click and racing two requests.
+  var gcalRefreshInFlight = false;
+
+  function refreshCalendarToday() {
+    if (!gcalClientId) { todaySection.classList.add('hidden'); return; }
+    if (gcalRefreshInFlight) return;
+    gcalRefreshInFlight = true;
+    renderTodayState('loading');
+    var tokenPromise = (gcalAccessToken && Date.now() < gcalTokenExpiry - 60000)
+      ? Promise.resolve(gcalAccessToken)
+      : requestGcalToken(false);
+
+    tokenPromise.then(fetchTodayEvents).then(function (events) {
+      gcalRefreshInFlight = false;
+      gcalWasConnected = true;
+      localStorage.setItem(STORAGE_GCAL_CONNECTED, '1');
+      gcalStatus.textContent = 'Connected.';
+      updateGcalConnectBtn();
+      renderTodayState(events.length ? 'events' : 'empty', events);
+    }).catch(function () {
+      gcalRefreshInFlight = false;
+      renderTodayState(gcalWasConnected ? 'error' : 'connect');
+      if (gcalWasConnected) armGcalGestureRetry();
+    });
+  }
+
+  function connectGcal(interactive) {
+    if (!gcalClientId) {
+      alert('Paste your Google OAuth Client ID first.');
+      return;
+    }
+    renderTodayState('loading');
+    requestGcalToken(interactive).then(fetchTodayEvents).then(function (events) {
+      gcalWasConnected = true;
+      localStorage.setItem(STORAGE_GCAL_CONNECTED, '1');
+      gcalStatus.textContent = 'Connected.';
+      updateGcalConnectBtn();
+      renderTodayState(events.length ? 'events' : 'empty', events);
+    }).catch(function () {
+      renderTodayState(gcalWasConnected ? 'error' : 'connect');
+    });
+  }
+
+  function disconnectGcal() {
+    if (gcalAccessToken && window.google && google.accounts && google.accounts.oauth2) {
+      google.accounts.oauth2.revoke(gcalAccessToken, function () {});
+    }
+    gcalAccessToken = null;
+    gcalTokenExpiry = 0;
+    gcalWasConnected = false;
+    localStorage.removeItem(STORAGE_GCAL_CONNECTED);
+    sessionStorage.removeItem(STORAGE_GCAL_TOKEN);
+    sessionStorage.removeItem(STORAGE_GCAL_TOKEN_EXPIRY);
+    gcalStatus.textContent = 'Not connected.';
+    updateGcalConnectBtn();
+    renderTodayState('connect');
+  }
+
+  gcalClientIdInput.addEventListener('change', function () {
+    gcalClientId = gcalClientIdInput.value.trim();
+    localStorage.setItem(STORAGE_GCAL_CLIENT_ID, gcalClientId);
+    gcalTokenClient = null;
+    gcalAccessToken = null;
+    gcalTokenExpiry = 0;
+    sessionStorage.removeItem(STORAGE_GCAL_TOKEN);
+    sessionStorage.removeItem(STORAGE_GCAL_TOKEN_EXPIRY);
+    if (gcalClientId) refreshCalendarToday();
+    else todaySection.classList.add('hidden');
+  });
+
+  gcalConnectBtn.addEventListener('click', function () {
+    if (gcalWasConnected) disconnectGcal();
+    else connectGcal(true);
+  });
+
+  // Only polls while the tab is actually visible — a background tab has no
+  // reason to keep hitting the Calendar API every 15 minutes. Paused/resumed
+  // alongside the clock in the visibilitychange handler below.
+  var gcalPollTimer = null;
+  function startGcalPolling() {
+    if (!gcalPollTimer && gcalClientId) gcalPollTimer = setInterval(refreshCalendarToday, 15 * 60 * 1000);
+  }
+  function stopGcalPolling() {
+    if (gcalPollTimer) { clearInterval(gcalPollTimer); gcalPollTimer = null; }
+  }
+
+  updateGcalConnectBtn();
+  if (gcalClientId) {
+    gcalStatus.textContent = gcalWasConnected ? 'Reconnecting…' : 'Not connected.';
+    startGcalPolling();
+  }
+
+  // startClock() fires tick() immediately, which calls refreshCalendarToday()
+  // on its first run — so the calendar module above must be set up before this.
+  startClock();
+
+  var savedEngine = localStorage.getItem(STORAGE_ENGINE);
+  if (savedEngine) engineSelect.value = savedEngine;
+  engineSelect.addEventListener('change', function () {
+    localStorage.setItem(STORAGE_ENGINE, engineSelect.value);
+  });
+
+  // ---- Launcher ----
+  var resultsEl = document.getElementById('results');
+  var matches = [];
+  var selectedIdx = 0;
+
+  var COMMANDS = [
+    { prefix: 'g',  label: 'Google',        url: 'https://www.google.com/search?q=' },
+    { prefix: 'd',  label: 'DuckDuckGo',    url: 'https://duckduckgo.com/?q=' },
+    { prefix: 'y',  label: 'YouTube',       url: 'https://www.youtube.com/results?search_query=' },
+    { prefix: 'gh', label: 'GitHub',        url: 'https://github.com/search?q=' },
+    { prefix: 'w',  label: 'Wikipedia',     url: 'https://en.wikipedia.org/w/index.php?search=' },
+    { prefix: 'r',  label: 'Reddit',        url: 'https://www.reddit.com/search/?q=' },
+    { prefix: 'a',  label: 'Amazon',        url: 'https://www.amazon.com/s?k=' },
+    { prefix: 'm',  label: 'Maps',          url: 'https://www.google.com/maps/search/' },
+    { prefix: 'i',  label: 'Images',        url: 'https://www.google.com/search?tbm=isch&q=' },
+    { prefix: 'np', label: 'npm',           url: 'https://www.npmjs.com/search?q=' },
+    { prefix: 'mdn',label: 'MDN',           url: 'https://developer.mozilla.org/en-US/search?q=' },
+    { prefix: 'so', label: 'Stack Overflow',url: 'https://stackoverflow.com/search?q=' }
+  ];
+
+  function parseCommand(q) {
+    var m = q.match(/^(\S+)\s+(.*)$/);
+    if (!m) return null;
+    var cmd = COMMANDS.find(function (c) { return c.prefix === m[1].toLowerCase(); });
+    if (!cmd || !m[2].trim()) return null;
+    return { cmd: cmd, term: m[2].trim() };
+  }
+
+  function partialCommands(q) {
+    var v = q.trim().toLowerCase();
+    if (!v || /\s/.test(v)) return [];
+    return COMMANDS.filter(function (c) { return c.prefix.indexOf(v) === 0; });
+  }
+
+  function scoreMatch(shortcut, q) {
+    var name = shortcut.name.toLowerCase();
+    var host = hostnameFor(shortcut.url).toLowerCase().replace(/^www\./, '');
+    if (name === q || host === q) return 0;
+    if (name.indexOf(q) === 0) return 1;
+    if (host.indexOf(q) === 0) return 2;
+    if (name.indexOf(q) > -1) return 3;
+    if (host.indexOf(q) > -1) return 4;
+    return -1;
+  }
+
+  function computeMatches(q) {
+    q = q.trim().toLowerCase();
+    if (!q) return [];
+    return shortcuts
+      .map(function (s, i) { return { s: s, i: i, score: scoreMatch(s, q) }; })
+      .filter(function (m) { return m.score > -1; })
+      .sort(function (a, b) { return a.score - b.score; })
+      .slice(0, 6)
+      .map(function (m) { return m.s; });
+  }
+
+  function looksLikeUrl(q) {
+    var v = q.trim();
+    if (/\s/.test(v)) return false;
+    return /^https?:\/\//i.test(v) || /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(v);
+  }
+
+  // ---- Inline calculator & unit conversion ----
+  // A small hand-rolled recursive-descent parser rather than eval(), so a
+  // typo can't run arbitrary script and behavior stays fully predictable.
+  function evalMath(expr) {
+    var pos = 0;
+    function skipWs() { while (expr.charAt(pos) === ' ') pos++; }
+    function parseNumber() {
+      skipWs();
+      var start = pos;
+      var hasDigits = false;
+      while (/[0-9]/.test(expr.charAt(pos))) { pos++; hasDigits = true; }
+      if (expr.charAt(pos) === '.') {
+        pos++;
+        while (/[0-9]/.test(expr.charAt(pos))) { pos++; hasDigits = true; }
+      }
+      if (!hasDigits) throw new Error('bad number');
+      return parseFloat(expr.slice(start, pos));
+    }
+    function parseAtom() {
+      skipWs();
+      var ch = expr.charAt(pos);
+      if (ch === '(') {
+        pos++;
+        var v = parseExpr();
+        skipWs();
+        if (expr.charAt(pos) !== ')') throw new Error('expected )');
+        pos++;
+        return v;
+      }
+      if (ch === '-' || ch === '+') {
+        pos++;
+        var v2 = parseAtom();
+        return ch === '-' ? -v2 : v2;
+      }
+      return parseNumber();
+    }
+    function parsePow() {
+      var base = parseAtom();
+      skipWs();
+      if (expr.charAt(pos) === '^') {
+        pos++;
+        return Math.pow(base, parsePow());
+      }
+      return base;
+    }
+    function parseTerm() {
+      var v = parsePow();
+      for (;;) {
+        skipWs();
+        var op = expr.charAt(pos);
+        if (op === '*' || op === '/' || op === '%') {
+          pos++;
+          var rhs = parsePow();
+          if (op === '*') v *= rhs;
+          else if (op === '/') v /= rhs;
+          else v = v % rhs;
+        } else break;
+      }
+      return v;
+    }
+    function parseExpr() {
+      var v = parseTerm();
+      for (;;) {
+        skipWs();
+        var op = expr.charAt(pos);
+        if (op === '+' || op === '-') {
+          pos++;
+          var rhs = parseTerm();
+          v = op === '+' ? v + rhs : v - rhs;
+        } else break;
+      }
+      return v;
+    }
+    var result = parseExpr();
+    skipWs();
+    if (pos !== expr.length) throw new Error('trailing input');
+    if (!isFinite(result)) throw new Error('not finite');
+    return result;
+  }
+
+  function looksLikeMath(q) {
+    var v = q.trim();
+    if (!v) return false;
+    if (!/^[-+*/^%().\d\s]+$/.test(v)) return false;
+    if (!/\d/.test(v)) return false;
+    // Bare digit-hyphen-digit is far more likely a phone number or a date
+    // (555-1234, 2026-08-08) than subtraction, so don't treat it as math.
+    if (/^\d+(-\d+)+$/.test(v)) return false;
+    if (!/[-+*/^%]/.test(v.replace(/^-/, ''))) return false;
+    return true;
+  }
+
+  function formatNum(n, decimals) {
+    var factor = Math.pow(10, decimals == null ? 6 : decimals);
+    if (Math.abs(n) < 1e-9) n = 0;
+    var rounded = Math.round(n * factor) / factor;
+    return rounded.toString();
+  }
+
+  var UNIT_ALIASES = {
+    mm: 'mm', millimeter: 'mm', millimeters: 'mm', millimetre: 'mm', millimetres: 'mm',
+    cm: 'cm', centimeter: 'cm', centimeters: 'cm', centimetre: 'cm', centimetres: 'cm',
+    m: 'm', meter: 'm', meters: 'm', metre: 'm', metres: 'm',
+    km: 'km', kilometer: 'km', kilometers: 'km', kilometre: 'km', kilometres: 'km',
+    in: 'in', inch: 'in', inches: 'in',
+    ft: 'ft', foot: 'ft', feet: 'ft',
+    yd: 'yd', yard: 'yd', yards: 'yd',
+    mi: 'mi', mile: 'mi', miles: 'mi',
+    mg: 'mg', milligram: 'mg', milligrams: 'mg',
+    g: 'g', gram: 'g', grams: 'g',
+    kg: 'kg', kilogram: 'kg', kilograms: 'kg',
+    oz: 'oz', ounce: 'oz', ounces: 'oz',
+    lb: 'lb', lbs: 'lb', pound: 'lb', pounds: 'lb',
+    st: 'st', stone: 'st', stones: 'st',
+    ml: 'ml', milliliter: 'ml', milliliters: 'ml', millilitre: 'ml', millilitres: 'ml',
+    l: 'l', liter: 'l', liters: 'l', litre: 'l', litres: 'l',
+    cup: 'cup', cups: 'cup',
+    tbsp: 'tbsp', tablespoon: 'tbsp', tablespoons: 'tbsp',
+    tsp: 'tsp', teaspoon: 'tsp', teaspoons: 'tsp',
+    floz: 'floz',
+    gal: 'gal', gallon: 'gal', gallons: 'gal',
+    qt: 'qt', quart: 'qt', quarts: 'qt',
+    pt: 'pt', pint: 'pt', pints: 'pt',
+    c: 'c', celsius: 'c',
+    f: 'f', fahrenheit: 'f',
+    k: 'k', kelvin: 'k'
+  };
+  var UNIT_TO_BASE = {
+    mm: 0.001, cm: 0.01, m: 1, km: 1000, in: 0.0254, ft: 0.3048, yd: 0.9144, mi: 1609.344,
+    mg: 0.001, g: 1, kg: 1000, oz: 28.3495, lb: 453.592, st: 6350.29,
+    ml: 1, l: 1000, cup: 236.588, tbsp: 14.7868, tsp: 4.92892, floz: 29.5735, gal: 3785.41, qt: 946.353, pt: 473.176
+  };
+  var UNIT_CATEGORY = {
+    mm: 'length', cm: 'length', m: 'length', km: 'length', in: 'length', ft: 'length', yd: 'length', mi: 'length',
+    mg: 'weight', g: 'weight', kg: 'weight', oz: 'weight', lb: 'weight', st: 'weight',
+    ml: 'volume', l: 'volume', cup: 'volume', tbsp: 'volume', tsp: 'volume', floz: 'volume', gal: 'volume', qt: 'volume', pt: 'volume',
+    c: 'temp', f: 'temp', k: 'temp'
+  };
+
+  function convertTemp(v, from, to) {
+    var celsius = from === 'c' ? v : from === 'f' ? (v - 32) * 5 / 9 : v - 273.15;
+    if (to === 'c') return celsius;
+    if (to === 'f') return celsius * 9 / 5 + 32;
+    return celsius + 273.15;
+  }
+
+  function tryConvert(q) {
+    var m = q.trim().match(/^(-?[\d.]+)\s*°?([a-zA-Z]+)\s+(?:to|in|as)\s+°?([a-zA-Z]+)\s*$/i);
+    if (!m) return null;
+    var value = parseFloat(m[1]);
+    var from = UNIT_ALIASES[m[2].toLowerCase()];
+    var to = UNIT_ALIASES[m[3].toLowerCase()];
+    if (!from || !to) return null;
+    var cat = UNIT_CATEGORY[from];
+    if (cat !== UNIT_CATEGORY[to]) return null;
+    var result = cat === 'temp' ? convertTemp(value, from, to) : value * UNIT_TO_BASE[from] / UNIT_TO_BASE[to];
+    if (!isFinite(result)) return null;
+    return { value: result, to: to };
+  }
+
+  function tryPercentOf(q) {
+    var m = q.trim().match(/^(-?[\d.]+)\s*%\s+of\s+(-?[\d.]+)$/i);
+    if (!m) return null;
+    var result = (parseFloat(m[1]) / 100) * parseFloat(m[2]);
+    return isFinite(result) ? result : null;
+  }
+
+  function computeCalc(q) {
+    var pct = tryPercentOf(q);
+    if (pct !== null) return { display: formatNum(pct) };
+    if (looksLikeMath(q)) {
+      try { return { display: formatNum(evalMath(q.trim())) }; } catch (e) { return null; }
+    }
+    var conv = tryConvert(q);
+    if (conv) return { display: formatNum(conv.value, 2) + ' ' + conv.to };
+    return null;
+  }
+
+  function copyText(str) {
+    function legacyCopy() {
+      var ta = document.createElement('textarea');
+      ta.value = str;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(str).catch(legacyCopy);
+    } else {
+      legacyCopy();
+    }
+  }
+
+  function renderResults() {
+    var q = searchInput.value;
+    resultsEl.innerHTML = '';
+    searchForm.classList.toggle('has-value', !!q);
+
+    if (!q.trim()) {
+      resultsEl.classList.add('hidden');
+      matches = [];
+      return;
+    }
+
+    var rows = [];
+    var parsed = parseCommand(q);
+
+    if (!parsed) {
+      var calc = computeCalc(q);
+      if (calc) rows.push({ kind: 'calc', label: calc.display, sub: q.trim(), copyValue: calc.display });
+    }
+
+    if (parsed) {
+      rows.push({
+        kind: 'command',
+        label: parsed.term,
+        sub: 'on ' + parsed.cmd.label,
+        prefix: parsed.cmd.prefix,
+        url: parsed.cmd.url + encodeURIComponent(parsed.term)
+      });
+    }
+
+    matches = computeMatches(q);
+    matches.forEach(function (s) {
+      rows.push({ kind: 'shortcut', label: s.name, url: s.url });
+    });
+
+    partialCommands(q).forEach(function (c) {
+      rows.push({ kind: 'hint', label: 'Search ' + c.label, prefix: c.prefix, hint: true });
+    });
+
+    if (!parsed) {
+      if (looksLikeUrl(q)) {
+        rows.push({ kind: 'open', label: q.trim(), url: normalizeUrl(q) });
+      }
+      rows.push({
+        kind: 'search',
+        label: q.trim(),
+        url: engineSelect.value + encodeURIComponent(q.trim())
+      });
+    }
+
+    if (selectedIdx >= rows.length) selectedIdx = 0;
+
+    rows.forEach(function (row, i) {
+      var el = document.createElement('div');
+      el.className = 'result' + (i === selectedIdx ? ' selected' : '');
+
+      if (row.kind === 'shortcut') {
+        var host = hostnameFor(row.url);
+        var img = document.createElement('img');
+        img.src = 'https://www.google.com/s2/favicons?sz=64&domain=' + host;
+        img.alt = '';
+        img.onerror = function () {
+          var fb = document.createElement('div');
+          fb.className = 'result-fallback';
+          fb.textContent = initialFor(row.label);
+          img.replaceWith(fb);
+        };
+        el.appendChild(img);
+      } else {
+        var glyph = document.createElement('div');
+        glyph.className = 'result-fallback';
+        glyph.textContent = row.kind === 'open' ? '\u2197' : row.kind === 'calc' ? '=' : '\u2315';
+        el.appendChild(glyph);
+      }
+
+      var text = document.createElement('div');
+      text.className = 'result-text';
+      text.textContent = row.label;
+      if (row.sub) {
+        var sub = document.createElement('span');
+        sub.className = 'result-host';
+        sub.textContent = row.sub;
+        text.appendChild(sub);
+      }
+      el.appendChild(text);
+
+      if (row.prefix) {
+        var pf = document.createElement('div');
+        pf.className = 'result-prefix';
+        pf.textContent = row.prefix + ' \u2026';
+        el.appendChild(pf);
+      }
+
+      var kind = document.createElement('div');
+      kind.className = 'result-kind';
+      kind.textContent = row.kind === 'shortcut' ? 'Shortcut'
+        : row.kind === 'open' ? 'Open'
+        : row.kind === 'hint' ? 'Command'
+        : row.kind === 'command' ? 'Go'
+        : row.kind === 'calc' ? 'Copy'
+        : 'Search';
+      el.appendChild(kind);
+
+      el.addEventListener('mouseenter', function () {
+        selectedIdx = i;
+        Array.prototype.forEach.call(resultsEl.children, function (c, ci) {
+          c.classList.toggle('selected', ci === i);
+        });
+      });
+
+      el.addEventListener('click', function () {
+        if (row.hint) {
+          searchInput.value = row.prefix + ' ';
+          selectedIdx = 0;
+          searchInput.focus();
+          renderResults();
+        } else if (row.kind === 'calc') {
+          copyText(row.copyValue);
+          showToast('Copied ' + row.copyValue);
+        } else {
+          go(row.url);
+        }
+      });
+
+      resultsEl.appendChild(el);
+    });
+
+    resultsEl.classList.remove('hidden');
+  }
+
+  function go(url) {
+    window.open(url, '_blank', 'noopener');
+  }
+
+  function activateSelection() {
+    var rows = resultsEl.children;
+    if (!rows.length) {
+      var q = searchInput.value.trim();
+      if (q) go(engineSelect.value + encodeURIComponent(q));
+      return;
+    }
+    rows[selectedIdx] && rows[selectedIdx].click();
+  }
+
+  function moveSelection(delta) {
+    var count = resultsEl.children.length;
+    if (!count) return;
+    selectedIdx = (selectedIdx + delta + count) % count;
+    Array.prototype.forEach.call(resultsEl.children, function (c, ci) {
+      c.classList.toggle('selected', ci === selectedIdx);
+    });
+    var sel = resultsEl.children[selectedIdx];
+    if (sel && sel.scrollIntoView) sel.scrollIntoView({ block: 'nearest' });
+  }
+
+  searchInput.addEventListener('input', function () {
+    selectedIdx = 0;
+    renderResults();
+  });
+
+  function clearSearch() {
+    searchInput.value = '';
+    selectedIdx = 0;
+    renderResults();
+    searchInput.focus();
+  }
+
+  searchClear.addEventListener('click', clearSearch);
+
+  searchInput.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); moveSelection(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveSelection(-1); }
+  });
+
+  searchInput.addEventListener('focus', renderResults);
+
+  searchInput.addEventListener('blur', function () {
+    setTimeout(function () { resultsEl.classList.add('hidden'); }, 150);
+  });
+
+  engineSelect.addEventListener('change', renderResults);
+
+  searchForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    activateSelection();
+  });
+
+  document.addEventListener('keyup', function (e) {
+    if (e.key === 'Alt') document.body.classList.remove('show-hotkeys');
+  });
+  window.addEventListener('blur', function () {
+    document.body.classList.remove('show-hotkeys');
+  });
+
+  // Column-based effects size themselves to the viewport at build time, so a
+  // resize needs a rebuild or the new width stays empty.
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (document.hidden) return;
+      renderParticles(document.documentElement.getAttribute('data-theme'));
+    }, 250);
+  });
+
+  // ---- Pause background animation and the clock when the tab isn't visible ----
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      stopClock();
+      stopTimers();
+      stopGcalPolling();
+      particlesEl.style.animationPlayState = 'paused';
+      particlesEl.querySelectorAll('*').forEach(function (el) {
+        el.style.animationPlayState = 'paused';
+      });
+    } else {
+      startClock();
+      renderParticles(document.documentElement.getAttribute('data-theme'));
+      if (gcalClientId) refreshCalendarToday();
+      startGcalPolling();
+    }
+  });
+
+  // ---- Installable app manifest ----
+  (function () {
+    var icon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0606'/%3E%3Cpath d='M16 34 32 20l16 14v14a2 2 0 0 1-2 2H34V40h-4v10H18a2 2 0 0 1-2-2z' fill='%23e0362b'/%3E%3C/svg%3E";
+    var manifest = {
+      name: 'Home',
+      short_name: 'Home',
+      description: 'A custom browser home page.',
+      start_url: '.',
+      display: 'standalone',
+      background_color: '#0a0606',
+      theme_color: '#0a0606',
+      icons: [
+        { src: icon, sizes: 'any', type: 'image/svg+xml', purpose: 'any' }
+      ]
+    };
+    try {
+      var blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+      var link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = URL.createObjectURL(blob);
+      document.head.appendChild(link);
+    } catch (e) {}
+  })();
+
+  // ---- Scratchpad ----
+  var STORAGE_SCRATCH = 'homepage.scratch';
+  var scratchPanel = document.getElementById('scratchPanel');
+  var scratchBtn = document.getElementById('scratchBtn');
+  var scratchClose = document.getElementById('scratchClose');
+  var scratchText = document.getElementById('scratchText');
+  var scratchStatus = document.getElementById('scratchStatus');
+  var scratchClear = document.getElementById('scratchClear');
+  var scratchTimer = null;
+
+  scratchText.value = localStorage.getItem(STORAGE_SCRATCH) || '';
+
+  function saveScratch() {
+    localStorage.setItem(STORAGE_SCRATCH, scratchText.value);
+    scratchStatus.textContent = 'Saved';
+    clearTimeout(scratchTimer);
+    scratchTimer = setTimeout(function () {
+      scratchStatus.textContent = 'Saved automatically';
+    }, 1500);
+  }
+
+  scratchText.addEventListener('input', function () {
+    scratchStatus.textContent = 'Saving…';
+    clearTimeout(scratchTimer);
+    scratchTimer = setTimeout(saveScratch, 400);
+  });
+
+  // Checklist syntax: a line starting with "- [ ]" or "- [x]" toggles when
+  // clicked near the brackets, since a plain textarea can't host a real
+  // checkbox widget. Clicks elsewhere on the line just place the cursor.
+  scratchText.addEventListener('click', function () {
+    var pos = scratchText.selectionStart;
+    var value = scratchText.value;
+    var lineStart = value.lastIndexOf('\n', pos - 1) + 1;
+    var lineEnd = value.indexOf('\n', lineStart);
+    if (lineEnd === -1) lineEnd = value.length;
+    var line = value.slice(lineStart, lineEnd);
+    var m = line.match(/^- \[([ xX])\]/);
+    if (!m || pos - lineStart > 5) return;
+    var toggled = (m[1] === ' ' ? '- [x]' : '- [ ]') + line.slice(5);
+    scratchText.value = value.slice(0, lineStart) + toggled + value.slice(lineEnd);
+    scratchText.selectionStart = scratchText.selectionEnd = pos;
+    scratchText.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
+  scratchClear.addEventListener('click', function () {
+    if (!scratchText.value || confirm('Clear the scratchpad?')) {
+      scratchText.value = '';
+      localStorage.setItem(STORAGE_SCRATCH, '');
+      scratchStatus.textContent = 'Cleared';
+      scratchText.focus();
+    }
+  });
+
+  function openScratch() {
+    settingsPanel.classList.add('hidden');
+    scratchPanel.classList.remove('hidden');
+    scratchBtn.classList.add('active');
+    scratchText.focus();
+  }
+
+  function closeScratch() {
+    scratchPanel.classList.add('hidden');
+    scratchBtn.classList.remove('active');
+  }
+
+  function toggleScratch() {
+    if (scratchPanel.classList.contains('hidden')) openScratch();
+    else closeScratch();
+  }
+
+  scratchBtn.addEventListener('click', toggleScratch);
+  scratchClose.addEventListener('click', closeScratch);
+
+  // ---- Zen mode ----
+  var STORAGE_ZEN = 'homepage.zen';
+  var zenBtn = document.getElementById('zenBtn');
+  var zenActive = localStorage.getItem(STORAGE_ZEN) === '1';
+
+  function applyZen() {
+    document.body.classList.toggle('zen', zenActive);
+    zenBtn.classList.toggle('active', zenActive);
+    var label = zenActive ? 'Exit zen mode (Z)' : 'Zen mode (Z)';
+    zenBtn.title = label;
+    zenBtn.setAttribute('aria-label', label);
+  }
+
+  function toggleZen() {
+    zenActive = !zenActive;
+    localStorage.setItem(STORAGE_ZEN, zenActive ? '1' : '0');
+    applyZen();
+  }
+
+  zenBtn.addEventListener('click', toggleZen);
+  applyZen();
+
+  // ---- Export / import ----
+  var exportBtn = document.getElementById('exportBtn');
+  var importBtn = document.getElementById('importBtn');
+  var importFile = document.getElementById('importFile');
+  var backupStatus = document.getElementById('backupStatus');
+  var backupDefaultText = backupStatus.textContent;
+
+  function flashBackupStatus(msg) {
+    backupStatus.textContent = msg;
+    setTimeout(function () { backupStatus.textContent = backupDefaultText; }, 3000);
+  }
+
+  exportBtn.addEventListener('click', function () {
+    var payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      shortcuts: shortcuts,
+      groups: groups,
+      theme: localStorage.getItem(STORAGE_THEME) || 'ember',
+      colors: colorOverrides,
+      engine: engineSelect.value,
+      scratch: scratchText.value,
+      gcalClientId: gcalClientId
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'homepage-settings.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    flashBackupStatus('Exported homepage-settings.json');
+  });
+
+  importBtn.addEventListener('click', function () { importFile.click(); });
+
+  importFile.addEventListener('change', function () {
+    var file = importFile.files && importFile.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var data = JSON.parse(reader.result);
+        if (!data || typeof data !== 'object') throw new Error('bad file');
+
+        if (Array.isArray(data.groups)) {
+          groups = data.groups.filter(function (g) { return typeof g === 'string' && g.trim(); });
+          saveGroups(groups);
+          activeGroup = 'all';
+          localStorage.setItem(STORAGE_ACTIVE_GROUP, activeGroup);
+          renderShortcuts();
+        }
+
+        if (Array.isArray(data.shortcuts)) {
+          var clean = data.shortcuts.filter(function (s) {
+            return s && typeof s.name === 'string' && typeof s.url === 'string';
+          }).map(function (s) {
+            return { name: s.name, url: s.url, group: typeof s.group === 'string' ? s.group : '' };
+          });
+          if (!confirm('Replace your ' + shortcuts.length + ' shortcuts with ' + clean.length + ' from this file?')) {
+            importFile.value = '';
+            return;
+          }
+          shortcuts = clean;
+          saveShortcuts(shortcuts);
+          renderShortcuts();
+        }
+
+        if (data.colors && typeof data.colors === 'object' && !Array.isArray(data.colors)) {
+          colorOverrides = data.colors;
+          saveColorOverrides();
+        }
+
+        if (typeof data.theme === 'string' && THEME_ANIM[data.theme]) {
+          applyTheme(data.theme);
+        } else {
+          applyColorOverrides(document.documentElement.getAttribute('data-theme'));
+          updateColorInputs();
+          updateFaviconAndMeta();
+        }
+
+        if (typeof data.engine === 'string') {
+          var found = Array.prototype.some.call(engineSelect.options, function (o) { return o.value === data.engine; });
+          if (found) {
+            engineSelect.value = data.engine;
+            localStorage.setItem(STORAGE_ENGINE, data.engine);
+          }
+        }
+
+        if (typeof data.scratch === 'string') {
+          scratchText.value = data.scratch;
+          localStorage.setItem(STORAGE_SCRATCH, data.scratch);
+        }
+
+        if (typeof data.gcalClientId === 'string') {
+          gcalClientId = data.gcalClientId.trim();
+          gcalClientIdInput.value = gcalClientId;
+          localStorage.setItem(STORAGE_GCAL_CLIENT_ID, gcalClientId);
+          gcalTokenClient = null;
+          gcalAccessToken = null;
+          gcalTokenExpiry = 0;
+          if (gcalClientId) refreshCalendarToday();
+          else todaySection.classList.add('hidden');
+        }
+
+        flashBackupStatus('Settings imported.');
+      } catch (err) {
+        flashBackupStatus("That file couldn't be read. Pick a homepage settings JSON file.");
+      }
+      importFile.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target.tagName || '').toLowerCase();
+    var typing = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;
+
+    if (e.key === '/' && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+      return;
+    }
+
+    if (e.shiftKey && (e.key === 'S' || e.key === 's') && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      toggleScratch();
+      return;
+    }
+
+    if ((e.key === 'z' || e.key === 'Z') && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      toggleZen();
+      return;
+    }
+
+    if (e.altKey && !e.metaKey && !e.ctrlKey && /^[1-9]$/.test(e.key)) {
+      var idx = parseInt(e.key, 10) - 1;
+      var vis = visibleShortcuts();
+      if (vis[idx]) {
+        e.preventDefault();
+        window.open(vis[idx].s.url, '_blank', 'noopener');
+      }
+      return;
+    }
+
+    if (e.key === 'Alt') document.body.classList.add('show-hotkeys');
+
+    if (e.key === 'Escape') {
+      if (!modalOverlay.classList.contains('hidden')) {
+        closeModal();
+      } else if (!scratchPanel.classList.contains('hidden')) {
+        closeScratch();
+      } else if (!settingsPanel.classList.contains('hidden')) {
+        settingsPanel.classList.add('hidden');
+      } else if (document.activeElement === searchInput) {
+        if (searchInput.value) {
+          clearSearch();
+        } else {
+          resultsEl.classList.add('hidden');
+          searchInput.blur();
+        }
+      } else if (zenActive) {
+        toggleZen();
+      }
+    }
+  });
+
+  var commandListEl = document.getElementById('commandList');
+  if (commandListEl) {
+    commandListEl.innerHTML = COMMANDS.map(function (c) {
+      return '<kbd class="k">' + c.prefix + '</kbd> ' + c.label;
+    }).join(' &nbsp;·&nbsp; ');
+  }
+
+  var savedTheme = localStorage.getItem(STORAGE_THEME) || 'ember';
+  applyTheme(savedTheme);
+  renderShortcuts();
+})();
+</script>
+</body>
+</html>

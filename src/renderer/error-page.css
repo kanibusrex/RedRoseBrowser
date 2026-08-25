@@ -1,0 +1,101 @@
+:root {
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: #17181c;
+  color: #e7e8ea;
+}
+
+.wrap {
+  max-width: 420px;
+  padding: 32px;
+  text-align: left;
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+  color: #9a9da3;
+  margin-bottom: 16px;
+}
+
+h1 {
+  font-size: 19px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.detail {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #b6b8bd;
+  margin: 0 0 4px;
+}
+
+.url {
+  font-size: 12.5px;
+  font-family: ui-monospace, "Cascadia Mono", "Consolas", "SF Mono", "Roboto Mono", monospace;
+  color: #7f8288;
+  word-break: break-all;
+  margin: 0 0 20px;
+}
+
+.retry {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: #2a2c31;
+  color: #e7e8ea;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #3a3d44;
+}
+
+.retry:hover {
+  background: #34363c;
+}
+
+.fineprint {
+  margin: 24px 0 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: #6b6e74;
+}
+
+/* ---- malicious-site variant — deliberately alarming, matching how a
+   real browser's malware/phishing interstitial reads: unmissable, not
+   just another gray error page. ---- */
+
+body.danger {
+  background: #4a0e0e;
+  color: #ffe9e9;
+}
+
+body.danger .icon {
+  color: #ff8a8a;
+}
+
+body.danger .detail {
+  color: #ffc9c9;
+}
+
+body.danger .url {
+  color: #e39b9b;
+}
+
+body.danger .fineprint {
+  color: #d19191;
+}

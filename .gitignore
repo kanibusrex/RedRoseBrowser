@@ -1,0 +1,18 @@
+node_modules/
+release/
+*.log
+npm-debug.log*
+
+.DS_Store
+.DS_Store?
+._*
+
+.vscode/
+.idea/
+*.swp
+
+# Local dev/runtime state — never checked in, always lives outside the
+# project directory (Electron's app.getPath('userData')) in the real
+# app, but excluded here defensively in case a script is ever run from
+# inside this directory.
+*.userdata.json

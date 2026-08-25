@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!--
+    DESIGN.md §7.12: restrict script-src to 'self', no inline scripts,
+    belt-and-suspenders given nodeIntegration is already off for this
+    renderer. This chrome UI is always loaded via loadFile() from local
+    disk (§7.11) — never remote content.
+  -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';"
+  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RedRose Browser</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="chrome-root">
+    <nav class="rail">
+      <button class="glyph" id="btnHome" type="button" title="RedRose Browser" aria-label="RedRose Browser">
+        <svg class="glyph-rose" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="g0" cx="38%" cy="26%" r="80%"><stop offset="0%" stop-color="#a4283a"/><stop offset="100%" stop-color="#4c0812"/></radialGradient><radialGradient id="g1" cx="38%" cy="26%" r="80%"><stop offset="0%" stop-color="#c22e3f"/><stop offset="100%" stop-color="#650f1a"/></radialGradient><radialGradient id="g2" cx="38%" cy="26%" r="80%"><stop offset="0%" stop-color="#e13d4c"/><stop offset="100%" stop-color="#82141f"/></radialGradient><radialGradient id="g3" cx="38%" cy="26%" r="80%"><stop offset="0%" stop-color="#ef5060"/><stop offset="100%" stop-color="#9c1c26"/></radialGradient><radialGradient id="g4" cx="38%" cy="26%" r="80%"><stop offset="0%" stop-color="#ff6a76"/><stop offset="100%" stop-color="#b62430"/></radialGradient><radialGradient id="g5" cx="38%" cy="26%" r="80%"><stop offset="0%" stop-color="#e8404d"/><stop offset="100%" stop-color="#941822"/></radialGradient></defs><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g0)" transform="translate(258.37,238.08) rotate(4.00) scale(1.55)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g0)" transform="translate(281.66,249.69) rotate(49.00) scale(1.55)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g0)" transform="translate(289.92,274.37) rotate(94.00) scale(1.55)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g0)" transform="translate(278.31,297.66) rotate(139.00) scale(1.55)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g0)" transform="translate(253.63,305.92) rotate(184.00) scale(1.55)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g0)" transform="translate(230.34,294.31) rotate(229.00) scale(1.55)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g0)" transform="translate(222.08,269.63) rotate(274.00) scale(1.55)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g0)" transform="translate(233.69,246.34) rotate(319.00) scale(1.55)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g1)" transform="translate(267.40,248.63) rotate(26.00) scale(1.35)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g1)" transform="translate(280.58,263.54) rotate(71.00) scale(1.35)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g1)" transform="translate(279.37,283.40) rotate(116.00) scale(1.35)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g1)" transform="translate(264.46,296.58) rotate(161.00) scale(1.35)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g1)" transform="translate(244.60,295.37) rotate(206.00) scale(1.35)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g1)" transform="translate(231.42,280.46) rotate(251.00) scale(1.35)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g1)" transform="translate(232.63,260.60) rotate(296.00) scale(1.35)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g1)" transform="translate(247.54,247.42) rotate(341.00) scale(1.35)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g2)" transform="translate(260.35,254.53) rotate(14.00) scale(1.05)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g2)" transform="translate(272.37,264.52) rotate(65.43) scale(1.05)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g2)" transform="translate(272.06,280.13) rotate(116.86) scale(1.05)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g2)" transform="translate(259.65,289.63) rotate(168.29) scale(1.05)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g2)" transform="translate(244.50,285.85) rotate(219.71) scale(1.05)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g2)" transform="translate(238.00,271.64) rotate(271.14) scale(1.05)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g2)" transform="translate(245.06,257.71) rotate(322.57) scale(1.05)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g3)" transform="translate(262.15,262.88) rotate(34.00) scale(0.82)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g3)" transform="translate(266.97,272.77) rotate(94.00) scale(0.82)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g3)" transform="translate(260.82,281.89) rotate(154.00) scale(0.82)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g3)" transform="translate(249.85,281.12) rotate(214.00) scale(0.82)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g3)" transform="translate(245.03,271.23) rotate(274.00) scale(0.82)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g3)" transform="translate(251.18,262.11) rotate(334.00) scale(0.82)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g4)" transform="translate(257.04,266.09) rotate(10.00) scale(0.56)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g4)" transform="translate(261.94,271.16) rotate(82.00) scale(0.56)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g4)" transform="translate(258.63,277.39) rotate(154.00) scale(0.56)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g4)" transform="translate(251.68,276.17) rotate(226.00) scale(0.56)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g4)" transform="translate(250.70,269.18) rotate(298.00) scale(0.56)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g5)" transform="translate(258.01,269.77) rotate(42.00) scale(0.36)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g5)" transform="translate(258.23,274.01) rotate(132.00) scale(0.36)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g5)" transform="translate(253.99,274.23) rotate(222.00) scale(0.36)"/><path d="M 0,0 C -12,-8 -30,-14 -38,-32 C -46,-50 -40,-72 -20,-84 C -8,-91 8,-91 20,-84 C 40,-72 46,-50 38,-32 C 30,-14 12,-8 0,0 Z" fill="url(#g5)" transform="translate(253.77,269.99) rotate(312.00) scale(0.36)"/><circle cx="256" cy="272" r="6" fill="#3a0710"/><circle cx="254.50" cy="270" r="2.20" fill="#ff8891" fill-opacity="0.85"/></svg>
+      </button>
+      <div class="rail-namewrap"><span class="rail-name">RedRose Browser</span></div>
+      <div class="rail-group">
+        <button id="btn-bookmarks" class="icon-btn" title="Bookmarks" aria-label="Bookmarks" aria-haspopup="true" data-tip="Bookmarks">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <button id="btn-extensions" class="icon-btn" title="Extensions" aria-label="Extensions" aria-haspopup="true" data-tip="Extensions">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10.5V7a2 2 0 0 0-2-2h-3.5a1.5 1.5 0 0 1-3 0H8a2 2 0 0 0-2 2v3.5a1.5 1.5 0 0 1 0 3V17a2 2 0 0 0 2 2h3.5a1.5 1.5 0 0 1 3 0H18a2 2 0 0 0 2-2v-3.5a1.5 1.5 0 0 1 0-3Z"/></svg>
+        </button>
+        <button id="btn-settings" class="icon-btn" title="Appearance" aria-label="Appearance" aria-haspopup="true" data-tip="Appearance">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </nav>
+    <nav id="sidebar" aria-label="Open tabs">
+      <div id="tab-list" role="tablist"></div>
+    </nav>
+    <div id="sidebar-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize tab panel"></div>
+    <div id="main-col">
+      <div id="toolbar">
+        <button id="btn-back" class="nav-btn" title="Back" disabled>&#x2190;</button>
+        <button id="btn-forward" class="nav-btn" title="Forward" disabled>&#x2192;</button>
+        <button id="btn-reload" class="nav-btn" title="Reload">&#x21bb;</button>
+        <button id="btn-home" class="nav-btn" title="Home" aria-label="Home">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>
+        </button>
+        <div id="address-bar-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <span id="security-icon" aria-hidden="true">&#x1F513;</span>
+          <input
+            id="address-bar"
+            type="text"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="Search Google or type a URL"
+          />
+          <button id="address-clear" aria-label="Clear" title="Clear">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+          <span class="kbd" id="address-kbd"></span>
+        </div>
+        <button id="btn-star" class="nav-btn" title="Bookmark this page" aria-label="Bookmark this page" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l3.09 6.26 6.91 1-5 4.87 1.18 6.88L12 18.27l-6.18 3.24L7 14.63l-5-4.87 6.91-1z"/></svg>
+        </button>
+      </div>
+      <div id="progress-bar"><div id="progress-bar-fill"></div></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="settingsOverlay">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Appearance</h2>
+        <button class="modal-close" id="settingsClose" aria-label="Close" title="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>Light themes</label>
+          <div class="theme-grid" id="themeLight"></div>
+        </div>
+        <div class="field">
+          <label>Dark themes</label>
+          <div class="theme-grid" id="themeDark"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="index.js"></script>
+</body>
+</html>

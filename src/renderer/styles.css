@@ -1,0 +1,1689 @@
+/* ============================================================
+   Theme variables — ported from ScriptureDesk's shell (same token
+   names/values) so this app's palette and theme picker match that
+   app family. Base (light, "Classic") tokens live on :root; dark mode
+   and every named accent theme override a subset via extra classes
+   on <html>, applied by theme.js.
+   ============================================================ */
+
+:root {
+  --list-ratio: 0.27;
+
+  --ink: #0f1b2d;
+  --slate: #17202e;
+  --mist: #eef1f6;
+  --paper: #ffffff;
+  --surface-2: #f7f9fc;
+  --line: #e4e8ef;
+  --line2: #edf0f5;
+  --line-strong: #d6dce5;
+  --text: #1c2740;
+  --muted: #5b6676;
+  --faint: #636b76;
+  --rail: #142033;
+  --scroll: rgba(120, 140, 165, 0.45);
+
+  --accent: #1e5fa8;
+  --accent-soft: #eaf1fa;
+  --accent-deep: #17497f;
+  --on-accent: #ffffff;
+  --teal: #216bb2;
+  --green: #1f7a55;
+  --green-soft: #e4f3eb;
+  --red: #c33b32;
+  --star-empty: #cbd3de;
+
+  --shadow-sm: 0 1px 2px rgba(15, 27, 45, 0.06);
+  --shadow: 0 1px 2px rgba(15, 27, 45, 0.05), 0 4px 12px rgba(15, 27, 45, 0.05);
+  --shadow-md: 0 8px 24px -10px rgba(15, 27, 45, 0.16);
+  --shadow-lg: 0 28px 64px -16px rgba(15, 27, 45, 0.32);
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --focus: 0 0 0 3px rgba(30, 95, 168, 0.22);
+
+  --r: 10px;
+  --r-sm: 7px;
+  --r-lg: 14px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "Consolas", "SF Mono", "Roboto Mono", monospace;
+
+  --accent-grad: var(--accent);
+  --od-ring-base: color-mix(in srgb, var(--accent) 26%, #ffffff);
+
+  /* Layout constants — must match RAIL_W / TOPBAR_H in tab-manager.js.
+     --tab-panel-w's value here is just the initial default; it's
+     user-resizable at runtime (§8.11 — SidebarResize.js) and restored
+     from disk on startup, overriding this. */
+  --rail-w: 64px;
+  --tab-panel-w: 200px;
+  --toolbar-h: 48px;
+  --progress-h: 2px;
+}
+
+/* ---- Dark base ---- */
+:root.theme-dark {
+  --ink: #111826;
+  --slate: #0c121b;
+  --mist: #0c121a;
+  --paper: #141c28;
+  --surface-2: #101825;
+  --line: #26313f;
+  --line2: #1d2733;
+  --line-strong: #33404f;
+  --text: #e4eaf1;
+  --muted: #97a3b2;
+  --faint: #7c8695;
+  --accent: #4e93da;
+  --accent-soft: #16273d;
+  --accent-deep: #9fc6ee;
+  --on-accent: #0c121a;
+  --teal: #6fb0e0;
+  --green: #54b487;
+  --green-soft: #132a20;
+  --red: #e0695e;
+  --star-empty: #38455a;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 10px 28px -10px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 28px 64px -14px rgba(0, 0, 0, 0.7);
+  --focus: 0 0 0 3px rgba(78, 147, 218, 0.28);
+  --rail: #0f1621;
+  --scroll: rgba(150, 170, 195, 0.3);
+  --od-ring-base: color-mix(in srgb, var(--accent) 22%, #0a1018);
+}
+
+/* ---- Light accent themes ---- */
+:root.theme-slate { --accent:#4841D6;--accent-soft:#ECEBFB;--accent-deep:#332DA6;--teal:#4841D6;--mist:#EDEEF6;--surface-2:#F5F6FB;--line:#E2E3EF;--line2:#EAEBF4;--line-strong:#D3D5E6;--star-empty:#CBD0E0;--focus:0 0 0 3px rgba(72,65,214,.22);--rail:#211E4E }
+:root.theme-evergreen { --accent:#16794D;--accent-soft:#E4F3EB;--accent-deep:#0F5D3A;--teal:#1F8A66;--focus:0 0 0 3px rgba(22,121,77,.22);--rail:#103A28 }
+:root.theme-teal { --accent:#0E7C86;--accent-soft:#E2F3F4;--accent-deep:#0A5C63;--teal:#12909B;--focus:0 0 0 3px rgba(14,124,134,.22);--rail:#0A424A }
+:root.theme-plum { --accent:#7A3EA1;--accent-soft:#F3EBFA;--accent-deep:#5E2C7E;--teal:#8A4FB0;--focus:0 0 0 3px rgba(122,62,161,.22);--rail:#341B47 }
+:root.theme-rose { --accent:#B23A63;--accent-soft:#FBE9EF;--accent-deep:#8A2B4C;--teal:#C24B72;--focus:0 0 0 3px rgba(178,58,99,.22);--rail:#4E1B30 }
+:root.theme-sandstone { --paper:#FBF8F3;--surface-2:#F5EFE6;--mist:#F1EADD;--line:#E7DECB;--line2:#EFE8DA;--line-strong:#DDD1B8;--ink:#241E12;--text:#2A2519;--muted:#6B6151;--faint:#716858;--accent:#B5761F;--accent-soft:#F6ECD9;--accent-deep:#8A5A16;--teal:#B5761F;--star-empty:#D9CDB4;--focus:0 0 0 3px rgba(181,118,31,.22);--rail:#33260F;--on-accent:#1A1408 }
+:root.theme-sky { --accent:#0288D1;--accent-soft:#E1F2FB;--accent-deep:#045E8A;--teal:#039BE5;--focus:0 0 0 3px rgba(2,136,209,.22);--rail:#0B3A54 }
+:root.theme-coral { --accent:#E05141;--accent-soft:#FCEAE7;--accent-deep:#B03325;--teal:#E76A5C;--focus:0 0 0 3px rgba(224,81,65,.22);--rail:#4E1913 }
+:root.theme-emerald { --accent:#059669;--accent-soft:#E1F5EE;--accent-deep:#046C4E;--teal:#10B981;--focus:0 0 0 3px rgba(5,150,105,.22);--rail:#0A3D2C }
+:root.theme-orchid { --accent:#C42B8E;--accent-soft:#FAE7F3;--accent-deep:#971F6D;--teal:#D53DA0;--focus:0 0 0 3px rgba(196,43,142,.22);--rail:#3E1030 }
+:root.theme-lagoon { --accent:#0E93B0;--accent-soft:#E0F3F7;--accent-deep:#0A6C82;--teal:#16A6C2;--focus:0 0 0 3px rgba(14,147,176,.22);--rail:#0A3742;--accent-grad:linear-gradient(135deg,#0E9AA7 0%,#3FB0E5 100%) }
+:root.theme-blossom { --accent:#B44FC0;--accent-soft:#F7E9FA;--accent-deep:#8A2F97;--teal:#C15AC0;--focus:0 0 0 3px rgba(180,79,192,.22);--rail:#3E1442;--accent-grad:linear-gradient(135deg,#E85C9A 0%,#9B5DE5 100%) }
+:root.theme-cosmic { --accent:#8B2FCF;--accent-soft:#F3E8FB;--accent-deep:#6A1F9E;--teal:#A23FD8;--focus:0 0 0 3px rgba(139,47,207,.22);--rail:#2A1049;--accent-grad:linear-gradient(135deg,#4338CA 0%,#C026D3 100%) }
+:root.theme-volcano { --accent:#B4185C;--accent-soft:#FBE7EF;--accent-deep:#8A1246;--teal:#C43A72;--focus:0 0 0 3px rgba(180,24,92,.22);--rail:#3A0E2A;--accent-grad:linear-gradient(135deg,#E01E37 0%,#7A12C9 100%) }
+
+/* ---- Dark accent themes (used together with .theme-dark) ---- */
+:root.theme-dark.theme-carbon { --paper:#17181C;--surface-2:#121316;--mist:#0E0F12;--line:#2A2C31;--line2:#212226;--line-strong:#3A3D44;--text:#E7E8EA;--muted:#9A9DA3;--faint:#7F8288;--accent:#5B9BE0;--accent-soft:#182430;--accent-deep:#A7CBEF;--teal:#5B9BE0;--rail:#171A1F }
+:root.theme-dark.theme-ocean { --paper:#0F1E24;--surface-2:#0B181D;--mist:#091519;--line:#21343B;--line2:#18272D;--line-strong:#2C454E;--text:#DFEEF1;--muted:#8DA6AD;--faint:#76888D;--accent:#35B0C0;--accent-soft:#10282E;--accent-deep:#8FD8E2;--teal:#35B0C0;--rail:#0C2A32 }
+:root.theme-dark.theme-forest { --paper:#10201A;--surface-2:#0C1A15;--mist:#0A1712;--line:#22362D;--line2:#1A2A23;--line-strong:#2E4A3D;--text:#E1EEE7;--muted:#8FA89B;--faint:#778A80;--accent:#4FB488;--accent-soft:#10271D;--accent-deep:#86D9B0;--teal:#4FB488;--green:#54B487;--rail:#0F2E22 }
+:root.theme-dark.theme-nightshade { --paper:#191426;--surface-2:#140F20;--mist:#110C1B;--line:#322944;--line2:#241D33;--line-strong:#443A5C;--text:#E9E3F3;--muted:#A197B5;--faint:#877F98;--accent:#A986E6;--accent-soft:#241A38;--accent-deep:#CDB4F2;--teal:#A986E6;--rail:#1F1733 }
+:root.theme-dark.theme-ember { --paper:#201814;--surface-2:#1A1310;--mist:#160F0C;--line:#3A2E24;--line2:#2A211A;--line-strong:#4E3E30;--text:#F0E7DD;--muted:#B0A390;--faint:#8B8374;--accent:#E0A24E;--accent-soft:#2E2113;--accent-deep:#F0C98A;--teal:#E0A24E;--rail:#241A11 }
+:root.theme-dark.theme-crimson { --paper:#1E1E20;--surface-2:#171719;--mist:#131315;--line:#34343A;--line2:#26262B;--line-strong:#45454D;--text:#EAEAEC;--muted:#9C9CA3;--faint:#88888E;--accent:#E5544B;--accent-soft:#341A18;--accent-deep:#F2938B;--teal:#E5544B;--rail:#17171A }
+:root.theme-dark.theme-harbor { --paper:#14202E;--surface-2:#0F1926;--mist:#0C1420;--line:#26374A;--line2:#1B2839;--line-strong:#33475D;--text:#E4ECF3;--muted:#93A4B6;--faint:#7A899A;--accent:#F08A3C;--accent-soft:#2E1E10;--accent-deep:#F7B57A;--teal:#F08A3C;--rail:#0E1926 }
+:root.theme-dark.theme-fuchsia { --paper:#201421;--surface-2:#1A0F1B;--mist:#160C17;--line:#35263A;--line2:#271B2B;--line-strong:#4A3750;--text:#F1E4EF;--muted:#B398AE;--faint:#937E8F;--accent:#E572C0;--accent-soft:#33162B;--accent-deep:#F3A6DA;--teal:#E572C0;--rail:#2A1030 }
+:root.theme-dark.theme-mint { --paper:#10201C;--surface-2:#0C1A16;--mist:#0A1713;--line:#22362F;--line2:#1A2A25;--line-strong:#2E4A41;--text:#E0EEE9;--muted:#8FA89F;--faint:#778A83;--accent:#3FC79B;--accent-soft:#0E2A22;--accent-deep:#7FE0BE;--teal:#3FC79B;--green:#3FC79B;--rail:#0C2E26 }
+:root.theme-dark.theme-indigo { --paper:#16182B;--surface-2:#111324;--mist:#0E101F;--line:#292C46;--line2:#1E2138;--line-strong:#393D5C;--text:#E6E8F5;--muted:#9C9FBC;--faint:#83869F;--accent:#7C83F5;--accent-soft:#1C2040;--accent-deep:#B3B7FA;--teal:#7C83F5;--rail:#1A1C3A }
+:root.theme-dark.theme-aurora { --paper:#0E1C1E;--surface-2:#0A1618;--mist:#081314;--line:#1E3336;--line2:#152628;--line-strong:#2A484B;--text:#DFEFEC;--muted:#8CA8A6;--faint:#748C8A;--accent:#35C9B0;--accent-soft:#0C2A28;--accent-deep:#7FE6D2;--teal:#35C9B0;--rail:#0B2A2A;--accent-grad:linear-gradient(135deg,#43E97B 0%,#38F9D7 50%,#4F8FF5 100%);--on-accent:#08251F }
+:root.theme-dark.theme-sunset { --paper:#221619;--surface-2:#1B1013;--mist:#170D10;--line:#3A2830;--line2:#2A1D23;--line-strong:#4E3742;--text:#F2E6E9;--muted:#B89AA2;--faint:#977E86;--accent:#FF6F80;--accent-soft:#331519;--accent-deep:#FFA9AE;--teal:#FF6F80;--rail:#2A1015;--accent-grad:linear-gradient(135deg,#FF8A5B 0%,#FF5FA2 100%);--on-accent:#3A0F16 }
+:root.theme-dark.theme-nebula { --paper:#171129;--surface-2:#120D20;--mist:#0F0B1A;--line:#2E2447;--line2:#221A36;--line-strong:#413359;--text:#EAE4F6;--muted:#A99CC0;--faint:#8B7EA2;--accent:#9A6BF0;--accent-soft:#231A3C;--accent-deep:#C4ACF7;--teal:#9A6BF0;--rail:#1E1440;--accent-grad:linear-gradient(135deg,#C04CFF 0%,#7C4DFF 50%,#4D8CFF 100%);--on-accent:#fff }
+:root.theme-dark.theme-vapor { --paper:#151622;--surface-2:#10111B;--mist:#0D0E16;--line:#292B3D;--line2:#1E1F2E;--line-strong:#3A3D54;--text:#E9E9F5;--muted:#9EA0BA;--faint:#84869E;--accent:#C98BE8;--accent-soft:#221B33;--accent-deep:#E4C2F3;--teal:#C98BE8;--rail:#181A2E;--accent-grad:linear-gradient(135deg,#FF6AD5 0%,#8A6DFF 50%,#6AE0FF 100%);--on-accent:#0E1626 }
+
+/* ============================================================
+   Base
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+  user-select: none;
+  background: var(--mist);
+}
+
+button {
+  font-family: inherit;
+}
+
+*{ scrollbar-width: thin; scrollbar-color: var(--scroll) transparent; }
+
+#chrome-root {
+  --rail-text: #eaf1fa;
+  --rail-text-muted: #9db0c7;
+  --rail-hover: rgba(255, 255, 255, 0.08);
+  --rail-active: rgba(255, 255, 255, 0.14);
+
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  background: var(--mist);
+}
+
+/* ---- Rail — matches ScriptureDesk's narrow .rail exactly: 64px, app
+   glyph badge, vertical shimmering app name, icon buttons pinned to the
+   bottom. Width must match RAIL_W in tab-manager.js. ---- */
+
+.rail {
+  flex: 0 0 var(--rail-w);
+  width: var(--rail-w);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 0;
+  background: var(--rail);
+  background: linear-gradient(
+    178deg,
+    color-mix(in srgb, var(--rail) 78%, #fff) 0%,
+    var(--rail) 42%,
+    color-mix(in srgb, var(--rail) 82%, #000) 100%
+  );
+  box-shadow: 2px 0 22px -12px rgba(15, 27, 45, 0.6);
+  z-index: 20;
+  -webkit-app-region: drag;
+}
+
+.glyph {
+  /* Always the app icon's own black card, not the active theme's accent
+     color — the glyph should read as a small copy of the real app icon
+     (build/icon.png) no matter which theme is active. Layered shadows +
+     highlights (glossy top rim, deep inset seat, drop shadow, ambient
+     red glow) give it a raised, 3D "button" look rather than a flat
+     square. */
+  -webkit-app-region: no-drag;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(120% 130% at 50% 22%, #333336 0%, #17171a 42%, #000000 100%);
+  box-shadow:
+    0 6px 14px -4px rgba(0, 0, 0, 0.7),
+    0 2px 5px -1px rgba(255, 40, 60, 0.35),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.4),
+    inset 0 1px 3px rgba(255, 255, 255, 0.08),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.75);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.12s var(--ease), box-shadow 0.15s var(--ease), filter 0.15s var(--ease);
+}
+
+/* A soft diagonal sheen across the top-left, like light glancing off a
+   glossy black surface — purely decorative, sits above the background,
+   below the rose (z-index via source order since both are non-positioned
+   siblings would conflict, so this is the badge's ::before instead). */
+.glyph::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 40%);
+  pointer-events: none;
+}
+
+.glyph:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow:
+    0 8px 18px -4px rgba(0, 0, 0, 0.75),
+    0 3px 8px -1px rgba(255, 40, 60, 0.45),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.45),
+    inset 0 1px 3px rgba(255, 255, 255, 0.1),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.75);
+}
+
+.glyph:active {
+  transform: scale(0.94) translateY(0);
+  box-shadow:
+    0 2px 6px -2px rgba(0, 0, 0, 0.7),
+    inset 0 2px 5px rgba(0, 0, 0, 0.6);
+}
+
+.glyph-rose {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: relative;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
+}
+
+/* Loading animation — a gentle bloom pulse + slow spin while the active
+   tab is loading, toggled via the .loading class on #btnHome (index.js). */
+@keyframes rose-bloom {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(10deg);
+  }
+}
+
+.glyph.loading .glyph-rose {
+  animation: rose-bloom 1.1s ease-in-out infinite;
+  transform-origin: 50% 52%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glyph.loading .glyph-rose {
+    animation: none;
+  }
+}
+
+.rail-namewrap {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.rail-name {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-weight: 300;
+  font-size: clamp(11px, 2.2vh, 20px);
+  letter-spacing: clamp(1px, 0.6vh, 5px);
+  white-space: nowrap;
+  user-select: none;
+  background: linear-gradient(
+      180deg,
+      transparent 8%,
+      rgba(255, 255, 255, 0.6) 36%,
+      #ffffff 50%,
+      rgba(255, 255, 255, 0.6) 64%,
+      transparent 92%
+    ),
+    linear-gradient(180deg, #bcc9de 0%, #eaf1fa 45%, var(--accent) 125%);
+  background-size: 100% 60%, 100% 100%;
+  background-position: 0 -150%, 0 0;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
+  animation: railShimmer 12s ease-in-out infinite;
+}
+
+@keyframes railShimmer {
+  0%, 15% {
+    background-position: 0 -150%, 0 0;
+  }
+  50%, 100% {
+    background-position: 0 150%, 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-name {
+    animation: none;
+  }
+}
+
+@media (max-height: 500px) {
+  .rail-namewrap {
+    display: none;
+  }
+}
+
+.rail-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.icon-btn {
+  -webkit-app-region: no-drag;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--rail-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.icon-btn svg {
+  width: 19px;
+  height: 19px;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.icon-btn:hover {
+  background: var(--rail-hover);
+  color: #fff;
+}
+
+.icon-btn:hover svg {
+  transform: scale(1.12);
+}
+
+.icon-btn::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  background: #0f1b2d;
+  color: #eaf1fa;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 7px 10px;
+  border-radius: 7px;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px -8px rgba(15, 27, 45, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.14s var(--ease), transform 0.14s var(--ease);
+  z-index: 60;
+}
+
+.icon-btn:hover::after,
+.icon-btn:focus-visible::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* ---- Tab panel — the wider list of open tabs, matches ScriptureDesk's
+   .list-pane in spirit. Width is user-resizable (§8.11) — kept in sync
+   with the BrowserView's actual bounds via SidebarResize.js/IPC, not a
+   fixed value, so nothing here needs to match a main-process constant
+   directly the way it used to. ---- */
+
+#sidebar {
+  flex: 0 0 var(--tab-panel-w);
+  width: var(--tab-panel-w);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 8px;
+  background: var(--rail);
+  background: linear-gradient(
+    178deg,
+    color-mix(in srgb, var(--rail) 70%, #fff) 0%,
+    color-mix(in srgb, var(--rail) 92%, #000) 42%,
+    color-mix(in srgb, var(--rail) 88%, #000) 100%
+  );
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  -webkit-app-region: drag;
+}
+
+/* Drag handle between the tab panel and the page content (§8.11).
+   6px hit area so it's easy to grab, but only the center 2px paints —
+   matches the thin dividers used elsewhere in this shell. */
+#sidebar-resize-handle {
+  flex: 0 0 6px;
+  width: 6px;
+  height: 100%;
+  margin-left: -3px;
+  cursor: col-resize;
+  position: relative;
+  z-index: 5;
+  -webkit-app-region: no-drag;
+}
+
+#sidebar-resize-handle::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: transparent;
+  transition: background 0.12s var(--ease);
+}
+
+#sidebar-resize-handle:hover::after,
+#sidebar-resize-handle.dragging::after {
+  background: var(--accent);
+}
+
+/* #tab-list is the container TabStrip.js clears and rebuilds on every
+   render — it must NOT be #sidebar itself, or that innerHTML reset would
+   wipe the static #btn-settings button that lives alongside it. */
+#tab-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.tab {
+  -webkit-app-region: no-drag;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  cursor: default;
+  flex-shrink: 0;
+  color: var(--rail-text-muted);
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+
+.tab:hover {
+  background: var(--rail-hover);
+  color: var(--rail-text);
+}
+
+.tab.active {
+  background: var(--rail-active);
+  color: var(--rail-text);
+}
+
+.tab-favicon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.tab-favicon-fallback {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.tab-spinner {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--accent-deep, var(--accent));
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tab-title {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+
+.tab-close {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0;
+}
+
+.tab:hover .tab-close {
+  opacity: 0.8;
+}
+
+.tab-close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  opacity: 1 !important;
+}
+
+/* ---- split view (§8.12) — drag one tab onto another to pair them ---- */
+
+.tab.tab-split {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.tab.tab-drop-target {
+  background: var(--rail-active);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.tab-split-indicator {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.55;
+}
+
+.tab-split-indicator svg {
+  width: 12px;
+  height: 12px;
+}
+
+.tab:hover .tab-split-indicator,
+.tab-split-indicator:hover {
+  opacity: 1;
+}
+
+.tab-split-indicator:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#new-tab-btn {
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: transparent;
+  color: var(--rail-text-muted);
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 4px;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+
+#new-tab-btn:hover {
+  background: var(--rail-hover);
+  color: var(--rail-text);
+}
+
+.theme-grad #new-tab-btn:hover {
+  color: var(--rail-text);
+  background: var(--accent-grad);
+  opacity: 0.9;
+}
+
+/* #btn-settings now lives in .rail-group and is styled by .icon-btn. */
+
+/* ---- Main column (topbar + content) — everything right of the sidebar ---- */
+
+#main-col {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ---- Topbar: nav buttons + combined URL/search bar. Height must match
+   TOPBAR_H in tab-manager.js. Matches ScriptureDesk's .topbar. ---- */
+
+#toolbar {
+  height: var(--toolbar-h);
+  flex: 0 0 var(--toolbar-h);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  background: var(--paper);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--paper) 94%, #fff) 0%,
+    var(--paper) 46%,
+    color-mix(in srgb, var(--paper) 90%, #000) 100%
+  );
+  color: var(--text);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(15, 27, 45, 0.02), 0 10px 24px -20px rgba(15, 27, 45, 0.4);
+  -webkit-app-region: drag;
+}
+
+:root.theme-dark #toolbar {
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.nav-btn {
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: var(--mist);
+}
+
+.nav-btn:disabled {
+  color: var(--line-strong);
+  cursor: default;
+}
+
+.nav-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  margin: auto;
+}
+
+#btn-star.active {
+  color: #f2a300;
+}
+
+#btn-star.active svg {
+  fill: #f2a300;
+  stroke: #f2a300;
+}
+
+/* ---- Address/search bar — matches ScriptureDesk's .search-wrap: full
+   pill, icon on the left, kbd-shortcut hint / clear button on the
+   right, animated focus glow ring. ---- */
+
+#address-bar-wrap {
+  -webkit-app-region: no-drag;
+  flex: 1 1 auto;
+  max-width: 720px;
+  margin: 0 auto;
+  position: relative;
+  height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+#address-bar-wrap > svg:first-child {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--faint);
+  transition: color 0.15s;
+  pointer-events: none;
+}
+
+#address-bar-wrap:focus-within > svg:first-child {
+  color: var(--accent);
+}
+
+#security-icon {
+  position: absolute;
+  left: 35px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+#address-bar {
+  width: 100%;
+  height: 100%;
+  border-radius: 100px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 0 74px 0 54px;
+  outline: none;
+  font-size: 13.5px;
+  transition: border-color 0.16s var(--ease), box-shadow 0.16s var(--ease), background 0.16s var(--ease);
+}
+
+#address-bar::placeholder {
+  color: var(--faint);
+}
+
+#address-bar:focus {
+  background: var(--paper);
+  border-color: var(--accent);
+  box-shadow: var(--focus);
+}
+
+.kbd {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px 7px;
+  background: var(--paper);
+  pointer-events: none;
+}
+
+#address-clear {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: 0.14s;
+}
+
+#address-clear svg {
+  width: 14px;
+  height: 14px;
+}
+
+#address-clear:hover {
+  color: var(--text);
+  background: var(--mist);
+}
+
+#address-bar-wrap.has-text .kbd {
+  display: none;
+}
+
+#address-bar-wrap.has-text #address-clear {
+  display: flex;
+}
+
+#address-bar-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 100px;
+  padding: 2px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.18s var(--ease);
+  background: conic-gradient(
+    from var(--od-ang),
+    var(--od-ring-base) 0deg,
+    var(--od-ring-base) 62deg,
+    var(--accent) 100deg,
+    color-mix(in srgb, var(--accent) 55%, #fff) 120deg,
+    var(--accent) 140deg,
+    var(--od-ring-base) 188deg,
+    var(--od-ring-base) 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 60%, transparent))
+    drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 42%, transparent));
+  animation: od-rotate 3.4s linear infinite;
+  animation-play-state: paused;
+}
+
+#address-bar-wrap:focus-within::after {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+:root:not(.theme-dark) #address-bar-wrap:focus-within::after {
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 88%, transparent))
+    drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 64%, transparent))
+    drop-shadow(0 0 24px color-mix(in srgb, var(--accent) 38%, transparent));
+}
+
+@property --od-ang {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes od-rotate {
+  to {
+    --od-ang: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #address-bar-wrap::after {
+    animation: none;
+  }
+}
+
+/* ---- Loading progress bar ---- */
+
+/* Height is always reserved (not toggled) so the chrome's total height stays
+   constant and matches CHROME_TOP_H in tab-manager.js — otherwise the
+   BrowserView (which always paints on top of the window) occludes the bar
+   exactly while it's visible. Only the fill's visibility is toggled. */
+#progress-bar {
+  height: var(--progress-h);
+  flex: 0 0 var(--progress-h);
+  background: transparent;
+  overflow: hidden;
+}
+
+#progress-bar-fill {
+  visibility: hidden;
+}
+
+#progress-bar.loading #progress-bar-fill {
+  visibility: visible;
+}
+
+#progress-bar-fill {
+  height: 100%;
+  width: 40%;
+  background: var(--accent-grad);
+  animation: indeterminate 1.1s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+/* ============================================================
+   Settings / theme-picker modal
+   ============================================================ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 20, 33, 0.5);
+  backdrop-filter: blur(3px);
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px;
+  z-index: 60;
+  overflow-y: auto;
+}
+
+.overlay.show {
+  display: flex;
+  animation: overlayFade 0.18s var(--ease);
+}
+
+@keyframes overlayFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  background: var(--paper);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 640px;
+  margin: auto;
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line2);
+}
+
+.modal-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.modal-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: var(--mist);
+  color: var(--text);
+}
+
+.modal-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.modal-body {
+  padding: 18px 20px 22px;
+}
+
+.field {
+  margin-bottom: 18px;
+}
+
+.field label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 10px;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 11px;
+}
+
+.theme-sw {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.tsw-prev {
+  position: relative;
+  height: 56px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  transition: 0.14s var(--ease);
+}
+
+.theme-sw:hover .tsw-prev {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.theme-sw.on .tsw-prev {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tsw-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+}
+
+.tsw-line {
+  position: absolute;
+  left: 10px;
+  height: 5px;
+  width: 52%;
+  border-radius: 3px;
+  top: 26px;
+}
+
+.tsw-line.short {
+  top: 37px;
+  width: 34%;
+}
+
+.tsw-dot {
+  position: absolute;
+  right: 9px;
+  bottom: 8px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.tsw-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.theme-sw.on .tsw-name {
+  color: var(--accent-deep);
+}
+
+.tsw-chk {
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* ============================================================
+   Pinned tabs
+   ============================================================ */
+
+.pinned-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 0 6px;
+  flex-shrink: 0;
+}
+
+.tab.tab-pinned {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tab.tab-pinned .tab-favicon,
+.tab.tab-pinned .tab-spinner {
+  margin: 0;
+}
+
+.tab-list-sep {
+  height: 1px;
+  margin: 4px 2px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Tab groups
+   ============================================================ */
+
+.group-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.group-dot {
+  -webkit-app-region: no-drag;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.group-name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--rail-text-muted);
+  cursor: default;
+}
+
+.group-rename-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 0 4px;
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--rail-text);
+  outline: none;
+}
+
+.group-ungroup {
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+  text-align: center;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--rail-text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0;
+}
+
+.group-header:hover .group-ungroup {
+  opacity: 0.8;
+}
+
+.group-ungroup:hover {
+  background: rgba(255, 255, 255, 0.16);
+  opacity: 1 !important;
+}
+
+.group-section .tab {
+  margin-left: 8px;
+}
+
+/* ============================================================
+   Popups — shared root for context menus, color pickers, and the
+   profile switcher. Rendered into a single #popup-root appended to
+   <body>, positioned absolutely, styled like a small floating card
+   (matches .modal's palette) so it reads consistently in every theme.
+   ============================================================ */
+
+#popup-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.popup-menu {
+  position: absolute;
+  pointer-events: auto;
+  min-width: 180px;
+  /* Chrome area (rail + tab panel) is 264px wide (--rail-w + --tab-panel-w)
+     — every popup anchors from inside it, so this keeps popups from ever
+     needing to spill into the BrowserView's region (see ContextMenu.js
+     positionWithinViewport). */
+  max-width: 248px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.popup-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-sm);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.popup-item:hover {
+  background: var(--surface-2);
+}
+
+.popup-item.danger {
+  color: var(--red);
+}
+
+.popup-sep {
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--line2);
+}
+
+.popup-popover {
+  padding: 10px;
+}
+
+/* ---- group color picker ---- */
+
+.group-color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.group-color-sw {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.group-color-sw.selected {
+  border-color: var(--text);
+}
+
+/* ---- profile switcher ---- */
+
+.profile-popover {
+  min-width: 220px;
+  max-width: 248px;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 6px;
+  border-radius: var(--r-sm);
+}
+
+.profile-row:hover {
+  background: var(--surface-2);
+}
+
+.profile-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.profile-name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.profile-row.active .profile-name {
+  font-weight: 700;
+}
+
+.profile-check {
+  color: var(--green);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.profile-mini-btn {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.profile-mini-btn:hover {
+  background: var(--mist);
+  color: var(--text);
+}
+
+.profile-rename-input {
+  flex: 1 1 auto;
+  height: 24px;
+  font-size: 13px;
+  padding: 0 6px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--accent);
+  background: var(--paper);
+  color: var(--text);
+  outline: none;
+}
+
+.profile-new {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 6px 2px;
+}
+
+.profile-new-input {
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+
+.profile-new-input:focus {
+  border-color: var(--accent);
+  background: var(--paper);
+}
+
+.profile-new-colors {
+  display: flex;
+  gap: 6px;
+}
+
+.profile-color-sw {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.profile-color-sw.selected {
+  border-color: var(--text);
+}
+
+.profile-new-create {
+  height: 30px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.profile-new-create:hover {
+  filter: brightness(1.06);
+}
+
+/* ---- bookmarks popover ---- */
+
+.bookmarks-popover {
+  min-width: 220px;
+  max-width: 248px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.bookmarks-empty {
+  padding: 10px 8px;
+  font-size: 12.5px;
+  color: var(--faint);
+  line-height: 1.5;
+}
+
+.bookmark-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 6px;
+  border-radius: var(--r-sm);
+}
+
+.bookmark-row:hover {
+  background: var(--surface-2);
+}
+
+.bookmark-favicon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 2px;
+}
+
+.bookmark-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bookmark-remove {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0;
+}
+
+.bookmark-row:hover .bookmark-remove {
+  opacity: 1;
+}
+
+.bookmark-remove:hover {
+  background: var(--mist);
+  color: var(--text);
+}
+
+/* ---- extensions popover ---- */
+
+.extensions-popover {
+  min-width: 240px;
+  max-width: 248px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.ext-install {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 4px 4px;
+}
+
+.ext-install-input {
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12.5px;
+  outline: none;
+}
+
+.ext-install-input:focus {
+  border-color: var(--accent);
+  background: var(--paper);
+}
+
+.ext-install-input:disabled {
+  opacity: 0.6;
+}
+
+.ext-install-btn {
+  height: 30px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.ext-install-btn:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.ext-install-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.ext-error {
+  margin: 2px 4px 8px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--red) 14%, var(--paper));
+  color: var(--red);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ext-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 6px;
+  border-radius: var(--r-sm);
+}
+
+.ext-row:hover {
+  background: var(--surface-2);
+}
+
+.ext-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ext-icon-clickable {
+  cursor: pointer;
+}
+
+.ext-name-clickable {
+  cursor: pointer;
+}
+
+.ext-name-clickable:hover {
+  text-decoration: underline;
+}
+
+.ext-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ext-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+
+.ext-version {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+.ext-toggle {
+  flex-shrink: 0;
+  width: 30px;
+  height: 17px;
+  border-radius: 999px;
+  border: none;
+  background: var(--line-strong);
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+}
+
+.ext-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.14s var(--ease);
+}
+
+.ext-toggle.on {
+  background: var(--accent);
+}
+
+.ext-toggle.on::after {
+  transform: translateX(13px);
+}
+
+.ext-remove,
+.ext-options {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0;
+}
+
+.ext-row:hover .ext-remove,
+.ext-row:hover .ext-options {
+  opacity: 1;
+}
+
+.ext-remove:hover,
+.ext-options:hover {
+  background: var(--mist);
+  color: var(--text);
+}
