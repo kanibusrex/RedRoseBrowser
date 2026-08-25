@@ -1113,3 +1113,32 @@ the tab strip rather than collapsing into one combined entry.
 - Interacts cleanly with the resizable tab panel (§8.11) — same
   `recomputeBounds()` runs for both, so a live sidebar drag reflows
   both split panes together, verified directly.
+
+### 8.13 Packaged-build-only startup bug: the Dock icon call
+
+v1.0.0's macOS build launched (Dock icon appeared, process ran, stayed
+alive) but never showed a window — worked perfectly in `npm start` dev
+mode, which is why this shipped without being caught earlier; nothing
+in this session's extensive dev-mode testing would have exercised the
+packaged/asar code path at all.
+
+Root cause, found by running the actual packaged binary from Terminal
+(not double-clicking — that route gives no console output) and
+capturing stderr: `index.js`'s `app.dock.setIcon(path.join(__dirname,
+'..', '..', 'build', 'icon.png'))` — added early in this project,
+before packaging was ever tested — throws an unhandled promise
+rejection under a packaged build, because `build/icon.png` lives
+inside `app.asar` once packaged, and the native (non-Node) image
+loader behind `dock.setIcon()` can't read through the asar archive the
+way `fs.readFileSync` transparently can. The comment directly above
+that line already explained why the call is dev-mode-only in the first
+place — packaged builds get their Dock icon from the bundle's
+Info.plist automatically — it just wasn't actually guarded that way.
+
+Fixed with one condition: `!app.isPackaged &&` added to the existing
+check. Confirmed via the same Terminal-launch method: the asar error is
+gone, and the process now visibly proceeds much further into normal
+startup (reaching this profile's extension-loading code, which only
+runs after the window's `did-finish-load` — i.e. after the window was
+created and actually loaded its content), where it didn't before.
+Shipped as v1.0.1.

@@ -39,7 +39,11 @@ app.whenReady().then(() => {
   // Info.plist (build/icon.icns via electron-builder) automatically. In
   // dev mode (`electron .`), there is no bundle, so the Dock would
   // otherwise show Electron's own default icon unless set explicitly.
-  if (process.platform === 'darwin' && app.dock) {
+  // Packaged-only bug this must guard against: `build/icon.png` lives
+  // inside app.asar once packaged, and dock.setIcon()'s underlying
+  // native image loader can't read through the asar archive the way
+  // Node's own fs can — it fails there every time.
+  if (!app.isPackaged && process.platform === 'darwin' && app.dock) {
     app.dock.setIcon(path.join(__dirname, '..', '..', 'build', 'icon.png'));
   }
 
