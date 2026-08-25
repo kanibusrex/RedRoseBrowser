@@ -25,6 +25,7 @@
   "build": {
     "appId": "com.redrose-browser.app",
     "productName": "RedRose Browser",
+    "publish": null,
     "directories": {
       "output": "release",
       "buildResources": "build"
