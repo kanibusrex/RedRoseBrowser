@@ -1201,3 +1201,42 @@ Verified both directions in the same test: the same-extension
 new-tab case now succeeds, and — unchanged — a page trying to
 `target="_blank"` open a `file://` URL still doesn't create a tab at
 all. Shipped as v1.0.3.
+
+**v1.0.3 still wasn't the whole story.** The user reported the same
+block again after upgrading. Third code path, this time: 1Password's
+settings link doesn't use a plain `<a>` (§8.13) or `window.open`
+(§8.14) at all — it calls the `chrome.tabs.create()` *extension API*
+directly, which MV3 extensions generally prefer for exactly this
+"open my own settings in a full tab" pattern, since `window.open` isn't
+reliably available from a service worker. That call never touches
+`will-navigate`/`setWindowOpenHandler` — it's handled entirely by
+`electron-chrome-extensions` (§8.8.1's bridge), which invokes this
+app's own `createTab(details)` callback in
+`chrome-extensions-bridge.js`. That callback called
+`tabManager.createTab(details.url)` with no `trusted` flag at all —
+yet another independent, context-free `classifyNavigation` call,
+blocked for the same reason as the other two. Reproduced again in
+total isolation first (a `chrome.tabs.create()`-based test extension)
+before touching real 1Password/account state.
+
+The fix here needed more judgment than §8.13/§8.14's, because this
+callback's shape is different: it can *only* ever be reached by
+`chrome.tabs.create()`, which is an extension-only API — no plain web
+page can call it — but the requested URL isn't guaranteed to be
+`chrome-extension:` the way the other two paths' already-passed check
+guaranteed. An extension calling this with an `https:` URL, or (if
+compromised) a `file:`/known-malicious one, should still go through
+the normal scheme/malicious-site check — only a `chrome-extension:`
+target is unconditionally trusted here, specifically because reaching
+this callback at all already proves the caller is extension code, not
+page content. Verified both ends again: a same-extension
+`chrome.tabs.create()` now succeeds, and one to `file:///etc/passwd`
+still gets the blocked-page treatment. Shipped as v1.0.4.
+
+Three separate fixes for what looks like one bug from the outside is
+worth being honest about: `chrome-extension:` targets can be reached
+via same-tab navigation, `window.open`, *and* the `chrome.tabs.create`
+API, and each one turned out to need its own fix rather than one
+shared choke point catching all three. If a fourth path like this
+surfaces later, look for another `TabManager.createTab(url)` call
+missing `{ trusted }` before assuming it's something new.

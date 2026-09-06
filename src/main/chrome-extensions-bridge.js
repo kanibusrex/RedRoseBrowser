@@ -23,7 +23,21 @@ function createExtensionsBridge({ win, session: profileSession, tabManager }) {
     session: profileSession,
 
     createTab(details) {
-      const { tabId } = tabManager.createTab(details.url);
+      // This callback only ever fires for `chrome.tabs.create()`, an
+      // extension-only API — a plain web page cannot reach it at all.
+      // MV3 extensions favor it over window.open (unreliable from a
+      // service worker) for exactly this "open my settings page in a
+      // full tab" pattern (found via 1Password's own settings link,
+      // which uses it — §8.13/§8.14's same-extension fixes covered
+      // will-navigate and window.open, not this, a third, separate
+      // path). A chrome-extension: target here is trusted unconditionally
+      // for that reason — only extension code, not page content, can ask
+      // for one. Anything else an extension requests (a plain https:
+      // URL, say) still goes through the normal scheme/malicious-site
+      // check, so a compromised extension can't use this API to reach
+      // file:/javascript: or a known-bad site.
+      const trusted = typeof details.url === 'string' && details.url.startsWith('chrome-extension://');
+      const { tabId } = tabManager.createTab(details.url, { trusted });
       const webContents = tabManager.getWebContents(tabId);
       return [webContents, win];
     },
