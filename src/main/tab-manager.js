@@ -37,6 +37,10 @@ const TOPBAR_H = 48;
 // must be included here too or the BrowserView occludes it while loading.
 const PROGRESS_H = 2;
 const CHROME_TOP_H = TOPBAR_H + PROGRESS_H;
+// Find-in-page bar (§8.19) height — must match --find-bar-h in styles.css.
+// Unlike TOPBAR_H/PROGRESS_H this is only reserved while a find is active
+// (see recomputeBounds/setFindBarOpen), not always-on.
+const FIND_BAR_H = 44;
 
 const NEW_TAB_URL = 'about:blank';
 
@@ -45,6 +49,11 @@ const NEW_TAB_URL = 'about:blank';
 // matches the convention Chrome/Edge use for their own tab groups).
 const DEFAULT_GROUP_COLOR = 'grey';
 const GROUP_COLORS = ['grey', 'blue', 'red', 'yellow', 'green', 'pink', 'purple', 'cyan'];
+
+// Recently-closed tabs (§8.18) — capped so a long session doesn't grow this
+// unboundedly; more than this many "undo close" steps back is not a
+// realistic use case.
+const CLOSED_STACK_LIMIT = 20;
 
 /**
  * Owns the ordered list of tabs, which one is active, each tab's nav
@@ -56,7 +65,11 @@ const GROUP_COLORS = ['grey', 'blue', 'red', 'yellow', 'green', 'pink', 'purple'
  * owns the callbacks passed in here).
  */
 class TabManager {
-  constructor(win, session, { onTabsChanged, onTabUpdated, onTabLoadFailed, onTabCreated, tabPanelWidth } = {}) {
+  constructor(
+    win,
+    session,
+    { onTabsChanged, onTabUpdated, onTabLoadFailed, onTabCreated, onFindResult, onHistoryVisit, tabPanelWidth } = {}
+  ) {
     this.win = win;
     this.session = session;
     this.onTabsChanged = onTabsChanged || (() => {});
@@ -67,11 +80,23 @@ class TabManager {
     // profile's ElectronChromeExtensions bridge (DESIGN.md §8.8) so
     // chrome.tabs/chrome.windows are aware of it from the start.
     this.onTabCreated = onTabCreated || (() => {});
+    // Find-in-page (§8.19) match-count updates, pushed to the renderer's
+    // find bar — see startFind()'s own doc comment for why this comes
+    // from a plain-text scan, not Chromium's found-in-page event.
+    this.onFindResult = onFindResult || (() => {});
+    // Browsing history (§8.20) — fired once per real page navigation
+    // (see _wireWebContents's did-navigate handler), never for the home
+    // page or an extension page.
+    this.onHistoryVisit = onHistoryVisit || (() => {});
     // The tab panel's current width (§8.11) — every profile shares one
     // visual sidebar, so ProfileManager is the source of truth and keeps
     // whichever TabManager is active in sync (setTabPanelWidth) on every
     // live resize and on profile switch.
     this.tabPanelWidth = tabPanelWidth ?? 200;
+    // Whether the find bar (§8.19) is currently reserving space above the
+    // BrowserView — chrome-level UI state, like tabPanelWidth, not
+    // per-tab; see startFind/stopFind and recomputeBounds.
+    this.findBarOpen = false;
 
     /** @type {Map<string, { id: string, view: BrowserView, url: string, title: string, favicon: string|null, isLoading: boolean, canGoBack: boolean, canGoForward: boolean, pinned: boolean, groupId: string|null }>} */
     this.tabs = new Map();
@@ -80,6 +105,14 @@ class TabManager {
 
     /** @type {Map<string, { id: string, name: string, color: string }>} */
     this.groups = new Map();
+
+    // Recently-closed stack (§8.18, Cmd/Ctrl+Shift+T) — most-recent last,
+    // capped at CLOSED_STACK_LIMIT. Deliberately session-only, unlike
+    // §8.15's session restore: persisting it across a restart would need
+    // its own on-disk format and merge logic with session restore's own
+    // tab list, for a feature whose whole point is undoing something
+    // that just happened a moment ago — not worth the complexity for v1.
+    this.closedStack = [];
 
     this.win.on('resize', () => this.recomputeBounds());
   }
@@ -235,7 +268,6 @@ class TabManager {
     this.order.push(id);
 
     this._wireWebContents(tab);
-    this.onTabCreated(tab);
 
     if (url) {
       const target = resolveNavigationTarget(url);
@@ -259,12 +291,35 @@ class TabManager {
       this.activateTab(id);
       this._emitTabsChanged();
     }
+
+    // Fired last, deliberately — this is what registers the tab with
+    // ProfileManager's extensions bridge (electron-chrome-extensions),
+    // and that bridge's own addTab() synchronously calls back into our
+    // *own* activateTab() the first time it sees a new window (it elects
+    // an active tab on the spot; see chrome-extensions-bridge.js's
+    // `selectTab`). Firing this only after activateTab() has already run
+    // above means that reentrant call finds `this.activeTabId` already
+    // equal to `id` and takes activateTab's "already showing" no-op
+    // branch, instead of running a second, premature attach cycle before
+    // this tab has even started loading.
+    //
+    // That premature second attach was a real, silent bug, found the
+    // hard way (§8.18/§8.19 in DESIGN.md): it corrupted the BrowserView's
+    // find-in-page channel for every profile's very first tab (found
+    // while implementing §8.19) and was also the source of the
+    // MaxListenersExceededWarning on the chrome window investigated
+    // separately — both traced back to this exact reentrancy, not two
+    // unrelated issues.
+    this.onTabCreated(tab);
+
     return { tabId: id };
   }
 
   closeTab(tabId) {
     const tab = this.tabs.get(tabId);
     if (!tab) return;
+
+    this._pushClosedStack(tab);
 
     const idx = this.order.indexOf(tabId);
     const wasActive = this.activeTabId === tabId;
@@ -307,6 +362,61 @@ class TabManager {
     } else {
       this._emitTabsChanged();
     }
+  }
+
+  // ---- recently-closed tabs (§8.18) --------------------------------------
+
+  _pushClosedStack(tab) {
+    this.closedStack.push({
+      // Same "home page normalizes to null" convention as
+      // getSessionSnapshot() (§8.15) — reopening takes the same
+      // no-explicit-url createTab() branch a fresh new tab does.
+      url: tab.url === NEW_TAB_URL ? null : tab.url,
+      pinned: tab.pinned,
+      groupId: tab.groupId,
+    });
+    if (this.closedStack.length > CLOSED_STACK_LIMIT) this.closedStack.shift();
+  }
+
+  // Cmd/Ctrl+Shift+T — pops the most recently closed tab and recreates it.
+  // Calling this repeatedly walks further back through the stack regardless
+  // of whether the tab(s) it already reopened are still open, matching how
+  // real browsers let you keep pressing the shortcut to step back through
+  // several closes in a row.
+  reopenLastClosedTab() {
+    const entry = this.closedStack.pop();
+    if (!entry) return;
+    const { tabId } = this.createTab(entry.url);
+    if (entry.pinned) this.setPinned(tabId, true);
+    if (entry.groupId && this.groups.has(entry.groupId)) this.setTabGroup(tabId, entry.groupId);
+  }
+
+  // ---- reordering (§8.18 drag-to-reorder) --------------------------------
+
+  // Moves `tabId` to just before/after `targetTabId` within `order`.
+  // Restricted to reordering within the same pinned/unpinned bucket —
+  // pinned tabs must stay contiguous at the front (§8.1's invariant,
+  // also relied on by setPinned) — a cross-bucket drag is silently a
+  // no-op rather than something that needs its own clamping logic. The
+  // tab strip's two buckets are visually and spatially separate (a
+  // divider between them), so this is never a drag a user would
+  // plausibly attempt expecting a reorder anyway.
+  moveTab(tabId, targetTabId, position) {
+    if (tabId === targetTabId) return;
+    const tab = this.tabs.get(tabId);
+    const target = this.tabs.get(targetTabId);
+    if (!tab || !target || tab.pinned !== target.pinned) return;
+
+    const fromIdx = this.order.indexOf(tabId);
+    if (fromIdx === -1) return;
+    this.order.splice(fromIdx, 1);
+
+    let toIdx = this.order.indexOf(targetTabId);
+    if (toIdx === -1) return; // shouldn't happen — target still exists
+    if (position === 'after') toIdx += 1;
+    this.order.splice(toIdx, 0, tabId);
+
+    this._emitTabsChanged();
   }
 
   // Full teardown (e.g. profile deletion) — unlike closeTab(), does not
@@ -538,11 +648,17 @@ class TabManager {
     const tab = this.tabs.get(this.activeTabId);
     if (!tab) return;
     const sidebarW = RAIL_W + this.tabPanelWidth;
+    // The find bar (§8.19) lives in the chrome renderer's own DOM, in the
+    // gap this reserves above the BrowserView — not an overlay on top of
+    // it (unlike the permission prompt/settings modal, hiding the page
+    // here would defeat the purpose of searching it). Only reserved while
+    // a find is actually open, unlike the always-on topbar.
+    const topReserve = CHROME_TOP_H + (this.findBarOpen ? FIND_BAR_H : 0);
     const [winWidth, winHeight] = this.win.getContentSize();
     const contentX = sidebarW;
-    const contentY = CHROME_TOP_H;
+    const contentY = topReserve;
     const contentW = Math.max(0, winWidth - sidebarW);
-    const contentH = Math.max(0, winHeight - CHROME_TOP_H);
+    const contentH = Math.max(0, winHeight - topReserve);
 
     const partner = tab.splitWithTabId ? this.tabs.get(tab.splitWithTabId) : null;
     if (!partner) {
@@ -659,6 +775,119 @@ class TabManager {
     this.activateTab(next);
   }
 
+  // ---- find-in-page (§8.19) ------------------------------------------------
+  //
+  // Uses window.find() via executeJavaScript, NOT Electron's native
+  // webContents.findInPage()/'found-in-page' event, despite that being
+  // the obvious first choice (and what this originally shipped with).
+  // Found the hard way: the instant a tab is registered with
+  // ProfileManager's electron-chrome-extensions bridge (§8.8.1) — which
+  // every real tab in this app always is — findInPage() stops firing
+  // 'found-in-page' entirely. No error, no rejected promise, nothing;
+  // the request just vanishes. Bisected extensively — a raw BrowserView
+  // with the exact same webPreferences/session/window works fine right
+  // up until a tab is handed to that library via its addTab(); a bare
+  // preload-script registration alone doesn't reproduce it either — the
+  // full ElectronChromeExtensions instance plus an added tab does, every
+  // time. That points at something inside the library's own tab-tracking
+  // machinery, not this app's code, and not worth vendoring/patching a
+  // GPL-3.0 dependency to chase further. window.find() — a legacy but
+  // still fully-implemented Window API — runs entirely inside the page's
+  // own JS context instead of through whatever internal channel gets
+  // broken, and was verified to keep working in that exact broken setup.
+  //
+  // The trade-off: window.find() only reports "found a match" per call,
+  // not a running match index the way found-in-page's activeMatchOrdinal
+  // did — so the find bar shows a plain match *count* (a separate
+  // plain-text scan, computed once per new search, not on every next/
+  // prev step), not a "3 of 12" position. See DESIGN.md §8.19.
+
+  // `findNext: false` (a fresh search — every keystroke in the find bar)
+  // recomputes the match count and restarts from the top of the
+  // document; `findNext: true` (Enter / the prev-next buttons) just
+  // steps to the next-or-previous match of the *same* search text,
+  // wrapping around, without re-scanning or re-counting. Reserves the
+  // find bar's on-screen space (recomputeBounds) the first time this is
+  // called — idempotent on every later keystroke, so typing doesn't
+  // thrash the BrowserView's bounds.
+  startFind(tabId, text, { forward = true, findNext = false } = {}) {
+    const tab = this.tabs.get(tabId);
+    if (!tab) return;
+    if (!this.findBarOpen) {
+      this.findBarOpen = true;
+      this.recomputeBounds();
+    }
+    const wc = tab.view.webContents;
+
+    if (!text) {
+      this._clearFindSelection(wc);
+      this.onFindResult({ tabId, matches: 0 });
+      return;
+    }
+
+    const countStep = findNext ? Promise.resolve(null) : this._countMatches(wc, text);
+    countStep
+      .then((matches) => {
+        if (matches !== null) {
+          this.onFindResult({ tabId, matches });
+          // A fresh search must start from the top of the document, not
+          // wherever a previous search's selection happened to land —
+          // window.find() otherwise continues from the current selection.
+          return this._clearFindSelection(wc).then(() => matches);
+        }
+        return matches;
+      })
+      .then(() => {
+        // Args: (searchText, caseSensitive, backwards, wrapAround,
+        // wholeWord, searchInFrames, showDialog).
+        return wc.executeJavaScript(`window.find(${JSON.stringify(text)}, false, ${!forward}, true, false, true, false)`);
+      })
+      .catch(() => {});
+  }
+
+  // Closes the find bar's reserved space and, by default, clears the
+  // page's own selection highlight window.find() leaves behind (Escape /
+  // closing the bar). `action` mirrors the old stopFindInPage-based
+  // API's options for the caller's sake: 'clearSelection' (default) or
+  // 'keepSelection' (not currently used by the UI, kept for completeness).
+  stopFind(tabId, action = 'clearSelection') {
+    if (this.findBarOpen) {
+      this.findBarOpen = false;
+      this.recomputeBounds();
+    }
+    const tab = this.tabs.get(tabId);
+    if (tab && action === 'clearSelection') this._clearFindSelection(tab.view.webContents);
+  }
+
+  // Plain case-insensitive substring count over the rendered text —
+  // deliberately simple (not DOM/whitespace-aware the way a real find
+  // engine is), just enough to show the find bar a meaningful number.
+  // Errors (e.g. a page with no accessible `document.body` yet) resolve
+  // to 0 rather than rejecting into the caller's .catch.
+  _countMatches(wc, text) {
+    const needle = JSON.stringify(text.toLowerCase());
+    return wc
+      .executeJavaScript(
+        `(() => {
+           const haystack = document.body.innerText.toLowerCase();
+           const needle = ${needle};
+           if (!needle) return 0;
+           let count = 0;
+           let pos = 0;
+           while ((pos = haystack.indexOf(needle, pos)) !== -1) {
+             count++;
+             pos += needle.length;
+           }
+           return count;
+         })()`
+      )
+      .catch(() => 0);
+  }
+
+  _clearFindSelection(wc) {
+    return wc.executeJavaScript('window.getSelection().removeAllRanges()').catch(() => {});
+  }
+
   // ---- webContents event wiring --------------------------------------------
 
   _wireWebContents(tab) {
@@ -733,6 +962,22 @@ class TabManager {
       tab.favicon = null;
       updateNavFlags();
       this._emitTabUpdated(tab);
+
+      // Browsing history (§8.20) — extension pages aren't "browsing" in
+      // the sense a history list means, so they're excluded the same way
+      // §8.15's session restore excludes them. Deliberately delayed:
+      // page-title-updated (usually milliseconds behind, for any page
+      // with a real <title> tag in its initial HTML) hasn't necessarily
+      // fired yet at did-navigate time, and recording the hostname-
+      // fallback title into history permanently would be a worse
+      // trade-off than a short delay. Re-checks tab.url still matches
+      // in case the user already navigated away by the time this fires
+      // — that newer navigation's own delayed call records its own entry.
+      if (!url.startsWith('chrome-extension://')) {
+        setTimeout(() => {
+          if (tab.url === url) this.onHistoryVisit({ url: tab.url, title: tab.title, favicon: tab.favicon });
+        }, 300);
+      }
     });
 
     wc.on('did-navigate-in-page', (_event, url) => {
@@ -750,6 +995,7 @@ class TabManager {
       tab.favicon = (favicons && favicons[0]) || null;
       this._emitTabUpdated(tab);
     });
+
 
     wc.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
       if (!isMainFrame) return;

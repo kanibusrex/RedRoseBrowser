@@ -25,6 +25,8 @@ function registerIpcHandlers(chromeWin, profileManager) {
   profileManager.onProfilesChanged = (snapshot) => send(MAIN_TO_RENDERER.PROFILES_CHANGED, snapshot);
   profileManager.onBookmarksChanged = (payload) => send(MAIN_TO_RENDERER.BOOKMARKS_CHANGED, payload);
   profileManager.onExtensionsChanged = (payload) => send(MAIN_TO_RENDERER.EXTENSIONS_CHANGED, payload);
+  profileManager.onFindResult = (payload) => send(MAIN_TO_RENDERER.FIND_RESULT, payload);
+  profileManager.onDownloadsChanged = (payload) => send(MAIN_TO_RENDERER.DOWNLOADS_CHANGED, payload);
 
   const activeTabs = () => profileManager.getActiveTabManager();
 
@@ -111,6 +113,58 @@ function registerIpcHandlers(chromeWin, profileManager) {
 
   ipcMain.handle(RENDERER_TO_MAIN.TABS_UNSPLIT, (_event, { tabId } = {}) => {
     activeTabs().unsplitTab(tabId);
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.TABS_MOVE, (_event, { tabId, targetTabId, position } = {}) => {
+    activeTabs().moveTab(tabId, targetTabId, position);
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.TABS_REOPEN_CLOSED, () => {
+    activeTabs().reopenLastClosedTab();
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.FIND_START, (_event, { tabId, text, options } = {}) => {
+    activeTabs().startFind(tabId, text, options || {});
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.FIND_STOP, (_event, { tabId, action } = {}) => {
+    activeTabs().stopFind(tabId, action);
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.HISTORY_LIST, (_event, { query } = {}) => {
+    return { entries: profileManager.getHistory(query) };
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.HISTORY_REMOVE, (_event, { id } = {}) => {
+    return { entries: profileManager.removeHistoryEntry(id) };
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.HISTORY_CLEAR, () => {
+    return { entries: profileManager.clearHistory() };
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.DOWNLOADS_LIST, () => {
+    return { downloads: profileManager.getDownloads() };
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.DOWNLOADS_CANCEL, (_event, { id } = {}) => {
+    profileManager.cancelDownload(id);
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.DOWNLOADS_REMOVE, (_event, { id } = {}) => {
+    return { downloads: profileManager.removeDownloadEntry(id) };
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.DOWNLOADS_CLEAR, () => {
+    return { downloads: profileManager.clearDownloads() };
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.DOWNLOADS_OPEN, (_event, { id } = {}) => {
+    profileManager.openDownload(id);
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.DOWNLOADS_SHOW_IN_FOLDER, (_event, { id } = {}) => {
+    profileManager.showDownloadInFolder(id);
   });
 
   ipcMain.handle(RENDERER_TO_MAIN.PROFILES_LIST, () => {

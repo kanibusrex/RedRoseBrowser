@@ -9,6 +9,9 @@ const { TabManager } = require('./tab-manager');
 const { BookmarkStore } = require('./bookmark-store');
 const { SessionStore } = require('./session-store');
 const { PermissionStore } = require('./permission-store');
+const { HistoryStore } = require('./history-store');
+const { DownloadStore } = require('./download-store');
+const { installDownloadTracking } = require('./download-manager');
 const { ExtensionManager } = require('./extension-manager');
 const { createExtensionsBridge } = require('./chrome-extensions-bridge');
 const { AdBlocker } = require('./ad-blocker');
@@ -35,7 +38,16 @@ const DEFAULT_PROFILE_COLORS = ['#1E5FA8', '#16794D', '#7A3EA1', '#B23A63', '#0E
 class ProfileManager {
   constructor(
     win,
-    { onTabsChanged, onTabUpdated, onTabLoadFailed, onProfilesChanged, onBookmarksChanged, onExtensionsChanged } = {}
+    {
+      onTabsChanged,
+      onTabUpdated,
+      onTabLoadFailed,
+      onProfilesChanged,
+      onBookmarksChanged,
+      onExtensionsChanged,
+      onFindResult,
+      onDownloadsChanged,
+    } = {}
   ) {
     this.win = win;
     this.onTabsChanged = onTabsChanged || (() => {});
@@ -44,6 +56,8 @@ class ProfileManager {
     this.onProfilesChanged = onProfilesChanged || (() => {});
     this.onBookmarksChanged = onBookmarksChanged || (() => {});
     this.onExtensionsChanged = onExtensionsChanged || (() => {});
+    this.onFindResult = onFindResult || (() => {});
+    this.onDownloadsChanged = onDownloadsChanged || (() => {});
 
     /** @type {Map<string, { id: string, name: string, color: string }>} */
     this.profiles = new Map();
@@ -51,10 +65,14 @@ class ProfileManager {
     this.tabManagers = new Map();
     /** @type {Map<string, import('electron-chrome-extensions').ElectronChromeExtensions>} */
     this.extensionBridges = new Map();
+    /** @type {Map<string, ReturnType<typeof installDownloadTracking>>} */
+    this.downloadManagers = new Map();
     this.activeProfileId = null;
     this.bookmarkStore = new BookmarkStore();
     this.sessionStore = new SessionStore();
     this.permissionStore = new PermissionStore();
+    this.historyStore = new HistoryStore();
+    this.downloadStore = new DownloadStore();
     this.extensionManager = new ExtensionManager();
     this.adBlocker = new AdBlocker();
     // The tab panel's width (§8.11) is chrome-level layout shared by
@@ -158,6 +176,15 @@ class ProfileManager {
     const profileSession = session.fromPartition(partition);
     this.adBlocker.enableForSession(profileSession);
 
+    const downloadManager = installDownloadTracking(profileSession, {
+      profileId,
+      downloadStore: this.downloadStore,
+      onDownloadsChanged: (payload) => {
+        if (profileId === this.activeProfileId) this.onDownloadsChanged(payload);
+      },
+    });
+    this.downloadManagers.set(profileId, downloadManager);
+
     tm = new TabManager(this.win, profileSession, {
       tabPanelWidth: this.tabPanelWidth,
       onTabsChanged: (snapshot) => {
@@ -170,6 +197,14 @@ class ProfileManager {
       onTabLoadFailed: (payload) => {
         if (profileId === this.activeProfileId) this.onTabLoadFailed(payload);
       },
+      onFindResult: (payload) => {
+        if (profileId === this.activeProfileId) this.onFindResult(payload);
+      },
+      // Not gated by activeProfileId, unlike the callbacks above — a
+      // background profile's tab navigating should still be recorded;
+      // history has no live renderer subscription to forward to anyway
+      // (History.js fetches on demand — see DESIGN.md §8.20).
+      onHistoryVisit: (payload) => this.historyStore.record(profileId, payload),
       // Lazy lookup (not a closed-over reference) because the bridge
       // below is created after `tm`, but createTab() can fire before then
       // (the seed tab a few lines down) or after (chrome.tabs.create).
@@ -232,6 +267,7 @@ class ProfileManager {
     this.onTabsChanged(this.getActiveTabManager().getAllTabsSnapshot());
     this.onBookmarksChanged({ bookmarks: this.getBookmarks() });
     this.onExtensionsChanged({ extensions: this.listExtensions() });
+    this.onDownloadsChanged({ downloads: this.getDownloads() });
   }
 
   // ---- sidebar width (chrome-level, shared across every profile) --------
@@ -303,6 +339,66 @@ class ProfileManager {
     const list = this.bookmarkStore.remove(this.activeProfileId, id);
     this.onBookmarksChanged({ bookmarks: list });
     return list;
+  }
+
+  // ---- history (scoped to whichever profile is active right now) --------
+  // No live-push subscription like bookmarks/extensions have — History.js
+  // fetches fresh each time its popover opens instead (§8.20); a list
+  // that can grow by one entry on every navigation isn't worth pushing
+  // to a UI element that's closed most of the time.
+
+  getHistory(query) {
+    return this.historyStore.list(this.activeProfileId, { query, limit: 500 });
+  }
+
+  removeHistoryEntry(id) {
+    return this.historyStore.removeEntry(this.activeProfileId, id);
+  }
+
+  clearHistory() {
+    return this.historyStore.clear(this.activeProfileId);
+  }
+
+  flushHistory() {
+    this.historyStore.flush();
+  }
+
+  // ---- downloads (scoped to whichever profile is active right now) ------
+  // Unlike history, this DOES push live updates (§8.21) — a download's
+  // whole point of being in a shelf/list is watching its progress.
+
+  getDownloads() {
+    const dm = this.downloadManagers.get(this.activeProfileId);
+    return dm ? dm.list() : [];
+  }
+
+  cancelDownload(id) {
+    const dm = this.downloadManagers.get(this.activeProfileId);
+    if (dm) dm.cancel(id);
+  }
+
+  removeDownloadEntry(id) {
+    const dm = this.downloadManagers.get(this.activeProfileId);
+    const list = dm ? dm.remove(id) : [];
+    this.onDownloadsChanged({ downloads: list });
+    return list;
+  }
+
+  clearDownloads() {
+    const dm = this.downloadManagers.get(this.activeProfileId);
+    const list = dm ? dm.clear() : [];
+    this.onDownloadsChanged({ downloads: list });
+    return list;
+  }
+
+  openDownload(id) {
+    const dm = this.downloadManagers.get(this.activeProfileId);
+    if (dm) dm.open(id);
+  }
+
+  showDownloadInFolder(id) {
+    const dm = this.downloadManagers.get(this.activeProfileId);
+    if (dm) dm.showInFolder(id);
   }
 
   // ---- extensions (scoped to whichever profile is active right now) ------
@@ -381,6 +477,11 @@ class ProfileManager {
     clearTimeout(this._sessionSaveTimers.get(profileId));
     this._sessionSaveTimers.delete(profileId);
     this.sessionStore.clear(profileId);
+    // Just the live in-memory tracker, not downloadStore's own persisted
+    // records — those are real user data (past downloads), kept around
+    // the same way bookmarks/history are, not ephemeral session state
+    // like sessionStore's tab list.
+    this.downloadManagers.delete(profileId);
     this.profiles.delete(profileId);
 
     if (wasActive) {
@@ -389,6 +490,7 @@ class ProfileManager {
       this.onTabsChanged(this.getActiveTabManager().getAllTabsSnapshot());
       this.onBookmarksChanged({ bookmarks: this.getBookmarks() });
       this.onExtensionsChanged({ extensions: this.listExtensions() });
+      this.onDownloadsChanged({ downloads: this.getDownloads() });
     }
 
     this._saveProfiles();

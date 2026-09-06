@@ -5,9 +5,12 @@ import { createToolbar } from './components/Toolbar.js';
 import { createAddressBar } from './components/AddressBar.js';
 import { createProfileSwitcher } from './components/ProfileSwitcher.js';
 import { createBookmarksButton } from './components/Bookmarks.js';
+import { createHistoryButton } from './components/History.js';
+import { createDownloadsButton } from './components/Downloads.js';
 import { createExtensionsButton } from './components/Extensions.js';
 import { initSidebarResize } from './components/SidebarResize.js';
 import { initPermissionPrompts } from './components/PermissionPrompt.js';
+import { createFindBar } from './components/FindBar.js';
 import { initTheme } from './theme.js';
 
 // This module runs in the chrome renderer: contextIsolation is on and
@@ -73,6 +76,9 @@ const tabStrip = createTabStrip(
       split: (tabId, otherTabId) => window.browserAPI.splitTabs(tabId, otherTabId),
       unsplit: (tabId) => window.browserAPI.unsplitTab(tabId),
     },
+    reorderActions: {
+      moveTab: (tabId, targetTabId, position) => window.browserAPI.moveTab(tabId, targetTabId, position),
+    },
   }
 );
 
@@ -109,6 +115,16 @@ const addressBar = createAddressBar(
 // address bar's lock/info glyph lives in.
 initPermissionPrompts({ securityIcon: document.getElementById('security-icon') });
 
+const findBar = createFindBar({
+  bar: document.getElementById('find-bar'),
+  input: document.getElementById('find-input'),
+  count: document.getElementById('find-count'),
+  prevBtn: document.getElementById('find-prev'),
+  nextBtn: document.getElementById('find-next'),
+  closeBtn: document.getElementById('find-close'),
+});
+window.browserAPI.onFindResult((result) => findBar.onResult(result));
+
 // The rail glyph doubles as the profile switcher entry point (click to
 // open the switcher popover), same spot ScriptureDesk uses for its
 // "Home" glyph.
@@ -127,6 +143,26 @@ const bookmarksButton = createBookmarksButton(
   {
     onOpen: (url) => window.browserAPI.createTab(url),
     onRemove: (id) => window.browserAPI.removeBookmark(id),
+  }
+);
+
+createHistoryButton(
+  { btn: document.getElementById('btn-history') },
+  {
+    onQuery: (query) => window.browserAPI.listHistory(query).then(({ entries }) => entries),
+    onRemove: (id) => window.browserAPI.removeHistoryEntry(id),
+    onClear: () => window.browserAPI.clearHistory(),
+  }
+);
+
+const downloadsButton = createDownloadsButton(
+  { btn: document.getElementById('btn-downloads') },
+  {
+    onCancel: (id) => window.browserAPI.cancelDownload(id),
+    onRemove: (id) => window.browserAPI.removeDownloadEntry(id),
+    onClear: () => window.browserAPI.clearDownloads(),
+    onOpen: (id) => window.browserAPI.openDownload(id),
+    onShowInFolder: (id) => window.browserAPI.showDownloadInFolder(id),
   }
 );
 
@@ -150,6 +186,7 @@ starBtn.addEventListener('click', () => {
 
 window.browserAPI.onTabsChanged(({ tabs, activeTabId, groups }) => {
   state = { tabs, activeTabId, groups: groups || [] };
+  findBar.onActiveTabChanged(activeTabId);
   renderAll();
 });
 
@@ -182,6 +219,10 @@ window.browserAPI.onExtensionsChanged(({ extensions }) => {
   extensionsButton.render(extensions);
 });
 
+window.browserAPI.onDownloadsChanged(({ downloads }) => {
+  downloadsButton.render(downloads);
+});
+
 // ---- initial hydrate ----
 
 window.browserAPI.getAllTabs().then(({ tabs, activeTabId, groups }) => {
@@ -203,6 +244,10 @@ window.browserAPI.listExtensions().then(({ extensions }) => {
   extensionsButton.render(extensions);
 });
 
+window.browserAPI.listDownloads().then(({ downloads }) => {
+  downloadsButton.render(downloads);
+});
+
 // ---- keyboard shortcuts (§1) ----
 // Handled here (not main-process accelerators) because these are pure UI
 // chrome actions; browserAPI already provides everything they need.
@@ -213,7 +258,10 @@ window.addEventListener('keydown', (event) => {
 
   const key = event.key.toLowerCase();
 
-  if (key === 't') {
+  if (key === 't' && event.shiftKey) {
+    event.preventDefault();
+    window.browserAPI.reopenLastClosedTab();
+  } else if (key === 't') {
     event.preventDefault();
     window.browserAPI.createTab();
   } else if (key === 'w') {
@@ -222,6 +270,9 @@ window.addEventListener('keydown', (event) => {
   } else if (key === 'l') {
     event.preventDefault();
     addressBar.focus();
+  } else if (key === 'f') {
+    event.preventDefault();
+    if (state.activeTabId) findBar.open(state.activeTabId);
   } else if (key === 'r') {
     event.preventDefault();
     if (state.activeTabId) window.browserAPI.reload(state.activeTabId);

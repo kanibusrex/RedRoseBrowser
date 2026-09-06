@@ -50,7 +50,7 @@ function fallbackLetter(tab) {
 // and wouldn't reach this listener regardless, but this is defensive).
 const TAB_DRAG_MIME = 'application/x-redrose-tab-id';
 
-export function createTabStrip(container, { onActivate, onClose, onNewTab, groupActions, pinActions, splitActions }) {
+export function createTabStrip(container, { onActivate, onClose, onNewTab, groupActions, pinActions, splitActions, reorderActions }) {
   let lastState = { tabs: [], activeTabId: null, groups: [] };
 
   function faviconOrSpinner(tab, { compact } = {}) {
@@ -149,10 +149,21 @@ export function createTabStrip(container, { onActivate, onClose, onNewTab, group
       openTabMenu(tab, { x: event.clientX, y: event.clientY });
     });
 
-    // Drag tab A onto tab B to open them side by side (§8.12). Dropping
-    // between rows to reorder isn't implemented — this is the only drag
-    // interaction the tab strip has, so there's no ambiguity to resolve
-    // between "reorder" and "split" drops.
+    // Drag tab A onto tab B (§8.12/§8.18): dropping on the middle ~50% of
+    // a row splits them side by side; dropping on the top/bottom edge
+    // reorders instead — same disambiguation-by-drop-position kanban
+    // boards/file trees commonly use for "onto" vs. "between". Both
+    // buckets (pinned/unpinned) support reordering; moveTab() itself
+    // refuses a drag across buckets, so no need to special-case that here.
+    const dropZone = (event) => {
+      const rect = el.getBoundingClientRect();
+      const frac = (event.clientY - rect.top) / rect.height;
+      if (frac < 0.3) return 'before';
+      if (frac > 0.7) return 'after';
+      return 'split';
+    };
+    const clearDropClasses = () => el.classList.remove('tab-drop-target', 'tab-drop-before', 'tab-drop-after');
+
     el.draggable = true;
     el.addEventListener('dragstart', (event) => {
       event.dataTransfer.effectAllowed = 'link';
@@ -162,20 +173,28 @@ export function createTabStrip(container, { onActivate, onClose, onNewTab, group
       if (!event.dataTransfer.types.includes(TAB_DRAG_MIME)) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = 'link';
+      const zone = dropZone(event);
+      clearDropClasses();
+      el.classList.add(zone === 'split' ? 'tab-drop-target' : `tab-drop-${zone}`);
     });
     el.addEventListener('dragenter', (event) => {
       if (!event.dataTransfer.types.includes(TAB_DRAG_MIME)) return;
-      el.classList.add('tab-drop-target');
+      // Just registers this as a valid drop target — dragover (above)
+      // fires right after, on every frame while hovering, and is what
+      // actually sets the correct zone class (including the first one).
+      event.preventDefault();
     });
     el.addEventListener('dragleave', () => {
-      el.classList.remove('tab-drop-target');
+      clearDropClasses();
     });
     el.addEventListener('drop', (event) => {
-      el.classList.remove('tab-drop-target');
+      const zone = dropZone(event);
+      clearDropClasses();
       const draggedId = event.dataTransfer.getData(TAB_DRAG_MIME);
       if (!draggedId || draggedId === tab.id) return;
       event.preventDefault();
-      splitActions.split(draggedId, tab.id);
+      if (zone === 'split') splitActions.split(draggedId, tab.id);
+      else reorderActions.moveTab(draggedId, tab.id, zone);
     });
 
     return el;

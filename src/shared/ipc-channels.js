@@ -29,6 +29,8 @@ const RENDERER_TO_MAIN = Object.freeze({
   TABS_SET_GROUP: 'tabs:setGroup',
   TABS_SPLIT: 'tabs:split',
   TABS_UNSPLIT: 'tabs:unsplit',
+  TABS_MOVE: 'tabs:move',
+  TABS_REOPEN_CLOSED: 'tabs:reopenClosed',
   PROFILES_LIST: 'profiles:list',
   PROFILES_CREATE: 'profiles:create',
   PROFILES_SWITCH: 'profiles:switch',
@@ -45,6 +47,17 @@ const RENDERER_TO_MAIN = Object.freeze({
   SIDEBAR_GET_WIDTH: 'sidebar:getWidth',
   SIDEBAR_SET_WIDTH: 'sidebar:setWidth',
   PERMISSION_RESPOND: 'permission:respond',
+  FIND_START: 'find:start',
+  FIND_STOP: 'find:stop',
+  HISTORY_LIST: 'history:list',
+  HISTORY_REMOVE: 'history:remove',
+  HISTORY_CLEAR: 'history:clear',
+  DOWNLOADS_LIST: 'downloads:list',
+  DOWNLOADS_CANCEL: 'downloads:cancel',
+  DOWNLOADS_REMOVE: 'downloads:remove',
+  DOWNLOADS_CLEAR: 'downloads:clear',
+  DOWNLOADS_OPEN: 'downloads:open',
+  DOWNLOADS_SHOW_IN_FOLDER: 'downloads:showInFolder',
 });
 
 // Main -> Renderer (webContents.send / ipcRenderer.on)
@@ -56,6 +69,8 @@ const MAIN_TO_RENDERER = Object.freeze({
   BOOKMARKS_CHANGED: 'bookmarks:changed',
   EXTENSIONS_CHANGED: 'extensions:changed',
   PERMISSION_REQUEST: 'permission:request',
+  FIND_RESULT: 'find:result',
+  DOWNLOADS_CHANGED: 'downloads:changed',
 });
 
 // Flat allowlist of every channel name the chrome preload/main may use.

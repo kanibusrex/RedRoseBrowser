@@ -57,6 +57,9 @@
   --tab-panel-w: 200px;
   --toolbar-h: 48px;
   --progress-h: 2px;
+  /* Must match FIND_BAR_H in tab-manager.js (§8.19) — only reserved above
+     the BrowserView while a find is actually open, unlike the above. */
+  --find-bar-h: 44px;
 }
 
 /* ---- Dark base ---- */
@@ -400,6 +403,20 @@ button {
   transform: translateY(-50%) translateX(0);
 }
 
+/* A download in progress (§8.21) — small dot, same spot a notification
+   badge would sit, so it's noticeable without needing the popover open. */
+#btn-downloads.has-active-download::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--rail);
+}
+
 /* ---- Tab panel — the wider list of open tabs, matches ScriptureDesk's
    .list-pane in spirit. Width is user-resizable (§8.11) — kept in sync
    with the BrowserView's actual bounds via SidebarResize.js/IPC, not a
@@ -571,6 +588,17 @@ button {
 .tab.tab-drop-target {
   background: var(--rail-active);
   box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+/* ---- drag-to-reorder (§8.18) — drop on a row's top/bottom edge instead
+   of its middle (.tab-drop-target, split, above) to reorder instead ---- */
+
+.tab.tab-drop-before {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.tab.tab-drop-after {
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 .tab-split-indicator {
@@ -917,6 +945,55 @@ button {
   100% {
     transform: translateX(350%);
   }
+}
+
+/* ---- Find in page (§8.19) ----
+   Lives in normal document flow (not a fixed overlay) — TabManager only
+   reserves this height above the BrowserView while `.show` is present
+   (see recomputeBounds/startFind/stopFind), so hiding it here and there
+   staying in sync is what keeps the page from being covered or the gap
+   from being left empty when it's closed. */
+#find-bar {
+  display: none;
+  height: var(--find-bar-h);
+  flex: 0 0 var(--find-bar-h);
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+}
+
+#find-bar.show {
+  display: flex;
+}
+
+#find-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+#find-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus);
+}
+
+#find-count {
+  flex-shrink: 0;
+  min-width: 72px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 /* ============================================================
@@ -1503,6 +1580,246 @@ button {
 .bookmark-remove:hover {
   background: var(--mist);
   color: var(--text);
+}
+
+/* ---- history popover (§8.20) ---- */
+
+.history-popover {
+  min-width: 260px;
+  max-width: 300px;
+  padding: 8px;
+}
+
+.history-search {
+  padding: 0 2px 8px;
+}
+
+.history-search input {
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.history-search input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus);
+}
+
+.history-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.history-empty {
+  padding: 10px 8px;
+  font-size: 12.5px;
+  color: var(--faint);
+  line-height: 1.5;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 6px;
+  border-radius: var(--r-sm);
+}
+
+.history-row:hover {
+  background: var(--surface-2);
+}
+
+.history-favicon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 2px;
+}
+
+.history-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.history-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.history-meta {
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.history-remove {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0;
+}
+
+.history-row:hover .history-remove {
+  opacity: 1;
+}
+
+.history-remove:hover {
+  background: var(--mist);
+  color: var(--text);
+}
+
+.history-footer {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line2);
+}
+
+.history-clear {
+  width: 100%;
+  height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-sm);
+  color: var(--red);
+  cursor: pointer;
+  font-size: 12.5px;
+}
+
+.history-clear:hover {
+  background: var(--surface-2);
+}
+
+/* ---- downloads popover (§8.21) ---- */
+
+.downloads-popover {
+  min-width: 280px;
+  max-width: 320px;
+  padding: 8px;
+}
+
+.downloads-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.downloads-empty {
+  padding: 10px 8px;
+  font-size: 12.5px;
+  color: var(--faint);
+  line-height: 1.5;
+}
+
+.download-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 6px;
+  border-radius: var(--r-sm);
+}
+
+.download-row:hover {
+  background: var(--surface-2);
+}
+
+.download-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.download-filename {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.download-status {
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 1px;
+}
+
+.download-progress-track {
+  margin-top: 5px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.download-progress-fill {
+  height: 100%;
+  background: var(--accent-grad);
+  border-radius: 2px;
+  transition: width 0.2s var(--ease);
+}
+
+.download-progress-fill.indeterminate {
+  width: 40%;
+  animation: indeterminate 1.1s ease-in-out infinite;
+}
+
+.download-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 2px;
+}
+
+.download-action {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.download-action:hover {
+  background: var(--mist);
+  color: var(--text);
+}
+
+.downloads-footer {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line2);
+}
+
+.downloads-clear {
+  width: 100%;
+  height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-sm);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12.5px;
+}
+
+.downloads-clear:hover {
+  background: var(--surface-2);
 }
 
 /* ---- permission prompt (§8.16) ----

@@ -31,6 +31,8 @@ const RENDERER_TO_MAIN = {
   TABS_SET_GROUP: 'tabs:setGroup',
   TABS_SPLIT: 'tabs:split',
   TABS_UNSPLIT: 'tabs:unsplit',
+  TABS_MOVE: 'tabs:move',
+  TABS_REOPEN_CLOSED: 'tabs:reopenClosed',
   PROFILES_LIST: 'profiles:list',
   PROFILES_CREATE: 'profiles:create',
   PROFILES_SWITCH: 'profiles:switch',
@@ -47,6 +49,17 @@ const RENDERER_TO_MAIN = {
   SIDEBAR_GET_WIDTH: 'sidebar:getWidth',
   SIDEBAR_SET_WIDTH: 'sidebar:setWidth',
   PERMISSION_RESPOND: 'permission:respond',
+  FIND_START: 'find:start',
+  FIND_STOP: 'find:stop',
+  HISTORY_LIST: 'history:list',
+  HISTORY_REMOVE: 'history:remove',
+  HISTORY_CLEAR: 'history:clear',
+  DOWNLOADS_LIST: 'downloads:list',
+  DOWNLOADS_CANCEL: 'downloads:cancel',
+  DOWNLOADS_REMOVE: 'downloads:remove',
+  DOWNLOADS_CLEAR: 'downloads:clear',
+  DOWNLOADS_OPEN: 'downloads:open',
+  DOWNLOADS_SHOW_IN_FOLDER: 'downloads:showInFolder',
 };
 
 const MAIN_TO_RENDERER = {
@@ -57,6 +70,8 @@ const MAIN_TO_RENDERER = {
   BOOKMARKS_CHANGED: 'bookmarks:changed',
   EXTENSIONS_CHANGED: 'extensions:changed',
   PERMISSION_REQUEST: 'permission:request',
+  FIND_RESULT: 'find:result',
+  DOWNLOADS_CHANGED: 'downloads:changed',
 };
 
 // Allowlist of push-event channels the renderer is permitted to subscribe
@@ -96,6 +111,8 @@ contextBridge.exposeInMainWorld('browserAPI', {
   setTabGroup: (tabId, groupId) => ipcRenderer.invoke(RENDERER_TO_MAIN.TABS_SET_GROUP, { tabId, groupId }),
   splitTabs: (tabId, otherTabId) => ipcRenderer.invoke(RENDERER_TO_MAIN.TABS_SPLIT, { tabId, otherTabId }),
   unsplitTab: (tabId) => ipcRenderer.invoke(RENDERER_TO_MAIN.TABS_UNSPLIT, { tabId }),
+  moveTab: (tabId, targetTabId, position) => ipcRenderer.invoke(RENDERER_TO_MAIN.TABS_MOVE, { tabId, targetTabId, position }),
+  reopenLastClosedTab: () => ipcRenderer.invoke(RENDERER_TO_MAIN.TABS_REOPEN_CLOSED),
 
   listProfiles: () => ipcRenderer.invoke(RENDERER_TO_MAIN.PROFILES_LIST),
   createProfile: (name, color) => ipcRenderer.invoke(RENDERER_TO_MAIN.PROFILES_CREATE, { name, color }),
@@ -116,6 +133,17 @@ contextBridge.exposeInMainWorld('browserAPI', {
   setSidebarWidth: (width) => ipcRenderer.invoke(RENDERER_TO_MAIN.SIDEBAR_SET_WIDTH, { width }),
   respondToPermission: (requestId, allow, remember) =>
     ipcRenderer.invoke(RENDERER_TO_MAIN.PERMISSION_RESPOND, { requestId, allow, remember }),
+  find: (tabId, text, options) => ipcRenderer.invoke(RENDERER_TO_MAIN.FIND_START, { tabId, text, options }),
+  stopFind: (tabId, action) => ipcRenderer.invoke(RENDERER_TO_MAIN.FIND_STOP, { tabId, action }),
+  listHistory: (query) => ipcRenderer.invoke(RENDERER_TO_MAIN.HISTORY_LIST, { query }),
+  removeHistoryEntry: (id) => ipcRenderer.invoke(RENDERER_TO_MAIN.HISTORY_REMOVE, { id }),
+  clearHistory: () => ipcRenderer.invoke(RENDERER_TO_MAIN.HISTORY_CLEAR),
+  listDownloads: () => ipcRenderer.invoke(RENDERER_TO_MAIN.DOWNLOADS_LIST),
+  cancelDownload: (id) => ipcRenderer.invoke(RENDERER_TO_MAIN.DOWNLOADS_CANCEL, { id }),
+  removeDownloadEntry: (id) => ipcRenderer.invoke(RENDERER_TO_MAIN.DOWNLOADS_REMOVE, { id }),
+  clearDownloads: () => ipcRenderer.invoke(RENDERER_TO_MAIN.DOWNLOADS_CLEAR),
+  openDownload: (id) => ipcRenderer.invoke(RENDERER_TO_MAIN.DOWNLOADS_OPEN, { id }),
+  showDownloadInFolder: (id) => ipcRenderer.invoke(RENDERER_TO_MAIN.DOWNLOADS_SHOW_IN_FOLDER, { id }),
 
   onTabsChanged: (cb) => subscribe(MAIN_TO_RENDERER.TABS_CHANGED, cb),
   onTabUpdated: (cb) => subscribe(MAIN_TO_RENDERER.TAB_UPDATED, cb),
@@ -124,4 +152,6 @@ contextBridge.exposeInMainWorld('browserAPI', {
   onBookmarksChanged: (cb) => subscribe(MAIN_TO_RENDERER.BOOKMARKS_CHANGED, cb),
   onExtensionsChanged: (cb) => subscribe(MAIN_TO_RENDERER.EXTENSIONS_CHANGED, cb),
   onPermissionRequest: (cb) => subscribe(MAIN_TO_RENDERER.PERMISSION_REQUEST, cb),
+  onFindResult: (cb) => subscribe(MAIN_TO_RENDERER.FIND_RESULT, cb),
+  onDownloadsChanged: (cb) => subscribe(MAIN_TO_RENDERER.DOWNLOADS_CHANGED, cb),
 });

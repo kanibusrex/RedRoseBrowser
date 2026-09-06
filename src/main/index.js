@@ -31,11 +31,15 @@ function createAppWindow() {
 
   // 'close' (not 'closed') — webContents/TabManagers are still alive here,
   // so this is the last chance to flush any session-restore save (§8.15)
-  // still sitting in its 500ms debounce timer. Covers both a real Quit and
-  // (on macOS) just closing the window while the app stays running, since
-  // either way this is the window that's about to go away.
+  // or history write (§8.20) still sitting in its own debounce timer.
+  // Covers both a real Quit and (on macOS) just closing the window while
+  // the app stays running, since either way this is the window that's
+  // about to go away.
   chromeWin.on('close', () => {
-    if (profileManager) profileManager.flushSessionSaves();
+    if (profileManager) {
+      profileManager.flushSessionSaves();
+      profileManager.flushHistory();
+    }
   });
 
   chromeWin.on('closed', () => {

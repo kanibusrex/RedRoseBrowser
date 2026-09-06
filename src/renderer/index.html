@@ -27,6 +27,12 @@
         <button id="btn-bookmarks" class="icon-btn" title="Bookmarks" aria-label="Bookmarks" aria-haspopup="true" data-tip="Bookmarks">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
         </button>
+        <button id="btn-history" class="icon-btn" title="History" aria-label="History" aria-haspopup="true" data-tip="History">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+        </button>
+        <button id="btn-downloads" class="icon-btn" title="Downloads" aria-label="Downloads" aria-haspopup="true" data-tip="Downloads">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        </button>
         <button id="btn-extensions" class="icon-btn" title="Extensions" aria-label="Extensions" aria-haspopup="true" data-tip="Extensions">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10.5V7a2 2 0 0 0-2-2h-3.5a1.5 1.5 0 0 1-3 0H8a2 2 0 0 0-2 2v3.5a1.5 1.5 0 0 1 0 3V17a2 2 0 0 0 2 2h3.5a1.5 1.5 0 0 1 3 0H18a2 2 0 0 0 2-2v-3.5a1.5 1.5 0 0 1 0-3Z"/></svg>
         </button>
@@ -69,6 +75,15 @@
         </button>
       </div>
       <div id="progress-bar"><div id="progress-bar-fill"></div></div>
+      <div id="find-bar">
+        <input id="find-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Find in page" />
+        <span id="find-count"></span>
+        <button id="find-prev" class="nav-btn" title="Previous match" aria-label="Previous match">&#x2191;</button>
+        <button id="find-next" class="nav-btn" title="Next match" aria-label="Next match">&#x2193;</button>
+        <button id="find-close" class="nav-btn" title="Close" aria-label="Close find bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 

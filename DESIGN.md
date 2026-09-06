@@ -14,7 +14,7 @@ multi-tab pattern.
 In scope:
 
 - Tabs: create, close, switch, drag-to-reorder is OUT of scope for v1
-  (nice-to-have, not required to ship).
+  (nice-to-have, not required to ship — added later anyway, §8.18).
 - Address/URL bar that doubles as a search box:
   - Valid URL (has scheme, or looks like `host.tld[/path]`) → navigate directly.
   - Anything else → treated as a search query, sent to a default search
@@ -38,14 +38,18 @@ oversights):
 - Bookmarks (star button, bookmarks bar/manager) — cut for v1. It's pure
   UI + a JSON store with no architectural dependency on anything else here;
   add it in v1.1 once the core shell is stable.
-- History (persisted, searchable) — cut for v1. Track only in-memory
-  per-tab back/forward via Chromium's own navigation stack.
-- Downloads UI/manager — cut for v1; let Electron's default download
-  behavior (save-as prompt) happen for now.
-- Extensions, profiles/multi-account, private/incognito windows, settings
-  UI, find-in-page, print, dev tools toggle (dev tools can stay available
-  via a hidden shortcut for engineering use, just no menu entry).
-- Tab drag-to-reorder / detach-to-new-window.
+- History (persisted, searchable) — cut for v1 (added later, §8.20).
+  Track only in-memory per-tab back/forward via Chromium's own
+  navigation stack, for now.
+- Downloads UI/manager — cut for v1 (added later, §8.21); let
+  Electron's default download behavior (save-as prompt) happen for now
+  — and it still does even after §8.21, deliberately (see that section).
+- Extensions (added later, §8.8), profiles/multi-account (added later,
+  §8.3), find-in-page (added later, §8.19) — private/incognito windows,
+  a real settings UI, print, and a menu entry for dev tools (a hidden
+  shortcut stays available for engineering use) remain out of scope.
+- Tab drag-to-reorder (added later, §8.18) / detach-to-new-window
+  (still out of scope).
 
 Rationale: v1's job is to prove the process architecture (main / chrome
 renderer / per-tab BrowserView + IPC contract) end to end with a usable,
@@ -1512,3 +1516,307 @@ Dock-icon-but-no-window regression class as §8.13's original bug is the
 main risk any packaging-config change reintroduces, so re-checking it
 is routine now for any change that touches `package.json`'s `build`
 block.
+
+### 8.18 Reopen closed tab (Cmd/Ctrl+Shift+T) and drag-to-reorder
+
+Two small, independent table-stakes gaps closed together:
+
+**Reopen closed tab.** `TabManager` keeps a `closedStack` (capped at
+`CLOSED_STACK_LIMIT`, 20) — `closeTab()` pushes `{url, pinned, groupId}`
+(the same "home page → `null`" convention `getSessionSnapshot()` uses,
+§8.15) before tearing the tab down; `reopenLastClosedTab()` pops the
+stack and recreates it via the normal `createTab()` path, restoring
+pinned state and group membership if the group still exists. Deliberately
+session-only, not persisted to disk across a restart the way §8.15's
+session itself is — merging an "undo close" stack with the session-
+restore format for a feature whose whole point is undoing something
+that *just happened* isn't worth the complexity here. Popping repeatedly
+(pressing the shortcut several times in a row) walks back through
+several closes without needing the previously-reopened tab to be closed
+again first, matching real browsers.
+
+**Drag-to-reorder.** `TabManager.moveTab(tabId, targetTabId, position)`
+splices `tabId` to just before/after `targetTabId` in `order`, refusing
+the move outright if the two tabs aren't in the same pinned/unpinned
+bucket — pinned tabs must stay contiguous at the front (the same
+invariant `setPinned` already maintains), and the tab strip's two
+buckets are spatially separate enough that a cross-bucket drag was never
+going to be attempted expecting a reorder anyway. The harder part was
+disambiguating this from §8.12's existing "drag tab A onto tab B to
+split them" — both now live on the same drag gesture, split when
+dropped on the middle ~40% of a row, reorder when dropped on the top/
+bottom ~30% edge (`TabStrip.js`'s `dropZone`), the same drop-position
+disambiguation kanban boards and file trees commonly use for "onto" vs.
+"between".
+
+**Verified in isolation** (temp `--user-data-dir`, throwaway local HTTP
+pages): `moveTab` reordering both directions, refusing a cross-bucket
+move, reopening preserving pinned/group state, and repeated reopens
+correctly walking back through multiple closes.
+
+### 8.19 Find-in-page (Cmd/Ctrl+F) — and a real bug found while building it
+
+The obvious implementation — Electron's native
+`webContents.findInPage()` / `'found-in-page'` event, the same one every
+Electron find-in-page tutorial uses — is **not what this ships with**.
+It's what this *started* with, and it silently didn't work. What follows
+is worth documenting in full because the eventual fix (§8.19's actual
+mechanism) only makes sense in light of what was ruled out, and because
+the investigation surfaced a second, independent, real bug along the way.
+
+**The UI.** `#find-bar` is a real element in `index.html`'s document
+flow (inside `#main-col`, after the progress bar), not a floating
+overlay — `TabManager.recomputeBounds()` reserves `FIND_BAR_H` (44px,
+must match `--find-bar-h` in `styles.css`) above the BrowserView only
+while `findBarOpen` is true, the same "make room in the chrome, don't
+paint over the page" approach the topbar itself uses, and the opposite
+of how the permission prompt (§8.16) and settings modal handle needing
+to be visible — those hide the BrowserView entirely, which isn't an
+option here since the whole point is searching the page while looking
+at it. Cmd/Ctrl+F opens it (or just refocuses it if already open for
+this tab); Escape or the × closes it; switching the active tab away from
+whichever one it was opened for closes it too (`FindBar.js`'s
+`onActiveTabChanged`) rather than silently continuing to search a page
+no longer on screen.
+
+**What went wrong.** `webContents.findInPage(text)` returns a request
+id and is documented to fire `'found-in-page'` asynchronously with the
+match count. In this app, once a tab is registered with
+ProfileManager's `electron-chrome-extensions` bridge (§8.8.1) — which
+every real tab always is, immediately after creation — that event
+simply never fires. No error, no rejected promise, `webContents.
+isDestroyed()` false, the page loads and renders completely normally;
+the find request just vanishes.
+
+**The investigation** (all in complete isolation — temp
+`--user-data-dir`, a throwaway local HTTP server, never against real
+extensions/account state), roughly in order, each ruling out one
+candidate:
+
+1. A plain `BrowserWindow` loading a page directly: works.
+2. A `BrowserView` attached to a host window: works.
+3. A `BrowserView` on a custom `session.fromPartition(...)` partition
+   (matching ProfileManager's per-profile sessions): works.
+4. The real `TabManager` class, wired up exactly like the app does, but
+   with `ProfileManager` (and therefore the extensions bridge) left out
+   entirely: works.
+5. The real `TabManager` *plus* `createExtensionsBridge(...)` — nothing
+   else, no `AdBlocker`, no `ExtensionManager.loadAllForProfile`, no
+   `PermissionManager` — with exactly one tab registered via `addTab()`:
+   **broken**. This isolated it to the bridge specifically.
+6. Suspecting a double-attach: `ElectronChromeExtensions.addTab()`
+   elects an active tab the first time it sees a new window by calling
+   back into `this.impl.selectTab()` — this app's own
+   `chrome-extensions-bridge.js`, which calls `tabManager.activateTab()`
+   — and at the time this fired, `createTab()` hadn't run its own
+   `activateTab()` yet, so this reentrant call did a full, premature
+   `addBrowserView`/`setTopBrowserView` attach on a view that hadn't
+   started loading. **This was real** (confirmed by counting
+   `_attachViewsFor` calls) and independently worth fixing — see below —
+   but fixing it did **not** fix find-in-page. Ruled out as the cause,
+   kept as a fix anyway.
+7. Registering *only* the bridge's own preload script
+   (`chrome-extension-api.preload.js`) on the session, without
+   constructing `ElectronChromeExtensions` at all: works fine. Reading
+   that preload's source confirms why — it only does anything
+   (`injectExtensionAPIs()`) for a service worker or a
+   `chrome-extension://` page; for an ordinary `http:` page it's a
+   nearly complete no-op. Ruled out.
+8. Bisecting further into the library's own tab-observation code
+   (`TabsAPI`/`WebNavigationAPI`'s `observeTab`, the message router)
+   turned up nothing that touches `findInPage` or `found-in-page`
+   anywhere in its source. At this point, chasing the exact mechanism
+   further inside a third-party GPL-3.0 dependency's internals stopped
+   being worth it — confirmed *what* breaks it (the full
+   `ElectronChromeExtensions` instance, with a tab actually registered
+   via `addTab()`) without needing to know *why*, and a working
+   alternative was already in hand (next).
+
+**The fix.** `window.find(text, caseSensitive, backwards, wrapAround,
+wholeWord, searchInFrames, showDialog)` — a legacy but still fully
+Chromium-implemented `Window` method — runs entirely inside the page's
+own JS context via `webContents.executeJavaScript()`, never touching
+whatever internal channel the native API relies on. Verified directly
+in the exact broken setup from step 5 above: works every time. `text` is
+never concatenated into the executed script — `JSON.stringify(text)`
+produces an escaped JS string literal, so find-bar input can't break out
+into arbitrary `executeJavaScript` code.
+
+The real trade-off: `window.find()` reports only "found a match" per
+call (and moves the browser's native text selection/highlight to it,
+scrolling it into view) — not a running position the way
+`found-in-page`'s `activeMatchOrdinal` did. `startFind()` fills that gap
+itself: a fresh search (`findNext: false`, every keystroke) runs a plain
+case-insensitive substring count over `document.body.innerText` and
+pushes that as the match count, then resets the selection to the
+document's start (`window.getSelection().removeAllRanges()`) before
+calling `window.find()` so a fresh search always starts from the top;
+`findNext: true` (Enter/Shift+Enter, the prev/next buttons) just steps
+`window.find()` forward or backward without recomputing the count. The
+find bar shows a plain "N matches", not Chrome's "3 of 12" — a
+deliberate, disclosed simplification, not an oversight.
+
+**The independent bug this surfaced (step 6 above), fixed regardless of
+not being find-in-page's cause:** `TabManager.createTab()` used to fire
+`onTabCreated` — which is what registers the tab with the extensions
+bridge — *before* running its own `activateTab()`/`_emitTabsChanged()`
+at the end of the same function. For the first tab of every profile (and
+only the first — after that, the bridge already has an active tab on
+record for the shared window and doesn't reentrantly call
+`selectTab()`), this meant `bridge.addTab()`'s reentrant call into
+`activateTab()` ran while `this.activeTabId` didn't yet equal the new
+tab's id, so it took the *normal* attach branch instead of `activateTab`
+'s "already showing, nothing to do" no-op — a second, premature
+`addBrowserView`/`setTopBrowserView` cycle on a view that hadn't started
+loading yet. Fixed by moving `onTabCreated` to fire *after* the tab's
+own activate/emit sequence: by the time the bridge's reentrant call
+happens, `this.activeTabId` already equals the new tab's id, so
+`activateTab`'s existing "already showing" check absorbs it as a no-op.
+This also happens to be the exact mechanism behind a
+`MaxListenersExceededWarning` ("N closed listeners added to
+[BrowserWindow]") noticed in passing during this same investigation —
+Electron's own `addBrowserView()` adds an internal listener to the host
+window on every call with no apparent dedup, so the premature extra
+attach on every profile's first tab was quietly contributing one stray
+listener per profile ever created in a running session. One fix, two
+symptoms — worth being honest that these looked, at first, like two
+unrelated findings.
+
+**Verified end to end** in the real, full stack (`ProfileManager` +
+`registerIpcHandlers`, extensions bridge and all — the exact
+configuration find-in-page was broken in) via a throwaway HTTP page: the
+match count for a real search term, a nonexistent term correctly
+reporting zero, `findNext` correctly *not* re-emitting a count, the
+`FIND_BAR_H` bounds reservation appearing and disappearing, and the real
+`FindBar.js` UI driven through actual DOM events (a synthetic Cmd+F
+keydown, typing into `#find-input`, reading `#find-count`'s rendered
+text, Escape) — not just the main-process methods in isolation.
+
+### 8.20 Browsing history
+
+§1 originally cut this outright ("Track only in-memory per-tab back/
+forward via Chromium's own navigation stack"). `history-store.js`
+(`HistoryStore`) is the same per-profile-JSON-file convention as
+bookmarks/sessions/permissions, but append-only and chronological — one
+record per real page visit, newest first, rather than one record per
+bookmarked URL toggled on/off. Capped at `HISTORY_LIMIT_PER_PROFILE`
+(5000) per profile, oldest trimmed, since this is a plain JSON file, not
+a database with proper indexing/pagination. Writes are debounced
+(`SAVE_DEBOUNCE_MS`, 800ms) — a visit is recorded on every real
+navigation, far more often than a bookmark toggle — with `flush()`
+called from the same window-`'close'` handler §8.15's session-save flush
+already lives in, so a visit landing right before quit isn't lost to the
+debounce window.
+
+**What counts as a visit.** Recorded from `TabManager`'s `did-navigate`
+handler, in the same branch that treats a URL as a genuine content
+navigation (not the home-page branch, not the failed/blocked-load error
+branch) — so the home/new-tab page and blocked navigations never show up
+in history, the same way they're excluded from §8.15's session restore.
+`chrome-extension://` pages are excluded too, for the same "not
+'browsing' in the sense a history list means" reasoning §8.15 already
+applies. Same-document navigations (`did-navigate-in-page` — hash
+changes, SPA route changes) are deliberately **not** recorded, unlike a
+real browser — a disclosed v1 simplification, not an oversight; recording
+every SPA route change would flood history with noise for the pages that
+do this heavily.
+
+**Title timing.** At `did-navigate` time the page's real `<title>`
+usually hasn't arrived yet — `tab.title` is still the hostname fallback
+seeded synchronously, with `page-title-updated` correcting it
+moments later for pages that set one. Recording immediately would
+permanently store that hostname fallback as the history title. Instead,
+the actual `historyStore.record()` call is deferred 300ms (long enough
+for the near-universal case of a `<title>` tag present in the initial
+HTML, which fires `page-title-updated` within milliseconds — not an
+attempt to guarantee correctness for every page), and re-checks
+`tab.url` still matches before recording, in case the user already
+navigated away in the meantime (that newer navigation schedules and
+records its own entry instead).
+
+**No live-push subscription**, unlike bookmarks/extensions/downloads
+(§8.21) — `History.js`'s popover fetches fresh (`HISTORY_LIST`, with an
+optional search query) every time it opens and every time the search box
+changes, rather than main pushing a `HISTORY_CHANGED` event on every
+single navigation to a UI element that's closed most of the time. Search
+is a plain case-insensitive substring match against title OR url,
+filtered in `HistoryStore.list()`.
+
+Deleting one entry (`HISTORY_REMOVE`) or clearing everything
+(`HISTORY_CLEAR`, behind a native `window.confirm()` in the popover — a
+destructive, unrecoverable action on the user's own data) only touches
+the history *record*, never the site itself or any of its stored data —
+same "workspace/list, not an account to nuke" posture profile deletion
+already has (§8.3).
+
+**Verified in isolation**: recording real page titles (not just
+hostnames) after the deferred write, newest-first ordering, revisiting
+the same URL creating a *new* chronological entry rather than deduping,
+search filtering by both title and url, remove/clear, and the real
+`History.js` popover driven through actual DOM events (clicking the rail
+button, typing into the search box, reading the rendered rows and empty
+state).
+
+### 8.21 Downloads
+
+§1 originally cut this too ("let Electron's default download behavior
+(save-as prompt) happen for now"). This is deliberately additive, not a
+replacement: `download-manager.js`'s `installDownloadTracking()` adds a
+`session.on('will-download', ...)` listener per profile, but — unlike
+every tutorial's version of this — never calls `item.setSavePath()`
+itself, which is the one thing that would suppress Electron's native
+Save-As dialog. The existing "ask where to save every time" behavior is
+completely unchanged; this only *observes* what already happens
+(filename, progress, the path the user chose, completion/failure) well
+enough to show it in a list, cancel it mid-flight, reopen the file, or
+reveal it in the file manager later — none of which was possible before
+since nothing was tracking downloads at all.
+
+**Two data lifetimes, one list.** An in-progress download lives entirely
+in `download-manager.js`'s own in-memory `live` map (keyed by a fresh id,
+not Electron's own download-item identity, which doesn't survive past
+the item's lifetime) — `download-store.js`'s `DownloadStore` (same
+per-profile-JSON-file convention as bookmarks/history/permissions) only
+ever receives a *finished* record (`completed`, `cancelled`, or
+`interrupted`) once the `'done'` event fires. `list()` merges live
+entries (newest activity first) with persisted ones from disk into one
+flat array so the renderer never has to reconcile two differently-shaped
+sources — a download that just finished briefly exists in both for one
+tick, deduped by id.
+
+**Unlike history (§8.20), this does push live updates**
+(`DOWNLOADS_CHANGED`) — a download's whole reason for being in a list is
+watching its progress bar move, not something you'd expect to have to
+reopen a popover to see. `Downloads.js` also toggles a small dot badge
+on the rail button itself (`.has-active-download`) whenever anything is
+`progressing`, so an active download is noticeable without the popover
+open at all.
+
+**Removing vs. cancelling.** "Remove" on a still-`progressing` entry
+cancels the download instead of just hiding it — there's no such thing
+as pulling an active download out of the list without stopping it — and
+that cancellation's own `'done'` handler persists the resulting
+`cancelled` record and drops it from `live` on its own, so `remove()`
+doesn't need special-case bookkeeping beyond calling `item.cancel()`.
+"Clear" (`DOWNLOADS_CLEAR`) only ever touches finished, persisted
+entries — it can never silently cancel something still running that the
+user didn't ask to stop. Neither one deletes the actual file on disk,
+only the list entry — same posture history's clear/remove has toward
+the sites it records, and bookmarks' removal has toward the page itself.
+
+**Open / show in folder** use `shell.openPath()`/`shell.showItemInFolder()`
+(Electron's `shell` module, main-process only) against the record's
+`savePath` — looked up from the merged `list()`, not from a live
+`DownloadItem` reference, so these still work for a download from a
+previous session, loaded back from `DownloadStore`.
+
+**Verified in isolation** (a throwaway local HTTP server serving a small
+file with a `Content-Disposition: attachment` header, triggering the
+download directly via `session.downloadURL()`, with a test-only extra
+`will-download` listener setting the save path so no native dialog blocks
+the test — the app's own code path still never does this): progress
+events arriving, completion persisting the correct filename/path/state,
+the downloaded file actually existing on disk with correct contents,
+remove-without-deleting-the-file, a second download after clearing,
+`openDownload` not throwing, and the real `Downloads.js` popover (and its
+badge) driven through actual DOM events.
