@@ -60,6 +60,9 @@ const RENDERER_TO_MAIN = {
   DOWNLOADS_CLEAR: 'downloads:clear',
   DOWNLOADS_OPEN: 'downloads:open',
   DOWNLOADS_SHOW_IN_FOLDER: 'downloads:showInFolder',
+  SETTINGS_GET: 'settings:get',
+  SETTINGS_SET: 'settings:set',
+  ADDRESS_SUGGEST_TOGGLE: 'address:suggestToggle',
 };
 
 const MAIN_TO_RENDERER = {
@@ -144,6 +147,9 @@ contextBridge.exposeInMainWorld('browserAPI', {
   clearDownloads: () => ipcRenderer.invoke(RENDERER_TO_MAIN.DOWNLOADS_CLEAR),
   openDownload: (id) => ipcRenderer.invoke(RENDERER_TO_MAIN.DOWNLOADS_OPEN, { id }),
   showDownloadInFolder: (id) => ipcRenderer.invoke(RENDERER_TO_MAIN.DOWNLOADS_SHOW_IN_FOLDER, { id }),
+  getGeneralSettings: () => ipcRenderer.invoke(RENDERER_TO_MAIN.SETTINGS_GET),
+  updateGeneralSettings: (partial) => ipcRenderer.invoke(RENDERER_TO_MAIN.SETTINGS_SET, partial),
+  setAddressSuggestOpen: (open) => ipcRenderer.invoke(RENDERER_TO_MAIN.ADDRESS_SUGGEST_TOGGLE, { open }),
 
   onTabsChanged: (cb) => subscribe(MAIN_TO_RENDERER.TABS_CHANGED, cb),
   onTabUpdated: (cb) => subscribe(MAIN_TO_RENDERER.TAB_UPDATED, cb),

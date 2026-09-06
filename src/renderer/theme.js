@@ -63,7 +63,7 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-export function initTheme() {
+export function initTheme({ onOpen } = {}) {
   let currentThemeId = 'classic';
   let lastLightId = 'classic';
   let lastDarkId = 'midnight';
@@ -124,6 +124,10 @@ export function initTheme() {
 
   function openSettings() {
     renderThemePicker();
+    // Populates the modal's General section (§8.24) — kept out of this
+    // module since it's a separate concern (search engine/home page/
+    // ad-block, not appearance); this module just owns the modal shell.
+    if (onOpen) onOpen();
     document.getElementById('settingsOverlay').classList.add('show');
     // A BrowserView always paints above the chrome window's own content, so
     // the active tab's page would otherwise hide this modal — detach it

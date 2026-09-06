@@ -7,6 +7,7 @@ const { pathToFileURL } = require('node:url');
 
 const { pageViewWebPreferences, classifyNavigation } = require('./security');
 const { resolveNavigationTarget, attachNavigationPolicy } = require('./navigation');
+const { showPageContextMenu } = require('./page-context-menu');
 
 const ERROR_PAGE_PATH = path.join(__dirname, '..', 'renderer', 'error-page.html');
 
@@ -41,6 +42,12 @@ const CHROME_TOP_H = TOPBAR_H + PROGRESS_H;
 // Unlike TOPBAR_H/PROGRESS_H this is only reserved while a find is active
 // (see recomputeBounds/setFindBarOpen), not always-on.
 const FIND_BAR_H = 44;
+// Address bar autocomplete dropdown (§8.23) height — must match
+// --address-suggest-h in styles.css. Fixed regardless of how many
+// suggestions are actually showing (0-6), same simplicity trade-off
+// FIND_BAR_H makes, to avoid a two-way renderer<->main height sync for
+// something whose row count varies with every keystroke.
+const ADDRESS_SUGGEST_H = 240;
 
 const NEW_TAB_URL = 'about:blank';
 
@@ -68,13 +75,27 @@ class TabManager {
   constructor(
     win,
     session,
-    { onTabsChanged, onTabUpdated, onTabLoadFailed, onTabCreated, onFindResult, onHistoryVisit, tabPanelWidth } = {}
+    {
+      onTabsChanged,
+      onTabUpdated,
+      onTabLoadFailed,
+      onTabCreated,
+      onFindResult,
+      onHistoryVisit,
+      tabPanelWidth,
+      getSettings,
+    } = {}
   ) {
     this.win = win;
     this.session = session;
     this.onTabsChanged = onTabsChanged || (() => {});
     this.onTabUpdated = onTabUpdated || (() => {});
     this.onTabLoadFailed = onTabLoadFailed || (() => {});
+    // Live accessor (not a snapshot) for this profile's general settings
+    // (§8.24 — search engine, home page) — ProfileManager owns the
+    // actual SettingsStore and can change what this returns at any time
+    // (the settings modal), so this is always read fresh, never cached.
+    this.getSettings = getSettings || (() => ({ searchEngineUrl: undefined, homePageUrl: null }));
     // Fired after a tab's BrowserView/webContents exists but before any
     // navigation — lets ProfileManager register the tab with this
     // profile's ElectronChromeExtensions bridge (DESIGN.md §8.8) so
@@ -97,6 +118,10 @@ class TabManager {
     // BrowserView — chrome-level UI state, like tabPanelWidth, not
     // per-tab; see startFind/stopFind and recomputeBounds.
     this.findBarOpen = false;
+    // Same idea for the address bar's autocomplete dropdown (§8.23) —
+    // set by the renderer (it alone knows whether it currently has any
+    // suggestions to show) via setAddressSuggestOpen.
+    this.addressSuggestOpen = false;
 
     /** @type {Map<string, { id: string, view: BrowserView, url: string, title: string, favicon: string|null, isLoading: boolean, canGoBack: boolean, canGoForward: boolean, pinned: boolean, groupId: string|null }>} */
     this.tabs = new Map();
@@ -270,7 +295,7 @@ class TabManager {
     this._wireWebContents(tab);
 
     if (url) {
-      const target = resolveNavigationTarget(url);
+      const target = resolveNavigationTarget(url, this.getSettings().searchEngineUrl);
       const verdict = trusted ? 'ok' : classifyNavigation(target);
       if (verdict === 'ok') {
         view.webContents.loadURL(target).catch(() => {});
@@ -279,12 +304,13 @@ class TabManager {
       }
     } else {
       // A new tab with no explicit url (the "+" button, Cmd+T) opens
-      // the home page (§8.10) — never resolveNavigationTarget('about:blank')
-      // navigated as a search, which is what an earlier version of
-      // this did (isLikelyUrl doesn't recognize the schemeless "about:"
-      // form, so it fell through to the search branch and ran a Google
-      // search for the literal text "about:blank" on every new tab).
-      view.webContents.loadFile(HOME_PAGE_PATH).catch(() => {});
+      // the home page (§8.10/§8.24) — never resolveNavigationTarget
+      // ('about:blank') navigated as a search, which is what an earlier
+      // version of this did (isLikelyUrl doesn't recognize the
+      // schemeless "about:" form, so it fell through to the search
+      // branch and ran a Google search for the literal text
+      // "about:blank" on every new tab).
+      this._loadHomePage(view.webContents);
     }
 
     if (!silent) {
@@ -648,12 +674,16 @@ class TabManager {
     const tab = this.tabs.get(this.activeTabId);
     if (!tab) return;
     const sidebarW = RAIL_W + this.tabPanelWidth;
-    // The find bar (§8.19) lives in the chrome renderer's own DOM, in the
-    // gap this reserves above the BrowserView — not an overlay on top of
-    // it (unlike the permission prompt/settings modal, hiding the page
-    // here would defeat the purpose of searching it). Only reserved while
-    // a find is actually open, unlike the always-on topbar.
-    const topReserve = CHROME_TOP_H + (this.findBarOpen ? FIND_BAR_H : 0);
+    // The find bar (§8.19) and address-suggestions dropdown (§8.23) both
+    // live in the chrome renderer's own DOM, in the gap this reserves
+    // above the BrowserView — not an overlay on top of it (unlike the
+    // permission prompt/settings modal, hiding the page here would
+    // defeat the purpose of searching it/distract from typing a URL).
+    // Only reserved while actually open, unlike the always-on topbar;
+    // stacking both is harmless (and correct) on the rare chance both
+    // were somehow open at once.
+    const topReserve =
+      CHROME_TOP_H + (this.findBarOpen ? FIND_BAR_H : 0) + (this.addressSuggestOpen ? ADDRESS_SUGGEST_H : 0);
     const [winWidth, winHeight] = this.win.getContentSize();
     const contentX = sidebarW;
     const contentY = topReserve;
@@ -696,7 +726,7 @@ class TabManager {
   navigate(tabId, input) {
     const tab = this.tabs.get(tabId);
     if (!tab) return;
-    const target = resolveNavigationTarget(input);
+    const target = resolveNavigationTarget(input, this.getSettings().searchEngineUrl);
     const verdict = classifyNavigation(target, tab.view.webContents.getURL());
     if (verdict !== 'ok') {
       this._showBlockedError(tab, target, verdict);
@@ -710,7 +740,25 @@ class TabManager {
   goHome(tabId) {
     const tab = this.tabs.get(tabId);
     if (!tab) return;
-    tab.view.webContents.loadFile(HOME_PAGE_PATH).catch(() => {});
+    this._loadHomePage(tab.view.webContents);
+  }
+
+  // Shared by createTab()'s no-explicit-url branch and goHome() — loads
+  // the profile's configured home page (§8.24), which defaults to (and
+  // falls back to, if the configured one is somehow invalid/blocked) the
+  // bundled SimpleHome page. A custom home page URL is user-supplied
+  // (typed into the settings modal) so it's validated exactly like any
+  // address-bar input, never trusted outright.
+  _loadHomePage(webContents) {
+    const { homePageUrl } = this.getSettings();
+    if (homePageUrl) {
+      const target = resolveNavigationTarget(homePageUrl);
+      if (classifyNavigation(target) === 'ok') {
+        webContents.loadURL(target).catch(() => {});
+        return;
+      }
+    }
+    webContents.loadFile(HOME_PAGE_PATH).catch(() => {});
   }
 
   // A blocked navigation — a disallowed scheme (§7.8 — file:, chrome:,
@@ -888,6 +936,18 @@ class TabManager {
     return wc.executeJavaScript('window.getSelection().removeAllRanges()').catch(() => {});
   }
 
+  // ---- address bar autocomplete (§8.23) -------------------------------------
+
+  // Toggled by AddressBar.js — it alone knows whether it currently has
+  // any suggestions to show (main has no visibility into what's typed
+  // until it's actually navigated to); idempotent, cheap to call on
+  // every keystroke.
+  setAddressSuggestOpen(open) {
+    if (this.addressSuggestOpen === open) return;
+    this.addressSuggestOpen = open;
+    this.recomputeBounds();
+  }
+
   // ---- webContents event wiring --------------------------------------------
 
   _wireWebContents(tab) {
@@ -996,6 +1056,19 @@ class TabManager {
       this._emitTabUpdated(tab);
     });
 
+    // Right-click menu on page content (§8.22) — without this,
+    // 'context-menu' fires but nothing shows at all; Electron doesn't
+    // build one on its own.
+    wc.on('context-menu', (_event, params) => {
+      showPageContextMenu({
+        webContents: wc,
+        win: this.win,
+        params,
+        tabManager: this,
+        tabId: tab.id,
+        searchEngineUrl: this.getSettings().searchEngineUrl,
+      });
+    });
 
     wc.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
       if (!isMainFrame) return;

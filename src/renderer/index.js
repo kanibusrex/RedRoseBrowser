@@ -11,6 +11,7 @@ import { createExtensionsButton } from './components/Extensions.js';
 import { initSidebarResize } from './components/SidebarResize.js';
 import { initPermissionPrompts } from './components/PermissionPrompt.js';
 import { createFindBar } from './components/FindBar.js';
+import { initGeneralSettings } from './components/GeneralSettings.js';
 import { initTheme } from './theme.js';
 
 // This module runs in the chrome renderer: contextIsolation is on and
@@ -18,7 +19,12 @@ import { initTheme } from './theme.js';
 // is window.browserAPI, exposed by src/preload/chrome-preload.js. No
 // require('electron'), no Node APIs here.
 
-initTheme();
+const generalSettings = initGeneralSettings({
+  searchEngineSelect: document.getElementById('settings-search-engine'),
+  homePageInput: document.getElementById('settings-home-page'),
+  adBlockCheckbox: document.getElementById('settings-adblock'),
+});
+initTheme({ onOpen: () => generalSettings.populate() });
 initSidebarResize(document.getElementById('sidebar-resize-handle'));
 
 function isMac() {
@@ -105,9 +111,14 @@ const addressBar = createAddressBar(
     securityIcon: document.getElementById('security-icon'),
     wrap: document.getElementById('address-bar-wrap'),
     clearBtn: document.getElementById('address-clear'),
+    suggestionsContainer: document.getElementById('address-suggestions'),
   },
   {
     onNavigate: (value) => state.activeTabId && window.browserAPI.navigate(state.activeTabId, value),
+    // Live accessor, not a snapshot — `bookmarks` is reassigned whenever
+    // onBookmarksChanged fires (below), so this always reads whatever's
+    // current.
+    getBookmarks: () => bookmarks,
   }
 );
 

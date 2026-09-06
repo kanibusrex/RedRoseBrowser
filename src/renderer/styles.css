@@ -60,6 +60,9 @@
   /* Must match FIND_BAR_H in tab-manager.js (§8.19) — only reserved above
      the BrowserView while a find is actually open, unlike the above. */
   --find-bar-h: 44px;
+  /* Must match ADDRESS_SUGGEST_H in tab-manager.js (§8.23) — same
+     "only reserved while actually open" rule as --find-bar-h. */
+  --address-suggest-h: 240px;
 }
 
 /* ---- Dark base ---- */
@@ -947,6 +950,78 @@ button {
   }
 }
 
+/* ---- Address bar autocomplete (§8.23) ----
+   Same "reserve real layout space, don't overlay" approach as the find
+   bar below (see its own comment) — TabManager reserves
+   --address-suggest-h above the BrowserView only while `.show` is
+   present, toggled by AddressBar.js as it decides whether it has any
+   suggestions to show right now. Fixed height regardless of how many
+   rows are actually rendered (0-6) — a shorter list just leaves this
+   box's own background showing below it, not a layout bug. */
+#address-suggestions {
+  display: none;
+  flex-direction: column;
+  height: var(--address-suggest-h);
+  flex: 0 0 var(--address-suggest-h);
+  overflow-y: auto;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  padding: 6px;
+}
+
+#address-suggestions.show {
+  display: flex;
+}
+
+.address-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  color: var(--text);
+}
+
+.address-suggestion:hover,
+.address-suggestion.active {
+  background: var(--surface-2);
+}
+
+.address-suggestion-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+  font-size: 14px;
+}
+
+.address-suggestion-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.address-suggestion-url {
+  flex-shrink: 0;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
 /* ---- Find in page (§8.19) ----
    Lives in normal document flow (not a fixed overlay) — TabManager only
    reserves this height above the BrowserView while `.show` is present
@@ -1091,6 +1166,60 @@ button {
   text-transform: uppercase;
   color: var(--faint);
   margin-bottom: 10px;
+}
+
+/* ---- settings modal: General section (§8.24) ---- */
+
+.modal-section {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.modal-section:not(:first-child) {
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line2);
+}
+
+.field select,
+.field input[type='text'] {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.field select:focus,
+.field input[type='text']:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus);
+}
+
+.field-checkbox {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  text-transform: none !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+  color: var(--text) !important;
+  cursor: pointer;
+}
+
+.field-checkbox input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 .theme-grid {

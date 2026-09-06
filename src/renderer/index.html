@@ -75,6 +75,7 @@
         </button>
       </div>
       <div id="progress-bar"><div id="progress-bar-fill"></div></div>
+      <div id="address-suggestions" role="listbox"></div>
       <div id="find-bar">
         <input id="find-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Find in page" />
         <span id="find-count"></span>
@@ -90,12 +91,28 @@
   <div class="overlay" id="settingsOverlay">
     <div class="modal">
       <div class="modal-head">
-        <h2>Appearance</h2>
+        <h2>Settings</h2>
         <button class="modal-close" id="settingsClose" aria-label="Close" title="Close">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>
       <div class="modal-body">
+        <h3 class="modal-section">General</h3>
+        <div class="field">
+          <label>Search engine</label>
+          <select id="settings-search-engine"></select>
+        </div>
+        <div class="field">
+          <label>Home page</label>
+          <input id="settings-home-page" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Leave blank for the default new tab page" />
+        </div>
+        <div class="field">
+          <label class="field-checkbox">
+            <input id="settings-adblock" type="checkbox" />
+            Block ads and trackers
+          </label>
+        </div>
+        <h3 class="modal-section">Appearance</h3>
         <div class="field">
           <label>Light themes</label>
           <div class="theme-grid" id="themeLight"></div>

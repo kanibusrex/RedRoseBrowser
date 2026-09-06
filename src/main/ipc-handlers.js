@@ -167,6 +167,18 @@ function registerIpcHandlers(chromeWin, profileManager) {
     profileManager.showDownloadInFolder(id);
   });
 
+  ipcMain.handle(RENDERER_TO_MAIN.SETTINGS_GET, () => {
+    return profileManager.getGeneralSettings();
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.SETTINGS_SET, (_event, partial = {}) => {
+    return profileManager.updateGeneralSettings(partial);
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.ADDRESS_SUGGEST_TOGGLE, (_event, { open } = {}) => {
+    activeTabs().setAddressSuggestOpen(!!open);
+  });
+
   ipcMain.handle(RENDERER_TO_MAIN.PROFILES_LIST, () => {
     return profileManager.getProfilesSnapshot();
   });

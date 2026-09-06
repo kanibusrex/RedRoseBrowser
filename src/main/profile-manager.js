@@ -12,6 +12,8 @@ const { PermissionStore } = require('./permission-store');
 const { HistoryStore } = require('./history-store');
 const { DownloadStore } = require('./download-store');
 const { installDownloadTracking } = require('./download-manager');
+const { SettingsStore } = require('./settings-store');
+const { SEARCH_ENGINES, searchEngineUrl } = require('../shared/search-engines');
 const { ExtensionManager } = require('./extension-manager');
 const { createExtensionsBridge } = require('./chrome-extensions-bridge');
 const { AdBlocker } = require('./ad-blocker');
@@ -73,6 +75,7 @@ class ProfileManager {
     this.permissionStore = new PermissionStore();
     this.historyStore = new HistoryStore();
     this.downloadStore = new DownloadStore();
+    this.settingsStore = new SettingsStore();
     this.extensionManager = new ExtensionManager();
     this.adBlocker = new AdBlocker();
     // The tab panel's width (§8.11) is chrome-level layout shared by
@@ -174,13 +177,24 @@ class ProfileManager {
 
     const partition = `persist:profile-${profileId}`;
     const profileSession = session.fromPartition(partition);
-    this.adBlocker.enableForSession(profileSession);
+    // Respects the settings-page toggle (§8.24) from the very first
+    // request this session ever makes — defaults to on, same as the
+    // unconditional enableForSession() call this replaced.
+    if (this.settingsStore.get(profileId).adBlockEnabled) {
+      this.adBlocker.enableForSession(profileSession);
+    }
 
     const downloadManager = installDownloadTracking(profileSession, {
       profileId,
       downloadStore: this.downloadStore,
       onDownloadsChanged: (payload) => {
         if (profileId === this.activeProfileId) this.onDownloadsChanged(payload);
+        // Unlike the renderer push above, the Dock/taskbar progress bar
+        // (§8.25) reflects *every* profile's downloads, not just the
+        // active one's — a background profile's download is still
+        // really happening, and there's only one Dock icon for the
+        // whole app to show it on.
+        this._updateDockProgress();
       },
     });
     this.downloadManagers.set(profileId, downloadManager);
@@ -205,6 +219,13 @@ class ProfileManager {
       // history has no live renderer subscription to forward to anyway
       // (History.js fetches on demand — see DESIGN.md §8.20).
       onHistoryVisit: (payload) => this.historyStore.record(profileId, payload),
+      // Live accessor (§8.24) — always reads whatever's currently saved,
+      // so a settings change takes effect on this TabManager's very next
+      // navigation without needing to recreate anything.
+      getSettings: () => {
+        const s = this.settingsStore.get(profileId);
+        return { searchEngineUrl: searchEngineUrl(s.searchEngine), homePageUrl: s.homePageUrl };
+      },
       // Lazy lookup (not a closed-over reference) because the bridge
       // below is created after `tm`, but createTab() can fire before then
       // (the seed tab a few lines down) or after (chrome.tabs.create).
@@ -401,6 +422,61 @@ class ProfileManager {
     if (dm) dm.showInFolder(id);
   }
 
+  // Dock (macOS)/taskbar (Windows) progress overlay (§8.25) — aggregates
+  // every profile's currently in-progress downloads into one fraction,
+  // since there's exactly one Dock icon for the whole app regardless of
+  // how many profiles exist. win.setProgressBar(-1) removes it entirely
+  // once nothing is downloading; called on every progress tick and every
+  // completion, from every profile's download manager.
+  _updateDockProgress() {
+    if (this.win.isDestroyed()) return;
+    let receivedTotal = 0;
+    let byteTotal = 0;
+    let anyProgressing = false;
+    for (const dm of this.downloadManagers.values()) {
+      for (const d of dm.list()) {
+        if (d.state !== 'progressing') continue;
+        anyProgressing = true;
+        if (d.totalBytes > 0) {
+          receivedTotal += d.receivedBytes;
+          byteTotal += d.totalBytes;
+        }
+      }
+    }
+    if (!anyProgressing) {
+      this.win.setProgressBar(-1);
+    } else if (byteTotal > 0) {
+      this.win.setProgressBar(Math.min(1, receivedTotal / byteTotal));
+    } else {
+      // Every in-progress download has an unknown total size (some
+      // servers never send Content-Length) — an indeterminate bar is
+      // honest about that; a fabricated fraction wouldn't be.
+      this.win.setProgressBar(2, { mode: 'indeterminate' });
+    }
+  }
+
+  // ---- general settings (scoped to whichever profile is active right now, §8.24) ---
+
+  getGeneralSettings() {
+    return { settings: this.settingsStore.get(this.activeProfileId), searchEngines: Object.values(SEARCH_ENGINES) };
+  }
+
+  // Partial update (only the keys the settings modal actually changed).
+  // Applies the ad-block toggle to the *live* session immediately —
+  // every other setting (search engine, home page) is read fresh by
+  // TabManager's getSettings() accessor on the next navigation, so
+  // nothing else needs an explicit "apply now" step.
+  updateGeneralSettings(partial) {
+    const profileId = this.activeProfileId;
+    const updated = this.settingsStore.set(profileId, partial);
+    if (typeof partial.adBlockEnabled === 'boolean') {
+      const profileSession = this.getActiveTabManager().session;
+      if (partial.adBlockEnabled) this.adBlocker.enableForSession(profileSession);
+      else this.adBlocker.disableForSession(profileSession);
+    }
+    return { settings: updated, searchEngines: Object.values(SEARCH_ENGINES) };
+  }
+
   // ---- extensions (scoped to whichever profile is active right now) ------
 
   listExtensions() {
@@ -483,6 +559,12 @@ class ProfileManager {
     // like sessionStore's tab list.
     this.downloadManagers.delete(profileId);
     this.profiles.delete(profileId);
+    // Recompute immediately — if that profile had a download in
+    // progress, the Dock/taskbar bar (§8.25) shouldn't keep showing
+    // stale progress for a tracker that no longer exists (the download
+    // itself isn't cancelled by this — see DESIGN.md §8.25 — but nothing
+    // can show or cancel it from the UI anymore either way).
+    this._updateDockProgress();
 
     if (wasActive) {
       this.activeProfileId = this.profiles.keys().next().value;

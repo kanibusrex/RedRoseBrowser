@@ -6,10 +6,13 @@ const { classifyNavigation } = require('./security');
 /**
  * Resolves raw address-bar input (§4.1 nav:go) into the URL that should
  * actually be loaded: either the URL itself (scheme-normalized) or a
- * search-engine query URL.
+ * search-engine query URL. `searchUrl` (optional) is the current
+ * profile's chosen search engine (§8.24) — omitted by callers that don't
+ * have profile context (e.g. session restore replaying an already-
+ * resolved URL), which falls back to normalizeInput's own default.
  */
-function resolveNavigationTarget(input) {
-  return normalizeInput(input);
+function resolveNavigationTarget(input, searchUrl) {
+  return normalizeInput(input, searchUrl);
 }
 
 /**

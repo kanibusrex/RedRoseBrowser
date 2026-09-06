@@ -49,6 +49,22 @@ class AdBlocker {
       /* already enabled for this session */
     }
   }
+
+  // Settings page (§8.24) toggle — off by the user's own choice, not the
+  // "engine failed to load" case above (isEnabledForSession would just
+  // report false either way, which is what the toggle actually reflects).
+  disableForSession(session) {
+    if (!this.blocker) return;
+    try {
+      this.blocker.disableBlockingInSession(session);
+    } catch {
+      /* already disabled for this session */
+    }
+  }
+
+  isEnabledForSession(session) {
+    return !!this.blocker && this.blocker.isBlockingEnabled(session);
+  }
 }
 
 module.exports = { AdBlocker };

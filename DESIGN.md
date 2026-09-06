@@ -45,9 +45,12 @@ oversights):
   Electron's default download behavior (save-as prompt) happen for now
   — and it still does even after §8.21, deliberately (see that section).
 - Extensions (added later, §8.8), profiles/multi-account (added later,
-  §8.3), find-in-page (added later, §8.19) — private/incognito windows,
-  a real settings UI, print, and a menu entry for dev tools (a hidden
-  shortcut stays available for engineering use) remain out of scope.
+  §8.3), find-in-page (added later, §8.19), a real settings UI (added
+  later, §8.24 — search engine/home page/ad-blocking; still no
+  appearance-vs-everything-else tabs, just one modal) — private/
+  incognito windows, print, and a menu entry for dev tools (a hidden
+  shortcut stays available for engineering use, and Inspect Element
+  lives in the page context menu now too, §8.22) remain out of scope.
 - Tab drag-to-reorder (added later, §8.18) / detach-to-new-window
   (still out of scope).
 
@@ -133,7 +136,11 @@ defaults Electron offers. The page-content preload script
 there is no reason to expose an API surface to arbitrary web pages. If a
 feature later needs it (e.g. custom right-click menu using page selection
 text), expose the absolute minimum via `contextBridge`, never
-`ipcRenderer` directly, never Node globals.
+`ipcRenderer` directly, never Node globals. (That exact example arrived,
+§8.22 — and turned out not to need this after all: `webContents`'s own
+`context-menu` event already hands main everything needed, including
+`selectionText`, with no page-side JS at all. `page-preload.js` is still
+empty.)
 
 ### 2.4 Process/IPC diagram (textual)
 
@@ -1820,3 +1827,201 @@ the downloaded file actually existing on disk with correct contents,
 remove-without-deleting-the-file, a second download after clearing,
 `openDownload` not throwing, and the real `Downloads.js` popover (and its
 badge) driven through actual DOM events.
+
+### 8.22 Page context menu
+
+Right-clicking on a page did *nothing* before this — `context-menu` on
+`webContents` fires, but Electron doesn't build or show any menu on its
+own unless something calls `Menu.buildFromTemplate(...).popup(...)`. No
+one did.
+
+`page-context-menu.js`'s `buildPageContextMenuTemplate()` reads the
+`params` Electron's own `context-menu` event provides and builds a menu
+scoped to what was actually clicked, in order: a link (open in new tab,
+copy address); an image (open in new tab, copy image, copy address,
+"Save Image As…" — this last one just calls `webContents.downloadURL()`,
+landing in the exact same `session.downloadURL()` → `'will-download'`
+path §8.21 already tracks, so a right-click-saved image shows up in the
+downloads list identically to any other download); editable content
+(cut/copy/paste/select-all, respecting Chromium's own `editFlags` for
+which are actually valid right now); a plain text selection (copy, plus
+a "Search for "…"" item); and, for a non-editable click, Back/Forward/
+Reload. Every one of these is always followed by Inspect Element.
+
+**Trust model.** Everything here operates on data Electron's own
+`context-menu` event already computed for this exact click — the one
+place page-supplied data still gets treated as untrusted is a link/image
+URL actually being navigated to, which goes through `createTab()`'s
+normal (non-`trusted`) path, same as any other page-initiated
+navigation. The "Search for…" action is the interesting edge case in the
+other direction: the URL it navigates to is *built* by this app's own
+code (the selected text run through `resolveNavigationTarget` against
+the configured search engine, §8.24), so it's passed `{ trusted: true }`
+— safe specifically because the app constructed that exact URL from its
+own trusted template, encoding the selected text into the query
+parameter rather than ever treating it as a URL to interpret. The
+selected text itself is never trusted with anything more than that.
+
+**Inspect Element, deliberately included.** §1's original scope call
+kept dev tools out of the application menu bar ("dev tools can stay
+available via a hidden shortcut for engineering use, just no menu
+entry"). That was about the app's own chrome menu specifically — a
+page's right-click menu is a different surface, where Inspect Element is
+a normal, expected affordance for any browser user (and just as useful
+for engineering use as the hidden shortcut already was), not something
+that needs gatekeeping the way a permanent menu-bar entry would.
+
+**Verified**: a comprehensive set of direct unit checks against
+`buildPageContextMenuTemplate()` (every branch — link, image, editable
+with mixed enabled/disabled edit flags, selection — with a hand-built
+fake `webContents`/`tabManager` recording what each item's `click`
+actually calls), plus a live-wiring smoke test that right-clicks real
+elements on a real loaded page (`webContents.sendInputEvent` — genuine
+input-level clicks, not synthetic DOM events) and confirms Chromium's
+own `context-menu` event reports the expected `linkURL`/`srcURL`/
+`mediaType`/`isEditable`/`selectionText` for a link, an image, a focused
+text input, and a text selection, respectively.
+
+### 8.23 Address bar autocomplete
+
+Typing in the address bar now suggests matches from bookmarks and
+history (§8.20) — up to 4 bookmark matches (title or url, case-
+insensitive substring) plus history matches (deduped against whatever
+bookmarks already matched) filling the remaining slots, capped at 6
+total. Debounced 150ms per keystroke, since a history match is a real
+IPC round trip (`HISTORY_LIST` with the current query), not free.
+
+**Reserves real layout space, not an overlay** — the exact same
+reasoning and mechanism as the find bar (§8.19): `TabManager` reserves
+`ADDRESS_SUGGEST_H` (240px, fixed regardless of how many of the up-to-6
+rows are actually showing — the same simplicity trade-off `FIND_BAR_H`
+already makes, to avoid a two-way renderer↔main height sync for
+something whose row count changes on every keystroke) above the
+BrowserView while `AddressBar.js` has anything to show, toggled via a
+new `setAddressSuggestOpen` IPC call. Additive with the find bar's own
+reservation if both were somehow open at once (not a realistic
+scenario, but correct either way — see `recomputeBounds`).
+
+**Keyboard model**: ArrowUp/Down move a highlighted selection (wrapping
+is deliberately not implemented — hitting the top/bottom just stops);
+Enter navigates to the highlighted suggestion if one exists, else falls
+back to whatever's typed (unchanged from before this existed); Escape
+closes the dropdown without blurring the address bar itself if
+suggestions are open, or blurs it as before if not. Clicking a
+suggestion uses `mousedown` with `preventDefault()`, not `click` — the
+browser's default mousedown behavior would otherwise blur the input
+(shifting focus away from a non-focusable row) before a `click` handler
+ever got a chance to run, racing against the `blur` listener that closes
+the whole dropdown.
+
+**Verified**: typing a query that matches both a bookmark and a history
+entry (bookmark sorted first), the `ADDRESS_SUGGEST_H` bounds reservation
+appearing and disappearing, ArrowDown highlighting, Enter on a
+highlighted suggestion actually navigating and closing the dropdown, a
+query with zero matches never opening it at all, and Escape closing the
+dropdown without blurring the input — all against the real
+`AddressBar.js` UI driven through actual DOM events, not just the
+suggestion-computation logic in isolation.
+
+### 8.24 General settings — search engine, home page, ad blocking
+
+§1 cut a settings UI entirely for v1; the settings modal that did ship
+(the theme picker, §6) only ever covered appearance. This adds a
+"General" section above it in the same modal — search engine (a fixed
+list: Google/DuckDuckGo/Bing, `shared/search-engines.js`), home page
+(free-text URL, blank = the bundled SimpleHome default), and an ad-
+blocking on/off toggle — each committing immediately on change, no Save
+button, same as the theme swatches next to them.
+
+**Scoped per profile**, like bookmarks/history/permissions —
+`settings-store.js`'s `SettingsStore` is the same per-profile-JSON-file
+convention, a flat key/value object per profile (`get`/`set`, not a
+list) with `DEFAULTS` merged under whatever's actually stored so a
+settings file from an older version missing a newer key never needs its
+own migration.
+
+**How it actually takes effect.** Search engine and home page are read
+*live* — `TabManager` gets a `getSettings()` accessor
+(`ProfileManager`'s closure reading `SettingsStore` fresh every call,
+never a cached snapshot) it calls on every navigation
+(`resolveNavigationTarget(input, searchEngineUrl)`) and every "no
+explicit url" `createTab()`/`goHome()` call (`_loadHomePage()`) — so a
+settings change takes effect on the very next thing that needs it,
+nothing needs to be recreated. `resolveNavigationTarget`/`normalizeInput`
+already accepted an optional custom search-engine-URL parameter before
+this (unused until now); threading it through was the only change
+`navigation.js` needed. A custom home page URL is validated exactly like
+any address-bar input (`classifyNavigation`) before being trusted,
+falling back to the bundled SimpleHome page if it's somehow invalid or
+blocked — never trusted outright just because it came from the settings
+modal rather than the address bar.
+
+Ad-block is different: it's session-level state (`@ghostery/adblocker-
+electron`'s `enableBlockingInSession`/`disableBlockingInSession`, both
+already existing library methods this just started calling), so toggling
+it calls `AdBlocker.enableForSession`/`disableForSession` on the
+*current live session* immediately, in addition to persisting the
+choice for next launch's `_ensureTabManager` to read.
+
+**One conflated concept, kept deliberately conflated**: "home page" and
+"new tab page" are two separate settings in some real browsers; this app
+already treated them as one and the same thing before settings existed
+at all (§8.10 — the Home button and a blank new tab load the identical
+bundled page), so the new setting controls both together rather than
+introducing a second, separate "new tab page" concept this app has never
+had.
+
+**Verified**: every default value, the search-engine list contents,
+navigating a search query actually using the configured engine (not the
+hardcoded default), a custom home page affecting both a fresh new tab
+*and* the Home button, clearing it falling back to the bundled page, the
+ad-block toggle taking effect on the live session immediately in both
+directions, persistence across calls, and the real settings-modal UI
+(the `<select>`, the home-page `<input>` committing on Enter, the
+checkbox) driven through actual DOM events end to end.
+
+### 8.25 Dock/taskbar download progress
+
+The last small piece of §8.21's "make downloads visible" work: while
+anything is downloading, the Dock icon (macOS) / taskbar button
+(Windows) shows real progress via `BrowserWindow.setProgressBar()` —
+removed entirely (`setProgressBar(-1)`) the instant nothing is
+downloading anywhere.
+
+**App-wide, not per-profile** — `ProfileManager._updateDockProgress()`
+aggregates *every* profile's currently-`progressing` downloads
+(summed received/total bytes) into one fraction, because there's exactly
+one Dock icon for the whole app no matter how many profiles exist; a
+background profile's download genuinely is still happening and should
+still show up here, unlike history (§8.20, deliberately no live push)
+or even the renderer-facing side of downloads itself (§8.21, gated to
+the active profile for the popover/badge — this is the one thing about
+downloads that isn't gated). Recomputed on every progress tick and every
+completion from every profile's download manager, and once more after
+deleting a profile (its tracker disappears from the aggregate, though
+not from a download it may have had genuinely in flight — see below).
+
+**Unknown total size** — some servers never send a `Content-Length`, so
+a real fraction can't always be computed. Rather than fabricate one, that
+case shows an indeterminate bar (`setProgressBar(2, { mode:
+'indeterminate' })`, Electron's documented way to ask for one) instead
+of pretending to know a number it doesn't.
+
+**A known, disclosed gap**: deleting a profile (§8.3) while it has an
+in-progress download only removes that download from the aggregate and
+from anything the UI can show or cancel — it does not cancel the actual
+in-flight Electron `DownloadItem`, which keeps running to completion (or
+failure) with nothing left tracking or reporting it. Pre-existing
+behavior (profile deletion never cancelled anything download-related,
+before or after this), surfaced while wiring this in rather than
+introduced by it; not fixed here since deleting a profile mid-download
+is a narrow edge case, but worth being honest about rather than silently
+leaving it undocumented.
+
+**Verified** by spying on the real `win.setProgressBar` (a temp local
+HTTP server serving a large-enough, slow-enough file that intermediate
+progress is actually observable, not just an instant 0-to-1 jump):
+an intermediate fraction while downloading, `-1` on completion, a
+second profile's download — deliberately triggered while that profile is
+in the *background* — still updating the one shared progress bar, and
+`-1` again once every profile is back to idle.

@@ -58,6 +58,9 @@ const RENDERER_TO_MAIN = Object.freeze({
   DOWNLOADS_CLEAR: 'downloads:clear',
   DOWNLOADS_OPEN: 'downloads:open',
   DOWNLOADS_SHOW_IN_FOLDER: 'downloads:showInFolder',
+  SETTINGS_GET: 'settings:get',
+  SETTINGS_SET: 'settings:set',
+  ADDRESS_SUGGEST_TOGGLE: 'address:suggestToggle',
 });
 
 // Main -> Renderer (webContents.send / ipcRenderer.on)
