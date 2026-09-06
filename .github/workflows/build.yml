@@ -15,23 +15,28 @@ jobs:
           - os: macos-latest
             script: dist:mac
             artifact: mac
-            # *.yml/*.blockmap are electron-updater's update-feed metadata
-            # (see src/main/updater.js / DESIGN.md §8.17) — generated
-            # alongside the dmg/zip because package.json's build.publish
-            # names a provider, but never uploaded to GitHub by
-            # electron-builder itself (--publish never); the release job
-            # below uploads them to the tag's release instead.
+            # latest*.yml/*.blockmap are electron-updater's update-feed
+            # metadata (see src/main/updater.js / DESIGN.md §8.17) —
+            # generated alongside the dmg/zip because package.json's
+            # build.publish names a provider, but never uploaded to
+            # GitHub by electron-builder itself (--publish never); the
+            # release job below uploads them to the tag's release
+            # instead. `latest*.yml` (not a bare `*.yml`) deliberately
+            # excludes electron-builder's own release/builder-debug.yml,
+            # which isn't update-feed metadata and has no reason to be a
+            # public release asset (found the hard way — it showed up in
+            # v1.1.0's draft release and had to be removed by hand).
             glob: |
               release/*.dmg
               release/*.zip
-              release/*.yml
+              release/latest*.yml
               release/*.blockmap
           - os: windows-latest
             script: dist:win
             artifact: windows
             glob: |
               release/*.exe
-              release/*.yml
+              release/latest*.yml
               release/*.blockmap
 
     runs-on: ${{ matrix.os }}
