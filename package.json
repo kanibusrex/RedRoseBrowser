@@ -1,6 +1,6 @@
 {
   "name": "redrose-browser",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "RedRose Browser — a minimal, secure, Chromium-based desktop browser built with Electron.",
   "author": "Michael Alexander",
   "license": "GPL-3.0",
@@ -12,8 +12,8 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "dist:mac": "electron-builder --mac",
-    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:win": "electron-builder --win --publish never",
     "check-electron": "node scripts/check-electron-updates.js",
     "update-blocklist": "node scripts/update-blocklist.js",
     "update-adblock-lists": "node scripts/update-adblock-lists.js"
@@ -25,7 +25,11 @@
   "build": {
     "appId": "com.redrose-browser.app",
     "productName": "RedRose Browser",
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "owner": "kanibusrex",
+      "repo": "RedRoseBrowser"
+    },
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -57,6 +61,7 @@
   "dependencies": {
     "@ghostery/adblocker-electron": "^2.18.2",
     "electron-chrome-extensions": "^4.9.0",
+    "electron-updater": "^6.8.9",
     "yauzl": "^3.4.0"
   }
 }

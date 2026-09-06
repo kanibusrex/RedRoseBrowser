@@ -46,6 +46,7 @@ const RENDERER_TO_MAIN = {
   EXTENSIONS_OPEN_PAGE: 'extensions:openPage',
   SIDEBAR_GET_WIDTH: 'sidebar:getWidth',
   SIDEBAR_SET_WIDTH: 'sidebar:setWidth',
+  PERMISSION_RESPOND: 'permission:respond',
 };
 
 const MAIN_TO_RENDERER = {
@@ -55,6 +56,7 @@ const MAIN_TO_RENDERER = {
   PROFILES_CHANGED: 'profiles:changed',
   BOOKMARKS_CHANGED: 'bookmarks:changed',
   EXTENSIONS_CHANGED: 'extensions:changed',
+  PERMISSION_REQUEST: 'permission:request',
 };
 
 // Allowlist of push-event channels the renderer is permitted to subscribe
@@ -112,6 +114,8 @@ contextBridge.exposeInMainWorld('browserAPI', {
   openExtensionPage: (id, kind) => ipcRenderer.invoke(RENDERER_TO_MAIN.EXTENSIONS_OPEN_PAGE, { id, kind }),
   getSidebarWidth: () => ipcRenderer.invoke(RENDERER_TO_MAIN.SIDEBAR_GET_WIDTH),
   setSidebarWidth: (width) => ipcRenderer.invoke(RENDERER_TO_MAIN.SIDEBAR_SET_WIDTH, { width }),
+  respondToPermission: (requestId, allow, remember) =>
+    ipcRenderer.invoke(RENDERER_TO_MAIN.PERMISSION_RESPOND, { requestId, allow, remember }),
 
   onTabsChanged: (cb) => subscribe(MAIN_TO_RENDERER.TABS_CHANGED, cb),
   onTabUpdated: (cb) => subscribe(MAIN_TO_RENDERER.TAB_UPDATED, cb),
@@ -119,4 +123,5 @@ contextBridge.exposeInMainWorld('browserAPI', {
   onProfilesChanged: (cb) => subscribe(MAIN_TO_RENDERER.PROFILES_CHANGED, cb),
   onBookmarksChanged: (cb) => subscribe(MAIN_TO_RENDERER.BOOKMARKS_CHANGED, cb),
   onExtensionsChanged: (cb) => subscribe(MAIN_TO_RENDERER.EXTENSIONS_CHANGED, cb),
+  onPermissionRequest: (cb) => subscribe(MAIN_TO_RENDERER.PERMISSION_REQUEST, cb),
 });

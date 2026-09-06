@@ -412,8 +412,12 @@ the first place:
    renderer.
 9. **Permission requests** (camera, mic, geolocation, notifications, etc.)
    from BrowserViews go through `session.setPermissionRequestHandler` and
-   are denied by default in v1 (no UI to prompt the user yet) rather than
-   silently allowed.
+   are denied by default — never silently allowed. §8.16 replaced the
+   original blanket "deny everything, no UI at all" v1 policy with a
+   three-tier one (a small always-allow set, a prompt-and-remember set,
+   deny for everything else), but the non-negotiable part of this rule is
+   unchanged: nothing gets access without either being on the small
+   explicitly-reviewed always-allow list or the user actually saying yes.
 10. **IPC channel allowlisting**: `ipcMain.handle`/`.on` register only the
     channels enumerated in §4 — no wildcard/dynamic channel name
     handling, so a compromised renderer can't invoke something
@@ -525,10 +529,13 @@ extending the current `ProfileManager`.
 
 ### 8.4 Bookmarks — per profile, persisted independently of tabs
 
-- New `src/main/bookmark-store.js`: unlike tabs (deliberately not
-  persisted, §1) or groups (in-memory only, `TabManager.groups`),
-  bookmarks are meant to survive a restart, so they get their own store
-  keyed by profile id and persisted to `bookmarks.json` in
+- New `src/main/bookmark-store.js`: at the time this was written, tabs
+  were deliberately not persisted (§1) — since reversed by §8.15's
+  session restore, but groups still are in-memory only
+  (`TabManager.groups`, restored as *data* by §8.15, not as their own
+  standalone store). Bookmarks are meant to survive a restart
+  regardless, so they get their own store keyed by profile id and
+  persisted to `bookmarks.json` in
   `app.getPath('userData')` — independent of `TabManager`/`ProfileManager`
   entirely, just referenced by `ProfileManager` via `this.activeProfileId`
   the same way tab/group operations already dispatch to whichever
@@ -1240,3 +1247,268 @@ API, and each one turned out to need its own fix rather than one
 shared choke point catching all three. If a fourth path like this
 surfaces later, look for another `TabManager.createTab(url)` call
 missing `{ trusted }` before assuming it's something new.
+
+### 8.15 Session restore — reopening where you left off
+
+§1 originally called this out of scope deliberately: "unlike open tabs
+(which are deliberately not persisted...)". Users expect a browser to
+reopen with the tabs it had before, so this reverses that call.
+`sidebar-state.js` and `bookmark-store.js` are the model this follows —
+a small per-profile JSON file (`sessions.json`, one entry per profile
+id) written debounced, the same 500ms-after-the-last-change pattern
+`ProfileManager` already used for sidebar width.
+
+What's persisted, per profile: each tab's URL (or `null` for the
+home/new-tab page — see below), pinned state, tab-group membership, and
+split-view pairing, plus which tab was active. `TabManager` owns both
+directions — `getSessionSnapshot()` (save) and `restoreSession()`
+(load) — since it already owns the tab/group/split data model;
+`ProfileManager` just owns *when* to call them (debounced on every
+tabs-changed event, for every profile's `TabManager`, not only the
+active one — a background profile's tabs can still change) and *where*
+they're stored (keyed by profile id, mirroring `BookmarkStore`).
+
+A few decisions worth recording:
+
+- **Extension pages are never persisted.** `getSessionSnapshot()` drops
+  any tab whose URL is `chrome-extension://...` before saving. Restoring
+  one before its owning extension has (re)loaded on the next launch
+  would reproduce the exact "zero tabs known to `chrome.tabs`" race
+  §8.8.3 already found and fixed by making the seed tab exist *before*
+  extensions load — restoring an extension tab at that same point,
+  pointed at an extension ID that may not even be installed yet in
+  loading order, isn't worth the risk for what's one click away via the
+  toolbar icon anyway.
+- **The home/new-tab page round-trips through `null`, not the literal
+  string `'about:blank'`.** A tab showing the home page already
+  normalizes its `tab.url` to the `'about:blank'` sentinel (§8.10) —
+  saved as `null` instead, so `restoreSession()`'s `createTab(url)` call
+  takes the exact same "falsy url → load the bundled home page" branch
+  a fresh new tab does, rather than literally navigating to
+  `about:blank` (which is itself a scheme `classifyNavigation` doesn't
+  even need to see here, since it's the `else` branch of `createTab`,
+  not a `loadURL` call).
+- **Splits are stored as an array index, not a tab id.** Every restore
+  regenerates fresh `crypto.randomUUID()` tab ids, so yesterday's id
+  means nothing on the next launch; the snapshot instead records "this
+  tab's split partner is whichever tab ends up at index N", resolved
+  back to a real id once all tabs exist.
+- **Restoring is just `createTab()` in a loop, called with a new
+  `silent: true` option** that skips the per-call `activateTab()` +
+  tabs-changed emit `createTab` normally does. Without it, restoring
+  five tabs would mean five BrowserView attach/detach cycles and five
+  IPC round-trips to the renderer before landing on the one that was
+  actually active; with it, only the explicit `activateTab()` call at
+  the very end of `restoreSession()` does any of that work, and only
+  once.
+- **A save sitting in its 500ms debounce timer at quit time would
+  otherwise be lost.** `ProfileManager.flushSessionSaves()` — called
+  from `chromeWin`'s `'close'` event (not `'closed'` — webContents are
+  still alive at that point) in `index.js` — cancels every profile's
+  pending timer and writes its current snapshot immediately instead.
+  `'close'` fires both for a real Quit and, on macOS, for just closing
+  the window while the app itself stays running, so either way it's the
+  right moment to flush.
+
+**A pre-existing bug this surfaced:** `ProfileManager._loadProfiles()`
+only ever wrote `profiles.json` from `switchProfile`/`createProfile`/
+`renameProfile`/`deleteProfile` — never from the branch that mints the
+very first default profile on a fresh install. That meant a user who
+never touches profile management (i.e. almost everyone, since the app
+ships with exactly one default profile) would never get a
+`profiles.json` written at all — every single launch would hit the
+"no stored profiles" branch again and mint a brand new random profile
+id, silently discarding that "profile"'s bookmarks, extensions, *and*
+now its session on every restart, despite looking to the user like one
+continuous profile the whole time. Fixed by calling `_saveProfiles()`
+immediately after minting that fallback profile. Caught before
+shipping by testing session restore in isolation (a temp
+`--user-data-dir`, two sequential Electron launches, a throwaway local
+HTTP server instead of a real site) — phase two's profile id didn't
+match phase one's until this was fixed, which is what surfaced it.
+
+### 8.16 Site permissions — a three-tier policy replacing blanket deny
+
+§7's rule 9 originally denied every permission request outright — camera,
+mic, geolocation, notifications, all of it — with no UI to say yes even
+if the user wanted to. That's fine for a v1 that's proving out the
+process architecture, but it means the browser can't be used for
+anything that legitimately needs a permission (a video call, a map site
+asking where you are). This replaces it with the same three-tier model
+real browsers use, still deny-by-default at its core (rule 9 is
+unchanged in spirit — see its updated text above):
+
+- **Always allow, no prompt:** `fullscreen`, `pointerLock`,
+  `clipboard-sanitized-write`. Real browsers don't prompt for these
+  either — they're low-risk and expected to just work.
+- **Prompt once per origin, then remember the answer:** `media` (camera/
+  mic — Electron reports getUserMedia as one combined permission, not
+  split by device), `geolocation`, `notifications`. These are the ones a
+  real browser also stops to ask about.
+- **Deny, no exception, ever:** everything else (`display-capture`,
+  `idle-detection`, `midiSysex`, `window-management`, ...). No pressing
+  reason for a general-purpose v1 browser to grant any of these yet, so
+  they stay closed rather than growing the always-allow list on
+  speculation.
+
+**Where the logic lives.** `security.js`'s original
+`installPermissionHandler` (blanket deny) is untouched and still
+installed on the chrome window's own default session in `index.js` — it
+never shows untrusted page content, so a hard-coded backstop is fine
+there. The real per-profile policy is new: `permission-manager.js`'s
+`installPermissionPolicy(session, { win, tabManager, permissionStore,
+profileId })`, installed in `ProfileManager._ensureTabManager` right
+after that profile's `TabManager` is constructed (needs it — see below —
+but must be in place before the seed/restored tab(s) start loading).
+Decisions are kept in a new `permission-store.js` (`PermissionStore`),
+the same per-profile-keyed-JSON-file convention as bookmarks/sessions,
+storing only origins that were actually prompted — the always-allow and
+always-deny tiers never touch it.
+
+**Only the tab on screen ever gets prompted.** A request from a
+background tab (still loading, or one the user switched away from) is
+denied outright — not queued, not remembered — the instant it's not
+`tabManager.activeTabId`. Without this, a page nobody's looking at could
+throw up a permission prompt for something the user is doing on a
+completely different tab, or pile up several behind each other. If that
+tab becomes the active one later, it's free to ask again.
+
+**The request/response round trip.** `setPermissionRequestHandler` is
+inherently async-capable (a `callback`, not a return value) but Electron
+gives no way to *show UI* from main directly — the actual prompt has to
+render in the chrome renderer. So: main generates a `requestId`
+(`crypto.randomUUID()`), stashes `{ resolve }` in a module-level
+`Map` in `permission-manager.js`, and pushes
+`{ requestId, origin, permission, tabId }` over a new
+`MAIN_TO_RENDERER.PERMISSION_REQUEST` channel. `PermissionPrompt.js` in
+the chrome renderer shows a popover (Allow/Block) anchored at the address
+bar's security icon, and calls back over a new
+`RENDERER_TO_MAIN.PERMISSION_RESPOND` channel with `{ requestId, allow,
+remember }`; `ipc-handlers.js` resolves the pending map entry, which (if
+`remember`) writes the decision to `PermissionStore` and then, only now,
+calls the *original* Electron `callback(allow)` — the page's
+`getUserMedia()`/etc. promise was sitting there waiting on exactly this
+the whole time. `setPermissionCheckHandler` (a separate, *synchronous*
+hook Electron uses for capability checks like
+`navigator.permissions.query()`) can't participate in this round trip at
+all — it can only ever consult an already-remembered decision or the
+always-allow set, never trigger a prompt.
+
+**Why the popover needed a change to the shared popup code.** Every
+existing popover (ContextMenu.js) anchors from inside the sidebar (a tab
+row, a group dot, the rail glyph) and `positionWithinViewport` clamps to
+that width specifically so it can't spill into the region the active
+tab's BrowserView occludes (it always paints above the chrome window's
+own content). A permission prompt anchored at the address bar's security
+icon is well outside that region. Rather than teach the clamp logic
+about a second safe zone, `PermissionPrompt.js` sidesteps the occlusion
+problem the same way the settings/theme modal already does — detach the
+active view for as long as the prompt is open — and `showPopover` grew a
+`fullWidth: true` option that skips the sidebar clamp for exactly (and
+only) a caller that's done that. Doing this surfaced a real gap: the
+settings modal and a permission prompt could now overlap (or two
+permission prompts, in sequence), and a plain hide/show call pair has no
+way to know another caller still needs the view hidden when it
+re-shows it. Fixed with a small reference count
+(`components/ViewOverlay.js`, `pushHideActiveView`/`popHideActiveView`)
+that both call sites now go through instead of
+`window.browserAPI.hideActiveView/showActiveView` directly.
+
+**Dismissing without choosing** (click outside, Escape, or a second
+prompt/modal opening over this one) is treated as "not now" — the
+pending request is denied so the page's promise doesn't hang forever,
+but nothing is written to `PermissionStore`, so the site can ask again
+later rather than being silently blocked for good. Detected in
+`PermissionPrompt.js` with a `MutationObserver` on the popover's removal
+from the DOM, since `ContextMenu.js`'s generic dismiss-on-outside-click
+handling has no callback hook of its own to hang this off of.
+
+**Known v1 simplifications, deliberate for now:** no per-site permissions
+*management* UI (no way to review/revoke a remembered decision short of
+deleting `permissions.json` by hand) — only the prompt-and-remember flow
+exists; and only one permission prompt is ever shown at a time (a second
+request arriving while one is open dismisses the first as "not now"
+rather than queuing). Both are reasonable follow-ups if they turn out to
+matter in practice, not architectural dead ends.
+
+**Verified in complete isolation** (a temp `--user-data-dir`, a
+throwaway local HTTP test page, no real account/session involved) before
+ever touching real data, per this project's established practice: the
+full request → popover → Allow → remembered → no-second-prompt round
+trip for `notifications`; the same for Block (→ `denied`, remembered,
+still no re-prompt); a background tab's request denied without a prompt
+and without being persisted; and — via `document.body.requestFullscreen()`
+called with no genuine user gesture — an incidental confirmation that
+Chromium itself routes gesture-less fullscreen through a *different*,
+stricter, correctly-still-denied permission (`automatic-fullscreen`),
+distinct from the gesture-triggered `fullscreen` this policy allows.
+
+### 8.17 Auto-updates — real on Windows, check-only on macOS
+
+Every release up to now has meant asking users to notice a new GitHub
+release exists and manually download/reinstall it. `src/main/updater.js`
+adds a background check (10s after launch, then every 4 hours) plus a
+"Check for Updates…" menu item (mac: app menu, under About; Windows/
+Linux: a new Help menu) — but not the same mechanism on both platforms,
+because of this project's own signing situation.
+
+**Why the platform split.** `electron-updater`'s macOS support is
+Squirrel.Mac, which — before it will apply an update at all — validates
+the *running* app's own code signature. This project ships unsigned on
+mac (`package.json`'s `identity: null`; see the README's Gatekeeper
+caveat), so that check fails outright, every time, for every mac user.
+Wiring up the real mechanism there would mean shipping a feature that
+can only ever error. So: **Windows** gets the real thing — `autoDownload
+= false` (never spend the user's bandwidth without asking first, the
+same instinct this project applies to everything outward/hard-to-reverse,
+e.g. never auto-publishing a release without an explicit yes),
+`checkForUpdates()` → an "update available, download?" dialog →
+`downloadUpdate()` → an "update ready, restart now?" dialog →
+`quitAndInstall()`. NSIS has no equivalent hard requirement — it can
+silently re-run an unsigned installer; the only user-facing cost is the
+same SmartScreen prompt a first-time manual download already shows.
+**macOS** gets a homegrown, lighter check instead: ask
+`api.github.com/repos/.../releases/latest` for the current published
+release's tag, compare it to `app.getVersion()` with a plain x.y.z
+comparator (this project's tags are never anything fancier), and if
+it's newer, offer to open the Releases page — the same manual install
+flow the README already documents. GitHub's `/releases/latest` endpoint
+only ever returns a *published* (non-draft, non-prerelease) release,
+which lines up exactly with this project's own draft-then-publish-by-
+hand release process — a release still sitting in draft, mid-review,
+is correctly invisible to this check.
+
+**Never runs in a dev build** (`!app.isPackaged`) — an unpackaged
+checkout has no meaningful "current version" to compare against a
+release tag, so every check there would be a false positive.
+
+**CI/build-config changes needed for this to work at all.** electron-
+updater needs update-feed metadata (`latest.yml`/`latest-mac.yml`, plus
+`.blockmap` files for differential downloads) generated *alongside* the
+installers — electron-builder only writes these when `package.json`'s
+`build.publish` names a real provider, which had been set to `null`
+specifically to stop electron-builder auto-detecting CI and trying to
+publish a GitHub release itself with no token (see the CI-build-failure
+fix earlier in this doc's history). Changed `publish` to a real `{
+provider: "github", owner, repo }` object, and — so that doesn't
+reopen the auto-publish problem — added `--publish never` directly to
+the `dist:mac`/`dist:win` npm scripts, which forces "never publish"
+regardless of the config object (defense in depth: even a future
+`electron-builder` invocation that forgets the flag would need the config
+itself changed too). `.github/workflows/build.yml`'s per-OS artifact
+upload globs were extended to include `*.yml`/`*.blockmap` so the
+release job actually attaches them to the GitHub release the update
+checks read from — without them, `latest-mac.yml`/`latest.yml` would
+generate locally every build and then never reach anywhere a real
+user's copy of the app could see them.
+
+**Verified:** built the mac target locally with the new `publish`
+config and confirmed `latest-mac.yml` (with correct version/sha512/size
+fields) and both `.blockmap` files are generated with `--publish
+never` and nothing is uploaded anywhere on its own; launched the
+packaged `.app` against an isolated `--user-data-dir` (not the real
+installed copy's) and confirmed it still opens cleanly — the same
+Dock-icon-but-no-window regression class as §8.13's original bug is the
+main risk any packaging-config change reintroduces, so re-checking it
+is routine now for any change that touches `package.json`'s `build`
+block.

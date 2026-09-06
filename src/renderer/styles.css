@@ -1505,6 +1505,68 @@ button {
   color: var(--text);
 }
 
+/* ---- permission prompt (§8.16) ----
+   Anchored at the address bar's security icon via showPopover's
+   `fullWidth` option (ContextMenu.js) instead of the sidebar-width clamp
+   every other popup uses — safe here specifically because
+   PermissionPrompt.js detaches the active tab's BrowserView for as long
+   as this is open, so there's nothing for it to spill past. */
+
+.permission-popover {
+  min-width: 240px;
+  max-width: 300px;
+}
+
+.permission-origin {
+  font-weight: 600;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.permission-desc {
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.permission-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.permission-btn {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--r-sm);
+  border: none;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.permission-btn.deny {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.permission-btn.deny:hover {
+  background: var(--mist);
+}
+
+.permission-btn.allow {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.permission-btn.allow:hover {
+  filter: brightness(1.06);
+}
+
 /* ---- extensions popover ---- */
 
 .extensions-popover {

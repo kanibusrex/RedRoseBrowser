@@ -109,6 +109,87 @@ class TabManager {
     };
   }
 
+  // ---- session persistence (§8.15) ---------------------------------------
+
+  // Serializes just enough to recreate this profile's tabs/groups/pins/
+  // splits on the next launch — called by ProfileManager (debounced) on
+  // every tabs-changed event and once more, unconditionally, right before
+  // the window closes. Extension pages (chrome-extension://) are
+  // deliberately excluded: restoring one before its owning extension has
+  // (re)loaded would reproduce the exact zero-tabs-known-to-chrome.tabs
+  // race that made the seed tab need to exist *before* extensions load in
+  // the first place (see ProfileManager._ensureTabManager and DESIGN.md
+  // §8.8.3) — simplest to just never persist them. An extension's
+  // popup/options page is one click away via its toolbar icon anyway.
+  //
+  // Splits are stored as an index into this same filtered/reordered
+  // array rather than a tab id, since ids are regenerated on every
+  // restore (see restoreSession) and wouldn't mean anything on the next
+  // launch.
+  getSessionSnapshot() {
+    const kept = this.order.filter((id) => !this.tabs.get(id).url.startsWith('chrome-extension://'));
+    const indexOf = new Map(kept.map((id, i) => [id, i]));
+    const tabs = kept.map((id) => {
+      const tab = this.tabs.get(id);
+      const splitIndex =
+        tab.splitWithTabId && indexOf.has(tab.splitWithTabId) ? indexOf.get(tab.splitWithTabId) : null;
+      return {
+        // The home/new-tab page always normalizes to the 'about:blank'
+        // sentinel (see createTab/did-navigate above) — stored as `null`
+        // so restoreSession's `createTab(url)` takes the same "no
+        // explicit url -> home page" branch a fresh new tab does, rather
+        // than literally re-navigating to about:blank.
+        url: tab.url === NEW_TAB_URL ? null : tab.url,
+        pinned: tab.pinned,
+        groupId: tab.groupId,
+        splitWithIndex: splitIndex,
+      };
+    });
+    const activeIndex = indexOf.has(this.activeTabId) ? indexOf.get(this.activeTabId) : 0;
+    return { tabs, groups: Array.from(this.groups.values()), activeIndex };
+  }
+
+  // Recreates tabs/groups/pins/splits from a snapshot getSessionSnapshot()
+  // produced on a previous run. Returns false (doing nothing) if there's
+  // nothing usable to restore, so the caller can fall back to seeding one
+  // blank tab exactly as it would on a first launch.
+  //
+  // Every tab is created with `silent: true` so this doesn't fire one
+  // tabs-changed IPC per tab (and, more importantly, doesn't run
+  // activateTab's attach/detach BrowserView dance N times) — only the
+  // final activateTab() call at the end actually attaches anything.
+  restoreSession(snapshot) {
+    if (!snapshot || !Array.isArray(snapshot.tabs) || snapshot.tabs.length === 0) return false;
+
+    for (const g of snapshot.groups || []) {
+      if (g && typeof g.id === 'string') {
+        this.groups.set(g.id, { id: g.id, name: g.name || 'New Group', color: g.color || DEFAULT_GROUP_COLOR });
+      }
+    }
+
+    const ids = snapshot.tabs.map((t) => this.createTab(t && t.url, { silent: true }).tabId);
+
+    snapshot.tabs.forEach((t, i) => {
+      if (!t) return;
+      const id = ids[i];
+      if (t.pinned) this.setPinned(id, true);
+      if (t.groupId && this.groups.has(t.groupId)) this.setTabGroup(id, t.groupId);
+    });
+
+    // Only link each pair from the lower index so splitTabs() isn't
+    // called twice (once from each side) for the same pair.
+    snapshot.tabs.forEach((t, i) => {
+      if (t && typeof t.splitWithIndex === 'number' && t.splitWithIndex > i && ids[t.splitWithIndex]) {
+        this.splitTabs(ids[i], ids[t.splitWithIndex]);
+      }
+    });
+
+    const activeId = ids[snapshot.activeIndex] || ids[ids.length - 1];
+    this.activateTab(activeId);
+    this._emitTabsChanged();
+    return true;
+  }
+
   _emitTabsChanged() {
     this.onTabsChanged(this.getAllTabsSnapshot());
   }
@@ -125,7 +206,12 @@ class TabManager {
   // URL, built from a manifest this app downloaded and verified, never
   // from page/user input). Every other caller — the address bar,
   // bookmarks, an extension's own chrome.tabs.create — stays checked.
-  createTab(url, { trusted = false } = {}) {
+  //
+  // `silent: true` skips activating the new tab and emitting a
+  // tabs-changed event — used only by restoreSession() below, which
+  // creates a whole batch of tabs up front and wants exactly one
+  // activate + one emit at the end instead of one per tab.
+  createTab(url, { trusted = false, silent = false } = {}) {
     const id = crypto.randomUUID();
     const view = new BrowserView({ webPreferences: pageViewWebPreferences(this.session) });
 
@@ -169,8 +255,10 @@ class TabManager {
       view.webContents.loadFile(HOME_PAGE_PATH).catch(() => {});
     }
 
-    this.activateTab(id);
-    this._emitTabsChanged();
+    if (!silent) {
+      this.activateTab(id);
+      this._emitTabsChanged();
+    }
     return { tabId: id };
   }
 

@@ -44,6 +44,7 @@ const RENDERER_TO_MAIN = Object.freeze({
   EXTENSIONS_OPEN_PAGE: 'extensions:openPage',
   SIDEBAR_GET_WIDTH: 'sidebar:getWidth',
   SIDEBAR_SET_WIDTH: 'sidebar:setWidth',
+  PERMISSION_RESPOND: 'permission:respond',
 });
 
 // Main -> Renderer (webContents.send / ipcRenderer.on)
@@ -54,6 +55,7 @@ const MAIN_TO_RENDERER = Object.freeze({
   PROFILES_CHANGED: 'profiles:changed',
   BOOKMARKS_CHANGED: 'bookmarks:changed',
   EXTENSIONS_CHANGED: 'extensions:changed',
+  PERMISSION_REQUEST: 'permission:request',
 });
 
 // Flat allowlist of every channel name the chrome preload/main may use.

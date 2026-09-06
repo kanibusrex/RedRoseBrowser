@@ -69,8 +69,18 @@ export function showContextMenu(items, anchor) {
 /**
  * A custom popover content builder (e.g. a color palette or the profile
  * list) instead of a plain item list. `build(container)` fills the popup.
+ *
+ * `fullWidth: true` skips the sidebar-width clamp below — only correct
+ * for a caller that has *also* detached the active tab's BrowserView for
+ * as long as the popover is open (see components/ViewOverlay.js), since
+ * without that the view would occlude anything positioned past the
+ * sidebar the moment it dips below the toolbar. The permission prompt
+ * (PermissionPrompt.js, anchored at the address bar's security icon) is
+ * the only caller that needs this; every other popover in this app
+ * anchors from inside the sidebar already, where the default clamp is
+ * exactly what keeps it clear of the BrowserView.
  */
-export function showPopover(build, anchor, { className = '' } = {}) {
+export function showPopover(build, anchor, { className = '', fullWidth = false } = {}) {
   closePopup();
   const root = ensureContainer();
 
@@ -79,7 +89,7 @@ export function showPopover(build, anchor, { className = '' } = {}) {
   build(popover);
 
   root.appendChild(popover);
-  positionWithinViewport(popover, anchor);
+  positionWithinViewport(popover, anchor, { fullWidth });
   wireDismiss(popover);
   return popover;
 }
@@ -88,12 +98,15 @@ export function closePopup() {
   if (closeCurrent) closeCurrent();
 }
 
-function positionWithinViewport(el, anchor) {
+function positionWithinViewport(el, anchor, { fullWidth = false } = {}) {
   // Render first (off-screen concerns aside) so we can measure it, then
   // clamp into the chrome area (never the BrowserView's region — see
-  // getChromeWidth above) and the window's bottom edge.
-  const { innerHeight } = window;
-  const maxRight = getChromeWidth() - 8;
+  // getChromeWidth above) and the window's bottom edge. `fullWidth`
+  // callers have already taken the BrowserView out of the picture
+  // entirely (see showPopover's doc comment above), so they clamp to the
+  // real window edge instead.
+  const { innerWidth, innerHeight } = window;
+  const maxRight = (fullWidth ? innerWidth : getChromeWidth()) - 8;
   // The tab panel is user-resizable (§8.11), so the chrome area isn't
   // always at least as wide as .popup-menu's CSS max-width (248px) —
   // cap the popup's own width to whatever's actually available too, not

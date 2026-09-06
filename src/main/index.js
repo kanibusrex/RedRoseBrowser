@@ -8,6 +8,7 @@ const { ProfileManager } = require('./profile-manager');
 const { registerIpcHandlers } = require('./ipc-handlers');
 const { buildApplicationMenu, attachDevToolsShortcut } = require('./menu');
 const { installPermissionHandler } = require('./security');
+const { initAutoUpdater } = require('./updater');
 
 let chromeWin = null;
 let profileManager = null;
@@ -26,6 +27,15 @@ function createAppWindow() {
 
   chromeWin.webContents.once('did-finish-load', () => {
     profileManager.start();
+  });
+
+  // 'close' (not 'closed') — webContents/TabManagers are still alive here,
+  // so this is the last chance to flush any session-restore save (§8.15)
+  // still sitting in its 500ms debounce timer. Covers both a real Quit and
+  // (on macOS) just closing the window while the app stays running, since
+  // either way this is the window that's about to go away.
+  chromeWin.on('close', () => {
+    if (profileManager) profileManager.flushSessionSaves();
   });
 
   chromeWin.on('closed', () => {
@@ -49,6 +59,7 @@ app.whenReady().then(() => {
 
   buildApplicationMenu();
   createAppWindow();
+  initAutoUpdater();
 
   app.on('activate', () => {
     if (chromeWin === null) {

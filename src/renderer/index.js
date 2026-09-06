@@ -7,6 +7,7 @@ import { createProfileSwitcher } from './components/ProfileSwitcher.js';
 import { createBookmarksButton } from './components/Bookmarks.js';
 import { createExtensionsButton } from './components/Extensions.js';
 import { initSidebarResize } from './components/SidebarResize.js';
+import { initPermissionPrompts } from './components/PermissionPrompt.js';
 import { initTheme } from './theme.js';
 
 // This module runs in the chrome renderer: contextIsolation is on and
@@ -103,6 +104,10 @@ const addressBar = createAddressBar(
     onNavigate: (value) => state.activeTabId && window.browserAPI.navigate(state.activeTabId, value),
   }
 );
+
+// Site-permission prompts (§8.16) anchor at the same security icon the
+// address bar's lock/info glyph lives in.
+initPermissionPrompts({ securityIcon: document.getElementById('security-icon') });
 
 // The rail glyph doubles as the profile switcher entry point (click to
 // open the switcher popover), same spot ScriptureDesk uses for its

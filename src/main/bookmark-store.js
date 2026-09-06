@@ -9,10 +9,11 @@ const BOOKMARKS_FILE = () => path.join(app.getPath('userData'), 'bookmarks.json'
 
 /**
  * Bookmarks, scoped per profile (see ProfileManager) and persisted to
- * bookmarks.json in app.getPath('userData') — unlike open tabs (which are
- * deliberately not persisted, see DESIGN.md §1), bookmarks are meant to
- * survive a restart, so they get their own small store independent of
- * TabManager.
+ * bookmarks.json in app.getPath('userData') — independent of the open
+ * tabs themselves, which now also survive a restart but via their own
+ * store (session-store.js, DESIGN.md §8.15) since they're written far
+ * more often and in a different shape (a whole session snapshot, not a
+ * list of independent records).
  */
 class BookmarkStore {
   constructor() {

@@ -3,6 +3,7 @@
 const { ipcMain } = require('electron');
 
 const { RENDERER_TO_MAIN, MAIN_TO_RENDERER } = require('../shared/ipc-channels');
+const { resolvePendingPermission } = require('./permission-manager');
 
 /**
  * Registers ipcMain.handle listeners for exactly the channels enumerated
@@ -175,6 +176,15 @@ function registerIpcHandlers(chromeWin, profileManager) {
 
   ipcMain.handle(RENDERER_TO_MAIN.SIDEBAR_SET_WIDTH, (_event, { width } = {}) => {
     return { width: profileManager.setSidebarWidth(width) };
+  });
+
+  // The other half of the permission-prompt round trip PermissionManager
+  // starts by pushing MAIN_TO_RENDERER.PERMISSION_REQUEST (§8.16) — not
+  // dispatched through profileManager like everything else above, since
+  // it doesn't act on tabs/bookmarks/etc., just resolves a specific
+  // pending request by id.
+  ipcMain.handle(RENDERER_TO_MAIN.PERMISSION_RESPOND, (_event, { requestId, allow, remember } = {}) => {
+    resolvePendingPermission(requestId, { allow, remember });
   });
 }
 

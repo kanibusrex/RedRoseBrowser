@@ -1,6 +1,7 @@
 'use strict';
 
 const { app, Menu } = require('electron');
+const { checkForUpdatesNow } = require('./updater');
 
 /**
  * Minimal application menu. Deliberately does not add custom menu items
@@ -21,6 +22,8 @@ function buildApplicationMenu() {
             label: app.name,
             submenu: [
               { role: 'about' },
+              { type: 'separator' },
+              { label: 'Check for Updates…', click: () => checkForUpdatesNow() },
               { type: 'separator' },
               { role: 'services' },
               { type: 'separator' },
@@ -49,6 +52,10 @@ function buildApplicationMenu() {
       label: 'Window',
       submenu: [{ role: 'minimize' }, { role: 'close' }],
     },
+    // Windows/Linux have no app-name menu (that's a mac-only convention),
+    // so "Check for Updates…" needs a home there too — a Help menu, same
+    // convention as VS Code/Slack/most other cross-platform Electron apps.
+    ...(isMac ? [] : [{ label: 'Help', submenu: [{ label: 'Check for Updates…', click: () => checkForUpdatesNow() }] }]),
   ];
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));

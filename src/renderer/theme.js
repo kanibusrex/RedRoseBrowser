@@ -5,6 +5,8 @@
 // Applies CSS classes on <html> (see styles.css for the variable blocks)
 // and persists the chosen theme in localStorage.
 
+import { pushHideActiveView, popHideActiveView } from './components/ViewOverlay.js';
+
 const STORAGE_KEY = 'browser-theme';
 
 const THEMES = [
@@ -125,13 +127,16 @@ export function initTheme() {
     document.getElementById('settingsOverlay').classList.add('show');
     // A BrowserView always paints above the chrome window's own content, so
     // the active tab's page would otherwise hide this modal — detach it
-    // while the modal is open.
-    window.browserAPI.hideActiveView();
+    // while the modal is open. Goes through ViewOverlay.js's reference
+    // count (not window.browserAPI.hideActiveView directly), so this
+    // can't prematurely re-show the page if a permission prompt (§8.16)
+    // happens to also be open right now.
+    pushHideActiveView();
   }
 
   function closeSettings() {
     document.getElementById('settingsOverlay').classList.remove('show');
-    window.browserAPI.showActiveView();
+    popHideActiveView();
   }
 
   // ---- initial theme: saved choice, else follow the OS setting ----

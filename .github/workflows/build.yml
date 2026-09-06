@@ -15,13 +15,24 @@ jobs:
           - os: macos-latest
             script: dist:mac
             artifact: mac
+            # *.yml/*.blockmap are electron-updater's update-feed metadata
+            # (see src/main/updater.js / DESIGN.md §8.17) — generated
+            # alongside the dmg/zip because package.json's build.publish
+            # names a provider, but never uploaded to GitHub by
+            # electron-builder itself (--publish never); the release job
+            # below uploads them to the tag's release instead.
             glob: |
               release/*.dmg
               release/*.zip
+              release/*.yml
+              release/*.blockmap
           - os: windows-latest
             script: dist:win
             artifact: windows
-            glob: release/*.exe
+            glob: |
+              release/*.exe
+              release/*.yml
+              release/*.blockmap
 
     runs-on: ${{ matrix.os }}
 
