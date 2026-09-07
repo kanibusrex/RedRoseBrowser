@@ -9,7 +9,7 @@
 // Each field commits immediately on change — no separate Save button,
 // same as the theme picker it sits next to.
 
-export function initGeneralSettings({ searchEngineSelect, homePageInput, adBlockCheckbox }) {
+export function initGeneralSettings({ searchEngineSelect, homePageInput, adBlockCheckbox, checkUpdatesBtn }) {
   async function populate() {
     const { settings, searchEngines } = await window.browserAPI.getGeneralSettings();
 
@@ -51,6 +51,13 @@ export function initGeneralSettings({ searchEngineSelect, homePageInput, adBlock
   adBlockCheckbox.addEventListener('change', () => {
     window.browserAPI.updateGeneralSettings({ adBlockEnabled: adBlockCheckbox.checked });
   });
+
+  // §8.30 — reachable from the native menu too (all platforms), but
+  // Windows/Linux's menu *bar* disappears along with the title bar once
+  // it's hidden, and this had no keyboard accelerator to fall back on
+  // (unlike Edit's roles). Feedback is a native dialog main shows either
+  // way (checkForUpdatesNow, updater.js) — nothing to wire back here.
+  checkUpdatesBtn.addEventListener('click', () => window.browserAPI.checkForUpdates());
 
   return { populate };
 }

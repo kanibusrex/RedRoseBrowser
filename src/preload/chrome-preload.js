@@ -64,6 +64,8 @@ const RENDERER_TO_MAIN = {
   SETTINGS_SET: 'settings:set',
   ADDRESS_SUGGEST_TOGGLE: 'address:suggestToggle',
   FOCUS_MODE_SET: 'focusMode:set',
+  TITLEBAR_OVERLAY_SET: 'titlebar:overlaySet',
+  UPDATES_CHECK: 'updates:check',
   POPOVER_SHOW: 'popover:show',
   POPOVER_CLOSE: 'popover:close',
   POPOVER_REPORT_SIZE: 'popover:reportSize',
@@ -156,6 +158,9 @@ contextBridge.exposeInMainWorld('browserAPI', {
   updateGeneralSettings: (partial) => ipcRenderer.invoke(RENDERER_TO_MAIN.SETTINGS_SET, partial),
   setAddressSuggestOpen: (open) => ipcRenderer.invoke(RENDERER_TO_MAIN.ADDRESS_SUGGEST_TOGGLE, { open }),
   setFocusMode: (on) => ipcRenderer.invoke(RENDERER_TO_MAIN.FOCUS_MODE_SET, { on }),
+  setTitleBarOverlayColors: (color, symbolColor) =>
+    ipcRenderer.invoke(RENDERER_TO_MAIN.TITLEBAR_OVERLAY_SET, { color, symbolColor }),
+  checkForUpdates: () => ipcRenderer.invoke(RENDERER_TO_MAIN.UPDATES_CHECK),
   showPopover: (kind, anchor, data) => ipcRenderer.invoke(RENDERER_TO_MAIN.POPOVER_SHOW, { kind, anchor, data }),
   closePopover: () => ipcRenderer.invoke(RENDERER_TO_MAIN.POPOVER_CLOSE),
   reportPopoverSize: (width, height) => ipcRenderer.invoke(RENDERER_TO_MAIN.POPOVER_REPORT_SIZE, { width, height }),

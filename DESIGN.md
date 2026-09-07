@@ -2488,3 +2488,109 @@ untouched) holds the peek open past where the plain auto-hide delay
 would otherwise have fired; opening a popover from the peeked rail holds
 the peek open regardless of where the mouse then goes, and closing that
 popover lets the hide countdown resume and actually complete.
+
+### 8.30 Hidden title bar
+
+"I want the title bar on the window to be hidden." Asked one thing up
+front: hide the bar but keep native window controls (traffic lights on
+macOS, minimize/maximize/close on Windows/Linux) and normal drag/resize
+— the look Notion/Slack/Arc/VS Code use — rather than going fully
+frameless with no native controls at all (which would need custom-built
+replacements for close/minimize/maximize before it was actually usable,
+a bigger separate job).
+
+**`titleBarStyle: 'hidden'`** (chrome-window.js) does this on both
+platforms, but what fills the space differs enough to need per-platform
+handling:
+
+- **macOS**: the traffic lights just float over the content at
+  `trafficLightPosition`, no color/styling of their own to set. Default
+  position collides directly with the rail's own app-glyph button (both
+  sit in roughly the same top-left ~40px square) — fixed by nudging the
+  traffic lights slightly (`{x: 18, y: 18}`) and giving `.rail` extra
+  top padding so the glyph column starts clear of them, rather than
+  moving the traffic lights somewhere non-standard (which would just
+  look broken to anyone used to where every Mac app keeps them).
+- **Windows/Linux**: no traffic-light equivalent exists, so
+  `titleBarOverlay` draws a custom-colored strip with system-drawn min/
+  max/close buttons top-right instead — the modern cross-platform way to
+  get "hidden bar, real controls" where macOS's approach doesn't apply.
+  The toolbar gets matching `padding-right` so the address bar/star
+  button don't render underneath it.
+
+**The overlay's color has no theme awareness of its own — main does.**
+`titleBarOverlay`'s color is a main-process window property, but which
+color is "correct" depends entirely on which of this app's ~30 themes is
+currently active (theme.js), something main has zero visibility into.
+Rather than hardcode one color that would clash with most of them,
+`theme.js`'s `applyThemeId` — the single choke point both the initial
+load and every later switch already went through — now also reads the
+just-applied theme's *resolved* `--paper`/`--text` (not the theme
+table's own `sw` swatch-preview colors, which exist only for the
+settings picker's little swatches and can drift from what styles.css
+actually computes) and pushes them to main via a new
+`TITLEBAR_OVERLAY_SET` channel, which calls `setTitleBarOverlay()` —
+a no-op, deliberately, on macOS, which doesn't support the API at all.
+
+**Found along the way, not asked for: Windows/Linux's menu *bar*
+disappears along with the title bar, and one menu item had nowhere else
+to go.** `Edit`/`Window`'s roles (copy, paste, undo, minimize, ...) keep
+working via their standard accelerators regardless of whether the bar
+itself is drawn — that's how Electron menu roles work everywhere, menu
+bar visible or not. But "Check for Updates…" (menu.js) is a plain
+`click` handler with no accelerator of its own, meaning hiding the bar
+that used to show it would leave it completely unreachable on Windows/
+Linux specifically (macOS's app menu lives in the *screen's* menu bar,
+never the window's, so it was never at risk there). Fixed by giving it
+a second home: a small "Check for Updates…" button in the settings
+modal's General section (new `UPDATES_CHECK` channel, straight through
+to the same `checkForUpdatesNow()` the menu item already called — same
+native-dialog feedback either way, nothing new to wire back to the
+renderer), reachable identically on every platform regardless of
+whether any menu bar is visible at all.
+
+**Known, deliberately unaddressed gap**: dragging the window by
+grabbing empty chrome space stops working during *full* focus mode
+(§8.29) specifically — not peeking, not the normal state, just the
+narrow window where the rail/toolbar have collapsed to nothing and the
+BrowserView covers everything except focus mode's own 6px hover sliver.
+Previously the OS's own title bar was always a drag fallback regardless
+of the app's own CSS drag regions; hiding it removes that safety net for
+this one narrow case. Making that sliver itself draggable was
+investigated and set aside: the natural way to do it (`-webkit-app-
+region: drag` on a shared ancestor like `#main-col`) would newly cascade
+onto the find bar/address-suggestions dropdown too, since they're
+siblings of the toolbar under that same ancestor — and unlike `.nav-btn`
+buttons (which already declare their own `no-drag`), nothing confirms
+their own inputs/rows already do, so chasing this now risked silently
+breaking clicks there for a rare edge case (this app already has full
+drag capability in the normal state and while peeking). Left as a known
+limitation rather than a rushed fix.
+
+**Verified**: a real window, this sandbox's own platform (macOS),
+constructed without throwing and with the expected `platform-mac`
+class/rail padding applied (the Windows/Linux branch's *class and
+padding* were also checked this way, forcing the other class directly —
+CSS-only, no native behavior involved); `setTitleBarOverlay()`'s guard
+logic specifically — since Electron's real window behavior always
+follows the actually-compiled platform, not a spoofed
+`process.platform`, that one path was checked by capturing the
+registered IPC handler directly (stubbing `ipcMain.handle`) and calling
+it under a forced `process.platform` with a fully mocked window object,
+confirming it calls `setTitleBarOverlay` with the given colors on non-
+mac and skips it entirely on mac — pure JS-logic-only, deliberately
+never touching a real native window at all for this part; theme.js's real
+settings-UI theme picker actually triggering the overlay-color sync (not
+just a hand-rolled call to it); and the Check-for-Updates button
+reaching `checkForUpdatesNow()` (confirmed via a stubbed
+`dialog.showMessageBox`, avoiding a real modal in a headless test).
+
+**Honestly out of reach here**: actually seeing the traffic lights or
+the Windows titleBarOverlay strip rendered — native OS window chrome
+isn't part of a `capturePage()` screenshot (same `capturePage()`
+characteristic §8.28 already ran into with `BrowserView`s), and this
+sandbox has no real, permission-granted screen to capture from even if
+it were. The positioning/padding above is based on Electron's documented
+behavior and reasonable, generous spacing rather than a pixel-measured
+fit — worth a glance once actually running it, especially on Windows,
+which couldn't be exercised here at all (this sandbox is macOS).

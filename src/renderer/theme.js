@@ -78,6 +78,23 @@ export function initTheme({ onOpen } = {}) {
     currentThemeId = t.id;
     if (t.dark) lastDarkId = t.id;
     else lastLightId = t.id;
+    syncTitleBarOverlay();
+  }
+
+  // Hidden title bar (§8.30) — Windows/Linux's titleBarOverlay is a
+  // main-process-owned window color with no theme awareness of its own;
+  // main has no visibility into which of this file's ~30 themes is
+  // active. A no-op on macOS (native traffic lights have no color to
+  // set), harmless to call regardless. Reads the CSS variables' actual
+  // *resolved* values (not the theme table's own `sw` swatch-preview
+  // colors, which exist for the settings picker's little swatches and
+  // can drift from what styles.css really computes) so this always
+  // matches whatever's genuinely on screen.
+  function syncTitleBarOverlay() {
+    const style = getComputedStyle(document.documentElement);
+    const paper = style.getPropertyValue('--paper').trim();
+    const text = style.getPropertyValue('--text').trim();
+    if (paper && text) window.browserAPI.setTitleBarOverlayColors(paper, text);
   }
 
   function persist(id) {

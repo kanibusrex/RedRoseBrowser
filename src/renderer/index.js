@@ -24,6 +24,7 @@ const generalSettings = initGeneralSettings({
   searchEngineSelect: document.getElementById('settings-search-engine'),
   homePageInput: document.getElementById('settings-home-page'),
   adBlockCheckbox: document.getElementById('settings-adblock'),
+  checkUpdatesBtn: document.getElementById('settings-check-updates'),
 });
 initTheme({ onOpen: () => generalSettings.populate() });
 initSidebarResize(document.getElementById('sidebar-resize-handle'));
@@ -37,6 +38,13 @@ function isMac() {
 }
 
 document.getElementById('address-kbd').textContent = isMac() ? '⌘L' : 'Ctrl+L';
+
+// Hidden title bar (§8.30) — which native window controls float over the
+// content, and where, differs by platform (macOS's traffic lights sit
+// top-left, over the rail; Windows/Linux's titleBarOverlay buttons sit
+// top-right, over the toolbar), so styles.css needs to know which one to
+// clear space for.
+document.documentElement.classList.add(isMac() ? 'platform-mac' : 'platform-overlay-titlebar');
 
 let state = { tabs: [], activeTabId: null, groups: [] };
 let bookmarks = [];

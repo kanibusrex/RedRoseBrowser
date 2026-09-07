@@ -4,6 +4,7 @@ const { ipcMain } = require('electron');
 
 const { RENDERER_TO_MAIN, MAIN_TO_RENDERER } = require('../shared/ipc-channels');
 const { resolvePendingPermission } = require('./permission-manager');
+const { checkForUpdatesNow } = require('./updater');
 
 /**
  * Registers ipcMain.handle listeners for exactly the channels enumerated
@@ -192,6 +193,29 @@ function registerIpcHandlers(chromeWin, profileManager, popoverManager) {
   // focused keeps the setting, the same as sidebar width does.
   ipcMain.handle(RENDERER_TO_MAIN.FOCUS_MODE_SET, (_event, { on } = {}) => {
     profileManager.setFocusMode(!!on);
+  });
+
+  // Hidden title bar (§8.30) — Windows/Linux's titleBarOverlay is a
+  // main-process-owned color, but which color is "correct" is purely a
+  // renderer concern (theme.js, ~30 themes deep) main has no visibility
+  // into otherwise. macOS's native traffic lights have no color of their
+  // own to set, so this is a no-op there — setTitleBarOverlay isn't
+  // supported on that platform regardless.
+  ipcMain.handle(RENDERER_TO_MAIN.TITLEBAR_OVERLAY_SET, (_event, { color, symbolColor } = {}) => {
+    if (process.platform === 'darwin' || chromeWin.isDestroyed()) return;
+    chromeWin.setTitleBarOverlay({ color, symbolColor, height: 48 });
+  });
+
+  // Also reachable from the native "Check for Updates…" menu item
+  // (menu.js) — this is the same manual, always-gives-feedback check, just
+  // reachable from Settings too. Added alongside §8.30's hidden title bar:
+  // Windows/Linux's menu *bar* (not just the title bar) disappears once
+  // the title bar is hidden, and "Check for Updates…" had no other way to
+  // reach it there (unlike Edit/Window's roles, which keep their
+  // accelerators — Ctrl+C etc. — regardless of whether the bar itself is
+  // drawn; this had no accelerator of its own to fall back on).
+  ipcMain.handle(RENDERER_TO_MAIN.UPDATES_CHECK, () => {
+    checkForUpdatesNow();
   });
 
   // Popovers (§8.28) — a genuine overlay on top of the page, not chrome-

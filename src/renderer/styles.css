@@ -1222,6 +1222,26 @@ button {
   cursor: pointer;
 }
 
+/* A neutral, bordered action button for a settings field that isn't a
+   plain text/select/checkbox input — "Check for Updates…" (§8.30) today,
+   reusable for anything similar later. Deliberately not accent-filled
+   (.ext-install-btn's look) — this isn't the modal's primary action. */
+.btn-secondary {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: var(--surface-2);
+}
+
 .theme-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
@@ -2289,4 +2309,32 @@ button {
      height — without this it would sit there as a lone hairline even
      once every other trace of the toolbar has collapsed away. */
   border-bottom-width: 0;
+}
+
+/* ============================================================
+   Hidden title bar (§8.30) — the window has no title bar/text, but
+   keeps its native controls, which now float *over* this document's own
+   content instead of occupying separate OS-reserved space (chrome-
+   window.js's titleBarStyle: 'hidden'). Where they land differs by
+   platform, so index.js sets exactly one of these two classes on
+   <html> at startup and this is the only place either one matters:
+   clearing room so nothing this app draws renders underneath them.
+   ============================================================ */
+
+/* macOS: traffic lights float top-left, over the rail — nudge the
+   glyph/icon column down clear of them (chrome-window.js's
+   trafficLightPosition) rather than moving the traffic lights
+   somewhere non-standard, which would just look broken to anyone used
+   to where every other Mac app keeps them. */
+html.platform-mac .rail {
+  padding-top: 40px;
+}
+
+/* Windows/Linux: no traffic-light equivalent — titleBarOverlay
+   (chrome-window.js) instead draws a custom-colored strip with system
+   min/max/close buttons top-right, over the toolbar. Reserve the same
+   width so the address bar/star button don't render underneath it;
+   the address bar itself just shrinks to fit, being flex-sized already. */
+html.platform-overlay-titlebar #toolbar {
+  padding-right: 140px;
 }

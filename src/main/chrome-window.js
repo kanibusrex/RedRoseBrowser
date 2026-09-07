@@ -31,6 +31,21 @@ function createChromeWindow() {
     title: 'RedRose Browser',
     icon: path.join(__dirname, '..', '..', 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     show: false,
+    // Hidden title bar (§8.30) — no title text/bar, but native window
+    // controls stay: traffic lights (macOS) float over the content at a
+    // custom position nudged clear of the rail's own app-glyph button
+    // (styles.css gives the rail extra top padding on macOS to match —
+    // see index.js's platform-mac class); on Windows/Linux,
+    // titleBarOverlay draws a custom-colored strip with system min/max/
+    // close buttons instead, since macOS's "just show the native traffic
+    // lights, no title bar" doesn't have an equivalent there. Colors
+    // start matching the default theme and are kept in sync with
+    // whatever theme is actually active by theme.js, via
+    // TITLEBAR_OVERLAY_SET — main has no theme state of its own.
+    titleBarStyle: 'hidden',
+    ...(process.platform === 'darwin'
+      ? { trafficLightPosition: { x: 18, y: 18 } }
+      : { titleBarOverlay: { color: '#ffffff', symbolColor: '#1c2740', height: 48 } }),
     webPreferences: chromeWindowWebPreferences(),
   });
 
