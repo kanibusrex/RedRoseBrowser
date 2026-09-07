@@ -36,6 +36,21 @@ function createAppWindow() {
   // regardless of which one currently has focus.
   attachChromeShortcuts(chromeWin.webContents, chromeWin, () => profileManager.getActiveTabManager());
 
+  // §8.40 — Windows/Linux deliver a mouse's back/forward buttons as a
+  // window-level app command rather than as DOM mouse events, so they're
+  // handled here instead of in a preload (macOS gets neither this event
+  // nor any main-process equivalent, which is why the preload path exists
+  // at all — the two are complements, not duplicates, and can't both fire
+  // on the same platform).
+  chromeWin.on('app-command', (event, command) => {
+    if (command !== 'browser-backward' && command !== 'browser-forward') return;
+    const tm = profileManager.getActiveTabManager();
+    if (!tm || !tm.activeTabId) return;
+    event.preventDefault();
+    if (command === 'browser-backward') tm.goBack(tm.activeTabId);
+    else tm.goForward(tm.activeTabId);
+  });
+
   chromeWin.webContents.once('did-finish-load', () => {
     profileManager.start();
   });

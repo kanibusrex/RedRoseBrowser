@@ -3257,3 +3257,84 @@ dismiss by clicking outside (the `blur` path), so this is a small
 annoyance rather than the reported defect, and it is deliberately left
 alone here instead of being folded into a fix for something else — the
 habit that produced four wrong releases in the first place.
+
+### 8.40 Mouse back/forward buttons
+
+"I would like to have the browser respond to my forward and back buttons
+on my mouse. right now, they don't do anything." They didn't, because
+nothing in the app had ever looked for them — Electron does nothing with
+them on its own.
+
+**Why this one can't be handled the way every other browser-level input
+is.** §8.32 established the rule for this app: chrome-level input is
+claimed in the main process, wired to every webContents that can hold
+focus, so a page never gets first dibs and focus never decides whether it
+works. That mechanism is unavailable here, in three separate ways:
+
+- `BrowserWindow`'s `app-command` event (`browser-backward` /
+  `browser-forward`) is **Windows/Linux only** — its own Electron typings
+  say `@platform win32,linux`.
+- `before-input-event`, which §8.32 is built on, is keyboard-only.
+- `webContents`' `input-event` does fire for mouse events, but the
+  `InputEvent` structure carries no button identity at all — only
+  `type` and a `modifiers` array whose button entries stop at
+  left/middle/right.
+
+So on macOS the only place these buttons are observable is as ordinary
+DOM mouse events, where they arrive as `button === 3` (back) and
+`button === 4` (forward). That makes this the one input in the app that
+genuinely has to be recognised in a renderer.
+
+**Where the listener lives, and why**: in the *preloads' own isolated
+worlds* — `page-preload.js` for tab pages, `chrome-preload.js` for the
+chrome window and every popover — rather than in page or app code. That
+covers every document without adding anything to the `window.browserAPI`
+surface, and it keeps the §8.32 property that matters: it works wherever
+focus happens to be. Capture phase, so a page can't swallow the event
+before the browser acts on it — the same "the browser wins, not the page"
+rule that applies to Cmd+T.
+
+`page-preload.js` was deliberately empty until now (§2.3 / §7.6: no
+contextBridge surface for arbitrary web content). **That rule is
+unchanged** — it still exposes nothing. `ipcRenderer` is used inside the
+isolated world and never handed to the page, so page script has no way to
+reach the channel; the event is `isTrusted`-checked so a synthetic
+`dispatchEvent` can't forge one; and the only thing it can trigger —
+back/forward in that tab's own session history — is something any page
+can already do for itself with `history.back()`.
+
+Main resolves the tab from `event.sender` (new
+`TabManager.tabIdForWebContents`) rather than trusting a renderer-supplied
+id, so the press navigates the tab it actually happened over rather than
+always the active one — they differ in split view, where two tabs' pages
+are visible and clickable at once. A press over the chrome UI or a
+popover, which belongs to no tab, falls back to the active tab.
+`app-command` is still wired in `index.js` for Windows/Linux, where the
+DOM path doesn't fire — the two are complements, not duplicates, and
+can't both fire on the same platform.
+
+**Verified** by injecting real `back`/`forward` button presses through
+Chromium's own input pipeline (CDP `Input.dispatchMouseEvent` supports
+those button values, and the resulting DOM events are `isTrusted: true` —
+so unlike a synthetic `dispatchEvent`, this exercises the same path a
+physical button does and is not the kind of fake input §8.32 and §8.39
+were both burned by). Confirmed the DOM genuinely receives them
+(`mouseup:btn=3:trusted=true`), then confirmed real navigation in both
+directions on a page with real session history, from **both** listener
+locations: dispatched at the page, and dispatched at the chrome window
+(which correctly navigated the active tab).
+
+**The one link not verifiable from here**: whether a given physical
+mouse's thumb buttons are delivered by macOS to Chromium as buttons 3/4
+in the first place. Everything downstream of Chromium receiving them is
+proven above; the hardware-to-Chromium mapping needs the actual mouse,
+and is the one thing left for the user to confirm. It is the standard
+mapping, but it is not something this sandbox can press.
+
+**Noticed while testing, not fixed here**: after a `navigate()` (address
+bar / `loadURL`) the tab's back history can end up genuinely empty even
+though the page's own `history.length` is 2, so the toolbar back button
+correctly reports and behaves as disabled. Real in-page navigations
+(link clicks) build history normally and back works fine, which is why
+this hasn't shown up in use. Flagged rather than folded in — bundling
+unrelated fixes is the habit §8.39 came out of.

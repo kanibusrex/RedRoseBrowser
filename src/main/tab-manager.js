@@ -814,6 +814,17 @@ class TabManager {
       .catch(() => {});
   }
 
+  // §8.40 — resolves a tab from the webContents that sent something, so a
+  // mouse back/forward press navigates the tab it actually happened over
+  // rather than always the active one (they differ in split view, where
+  // both tabs' pages are visible and clickable at once).
+  tabIdForWebContents(webContents) {
+    for (const [id, tab] of this.tabs) {
+      if (tab.view.webContents === webContents) return id;
+    }
+    return null;
+  }
+
   goBack(tabId) {
     const tab = this.tabs.get(tabId);
     if (!tab) return;

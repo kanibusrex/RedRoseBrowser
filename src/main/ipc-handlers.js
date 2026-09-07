@@ -63,6 +63,22 @@ function registerIpcHandlers(chromeWin, profileManager, popoverManager) {
     activeTabs().goForward(tabId);
   });
 
+  // §8.40 — a mouse's own back/forward buttons, forwarded by whichever
+  // preload's isolated world saw the DOM event (that button identity
+  // never reaches main on its own). `on`, not `handle`: the sender uses
+  // send() and wants no reply. The tab is resolved from the sender rather
+  // than trusting a renderer-supplied id, and falls back to the active
+  // tab when the press happened over the chrome UI or a popover rather
+  // than over a page.
+  ipcMain.on(RENDERER_TO_MAIN.NAV_MOUSE_BUTTON, (event, { direction } = {}) => {
+    const tm = activeTabs();
+    if (!tm) return;
+    const tabId = tm.tabIdForWebContents(event.sender) || tm.activeTabId;
+    if (!tabId) return;
+    if (direction === 'back') tm.goBack(tabId);
+    else if (direction === 'forward') tm.goForward(tabId);
+  });
+
   ipcMain.handle(RENDERER_TO_MAIN.NAV_RELOAD, (_event, { tabId } = {}) => {
     activeTabs().reload(tabId);
   });

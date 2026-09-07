@@ -20,6 +20,7 @@ const RENDERER_TO_MAIN = {
   NAV_RELOAD: 'nav:reload',
   NAV_HOME: 'nav:home',
   NAV_STOP: 'nav:stop',
+  NAV_MOUSE_BUTTON: 'nav:mouseButton',
   TABS_GET_ALL: 'tabs:getAll',
   CHROME_OVERLAY_OPEN: 'chrome:overlay-open',
   CHROME_OVERLAY_CLOSE: 'chrome:overlay-close',
@@ -191,3 +192,29 @@ contextBridge.exposeInMainWorld('browserAPI', {
   onShortcutToggleFocusMode: (cb) => subscribe(MAIN_TO_RENDERER.SHORTCUT_TOGGLE_FOCUS_MODE, cb),
   onShortcutCopyUrl: (cb) => subscribe(MAIN_TO_RENDERER.SHORTCUT_COPY_URL, cb),
 });
+
+// §8.40 — the mouse's own back/forward buttons (the two thumb buttons on
+// most mice). Electron does nothing with these by itself: `app-command`
+// is Windows/Linux only, `before-input-event` (§8.32) is keyboard-only,
+// and a webContents' `input-event` carries no button identity at all — so
+// unlike every other browser-level input in this app, this one genuinely
+// has to be recognised in a renderer and handed to main. They arrive as
+// ordinary DOM mouse events: button 3 = back, button 4 = forward.
+//
+// Attached here in the preload's own isolated world rather than in
+// index.js, so it covers this document and every popover without adding
+// anything to the window.browserAPI surface. Capture phase, so page/app
+// code can't swallow it first; `isTrusted` so a synthetic dispatch can't
+// forge one.
+window.addEventListener(
+  'mouseup',
+  (event) => {
+    if (!event.isTrusted) return;
+    if (event.button !== 3 && event.button !== 4) return;
+    event.preventDefault();
+    ipcRenderer.send(RENDERER_TO_MAIN.NAV_MOUSE_BUTTON, {
+      direction: event.button === 3 ? 'back' : 'forward',
+    });
+  },
+  true
+);

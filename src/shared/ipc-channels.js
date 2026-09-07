@@ -18,6 +18,10 @@ const RENDERER_TO_MAIN = Object.freeze({
   NAV_RELOAD: 'nav:reload',
   NAV_HOME: 'nav:home',
   NAV_STOP: 'nav:stop',
+  // §8.40 — a mouse's own back/forward buttons. Sent (not invoked) from
+  // whichever preload's isolated world saw the DOM mouse event, since
+  // that button identity never reaches the main process on its own.
+  NAV_MOUSE_BUTTON: 'nav:mouseButton',
   TABS_GET_ALL: 'tabs:getAll',
   CHROME_OVERLAY_OPEN: 'chrome:overlay-open',
   CHROME_OVERLAY_CLOSE: 'chrome:overlay-close',
