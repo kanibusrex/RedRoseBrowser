@@ -129,19 +129,95 @@ class ExtensionManager {
     return path.join(EXTENSIONS_DIR(), profileId, extensionId);
   }
 
+  // §8.38 — repairs extensions installed BEFORE §8.35 existed, which are
+  // still sitting on disk with no `key` in their manifest and therefore
+  // still loading under a wrong, locally-derived id. §8.35 only ever ran
+  // inside install(), so for anyone who already had an extension
+  // installed when that shipped, the fix did precisely nothing: the
+  // broken state persists across upgrades and restarts forever, and the
+  // only way out was to notice, and manually remove and reinstall.
+  //
+  // Recovers the same publisher key install() would have, from a fresh
+  // download of the same CRX, and writes it into the manifest already on
+  // disk — deliberately NOT re-unzipping the whole package, so the
+  // browser-namespace polyfill already injected into this copy's
+  // background script (and anything else install() did to these files)
+  // survives untouched.
+  //
+  // Best-effort by construction: needs the network, and runs at startup.
+  // Any failure (offline, Web Store 404 for a delisted extension, an
+  // unsigned CRX2 with no recoverable key) leaves the extension exactly
+  // as it is today and lets it load unrepaired — strictly no worse than
+  // before this existed. Succeeds at most once per extension: afterwards
+  // the manifest has a `key`, so this skips it outright.
+  async _repairExtensionId(profileId, record) {
+    const dir = this._extensionDir(profileId, record.sourceId);
+    const manifestPath = path.join(dir, 'manifest.json');
+
+    let manifest;
+    try {
+      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    } catch {
+      return false;
+    }
+    if (manifest.key) return false; // already correct (or repaired earlier)
+
+    let manifestKey;
+    try {
+      const crx = await downloadCrx(record.sourceId);
+      const { publicKeyDer } = parseCrx(crx);
+      manifestKey = manifestKeyFromCrx(publicKeyDer);
+    } catch (err) {
+      console.warn(`Couldn't recover the real id for ${record.sourceId} (leaving it as-is):`, err.message);
+      return false;
+    }
+    if (!manifestKey) return false;
+
+    manifest.key = manifestKey;
+    try {
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+    } catch (err) {
+      console.warn(`Couldn't write the recovered id for ${record.sourceId}:`, err.message);
+      return false;
+    }
+    return true;
+  }
+
   // Loads every enabled extension this profile has installed into its
   // session — called once when a profile's session/TabManager is first
   // created (see ProfileManager._ensureTabManager).
   async loadAllForProfile(profileSession, profileId) {
+    let registryChanged = false;
+
     for (const record of this.list(profileId)) {
       if (!record.enabled) continue;
       const dir = this._extensionDir(profileId, record.sourceId);
+
+      // Repair before loading, never after: an extension loaded under the
+      // wrong id would otherwise have to be unloaded and re-loaded to pick
+      // the corrected one up.
+      if (record.id !== record.sourceId) {
+        await this._repairExtensionId(profileId, record);
+      }
+
       try {
-        await profileSession.extensions.loadExtension(dir, { allowFileAccess: false });
+        const loaded = await profileSession.extensions.loadExtension(dir, { allowFileAccess: false });
+        // Always reconcile, repair or not — loadAllForProfile used to
+        // discard `loaded` entirely, so any drift between the id Electron
+        // actually assigns and the stale one in extensions.json (which is
+        // what every chrome-extension:// URL the UI builds comes from)
+        // would silently persist.
+        const live = this.byProfile[profileId].find((e) => e.sourceId === record.sourceId);
+        if (live && live.id !== loaded.id) {
+          live.id = loaded.id;
+          registryChanged = true;
+        }
       } catch (err) {
         console.warn(`Failed to load extension ${record.sourceId} for profile ${profileId}:`, err.message);
       }
     }
+
+    if (registryChanged) this._save();
   }
 
   async install(profileSession, profileId, ref) {

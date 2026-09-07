@@ -99,12 +99,27 @@ export function render(root) {
       meta.appendChild(version);
       row.appendChild(meta);
 
+      // openExtensionPage rejects rather than returning a status (no
+      // popup, no options page, extension not found) — unhandled, that
+      // rejection is swallowed by the renderer and the click looks like
+      // it simply did nothing at all, which is indistinguishable from a
+      // dead button and is exactly how §8.33-§8.35's real failures
+      // presented. Surface it in the popover's own error slot instead.
+      const openPage = async (kind) => {
+        try {
+          await window.browserAPI.openExtensionPage(ext.id, kind);
+        } catch (err) {
+          lastError = err?.message || String(err);
+          renderAll();
+        }
+      };
+
       if (ext.popupUrl) {
         icon.title = 'Open';
         icon.classList.add('ext-icon-clickable');
-        icon.addEventListener('click', () => window.browserAPI.openExtensionPage(ext.id, 'popup'));
+        icon.addEventListener('click', () => openPage('popup'));
         name.classList.add('ext-name-clickable');
-        name.addEventListener('click', () => window.browserAPI.openExtensionPage(ext.id, 'popup'));
+        name.addEventListener('click', () => openPage('popup'));
       }
 
       if (ext.optionsUrl) {
@@ -113,7 +128,7 @@ export function render(root) {
         optionsBtn.className = 'ext-options';
         optionsBtn.title = 'Options';
         optionsBtn.textContent = '⚙';
-        optionsBtn.addEventListener('click', () => window.browserAPI.openExtensionPage(ext.id, 'options'));
+        optionsBtn.addEventListener('click', () => openPage('options'));
         row.appendChild(optionsBtn);
       }
 
@@ -138,7 +153,14 @@ export function render(root) {
       removeBtn.className = 'ext-remove';
       removeBtn.title = 'Remove';
       removeBtn.textContent = '×';
-      removeBtn.addEventListener('click', () => window.browserAPI.removeExtension(ext.id));
+      removeBtn.addEventListener('click', async () => {
+        try {
+          await window.browserAPI.removeExtension(ext.id);
+        } catch (err) {
+          lastError = err?.message || String(err);
+          renderAll();
+        }
+      });
       row.appendChild(removeBtn);
 
       popover.appendChild(row);

@@ -3068,3 +3068,107 @@ deliberately held back from actually publishing anything as part of
 building this, consistent with the project's own established pattern
 of never publishing without it being a genuine, current decision, not
 an incidental side effect of something else.
+
+### 8.38 The §8.35 fix had never actually run on a real machine
+
+"I STILL can't click on the extension in the extension popout menu" —
+the fourth report of the same thing, after §8.33, §8.34 and §8.35 each
+shipped as fixed. It was still broken, and the reason is worth writing
+down plainly, because the defect was in how the previous fix was
+verified rather than in what it did.
+
+**§8.35's fix only ever ran inside `install()`.** It recovers the
+publisher key from the downloaded CRX and writes it into the unpacked
+`manifest.json`, so Electron computes the extension's real Web Store
+id instead of a locally-derived one. That is the correct fix and it
+was genuinely verified — on a *freshly installed* extension, in a
+sandbox. But an upgrade doesn't reinstall anything. For anyone who
+already had the extension installed when v1.6.5 landed, the files on
+disk kept their keyless manifest and their wrong id forever, and the
+fix did precisely nothing. The only escape was to somehow know to
+remove and reinstall. So the one person actually affected saw no
+change at all across three consecutive "fixed" releases.
+
+**Diagnosed this time against the real machine's own state, not a
+reconstruction** — which is what finally made it obvious:
+
+- `extensions.json` said `id: pgfbjhcohheeaajmchhhocgidpgabhgo`,
+  `sourceId: aeblfdkhhhdcdjpifhhbdiojplfjncoa`. Not equal — i.e. exactly
+  the state §8.35 was supposed to have eliminated. The unpacked
+  `manifest.json` had no `key`. Installed 24 Aug, before v1.6.5.
+- 1Password's own native-messaging host manifest, present on that
+  machine at Chrome's own search path, allowlists six real extension
+  ids — including `aeblfdkhhhdcdjpifhhbdiojplfjncoa`, and of course not
+  `pgfbjhcohheeaajmchhhocgidpgabhgo`. So every connection attempt was
+  refused, by design, exactly as §8.35 predicted.
+- Driving the *running* app over its own DevTools endpoint (rather than
+  a harness): clicking really did open the popup at a URL that really
+  did resolve — and the page mounted real 1Password UI that then sat on
+  "Loading…" forever. "Can't click on the extension" was a dead popup,
+  not a dead button. Worth stating since three prior sections chased
+  the click path itself.
+
+Two hypotheses got killed by that same evidence before they could
+become a fourth wrong fix: the ids were *stable* across restarts (so
+the recent Electron bump had not shifted id derivation — the registry
+and runtime agreed), and a `Service worker registration failed` error
+turned out to be an artifact of a minimal probe session that lacked the
+extension bridge, absent from the real app, where the service worker
+runs fine.
+
+**Fix**: `ExtensionManager._repairExtensionId` — for any installed
+extension whose `id` doesn't match its `sourceId` and whose manifest
+has no `key`, re-download the same CRX, recover the same key §8.35
+recovers, and write it into the manifest already on disk. Deliberately
+*not* a re-unzip: the browser-namespace polyfill (§8.8.3) injected into
+that copy's background script at install time has to survive. Runs from
+`loadAllForProfile` before the load, so the extension comes up under the
+corrected id immediately. Best-effort throughout — offline, a delisted
+extension, an unrecoverable key all just leave it as it is and load it
+unrepaired, which is exactly today's behaviour. Succeeds at most once,
+since afterwards the manifest has a `key`.
+
+`loadAllForProfile` also now reconciles `record.id` with the id Electron
+actually assigns. It previously discarded the loaded extension object
+entirely, so any drift between the real id and the stale one in
+`extensions.json` — which is what every `chrome-extension://` URL the UI
+builds comes from — would have persisted silently.
+
+Separately, the extensions popover swallowed its own errors:
+`openExtensionPage` *rejects* ("this extension doesn't have a popup",
+"extension not found") and every click handler called it without a
+`catch`, so a failure was an unhandled rejection and the click looked
+like it did nothing whatsoever — indistinguishable from a dead button,
+and precisely the symptom reported four times. Those now surface in the
+popover's existing error slot.
+
+**Verified end to end on the real machine, which is the whole point
+this time** — the previous section's own "honestly out of reach here"
+note (whether the popup ever renders real UI, needing 1Password's
+actual desktop app) is now closed, because this was diagnosed and
+fixed where that app actually exists:
+
+- After the migration, `extensions.json` reads
+  `id === sourceId === aeblfdkhhhdcdjpifhhbdiojplfjncoa`, and the
+  manifest on disk carries a `key`.
+- `chrome.runtime.connectNative('com.1password.1password')`, evaluated
+  in the extension's own live service worker, **connects and receives a
+  real reply from the real 1Password desktop app** — the exact handshake
+  that was being refused before.
+- The popup, opened through the app's own real click path, now renders
+  actual working UI ("No accounts found. Add account…") instead of
+  hanging on "Loading…".
+
+That last state is expected and is a genuine one-time cost of the
+repair: correcting the id means the extension's storage, which is keyed
+per-id, starts fresh, so it asks to sign in again. Signing in is
+something that was simply impossible before, since the UI never got far
+enough to offer it.
+
+**Still open, deliberately not fixed here**: an extension with no popup
+at all gets no click handler in the popover (`if (ext.popupUrl)`), and
+this app never dispatches `chrome.action.onClicked` the way a real
+browser does when a popup-less extension's icon is clicked — so such an
+extension is genuinely inert here. Real, but a different defect from
+the one reported, and unrelated to 1Password (which declares a popup
+statically). Noted rather than folded into this fix.
