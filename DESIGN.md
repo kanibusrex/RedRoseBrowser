@@ -3172,3 +3172,88 @@ browser does when a popup-less extension's icon is clicked — so such an
 extension is genuinely inert here. Real, but a different defect from
 the one reported, and unrelated to 1Password (which declares a popup
 statically). Noted rather than folded into this fix.
+
+### 8.39 Every popover was unclickable — draggable regions, not extensions
+
+Five reports of "can't click the extension in the extension popout menu",
+across four releases that each shipped a confident fix (§8.33, §8.34,
+§8.35, §8.38). None of them were the bug. The actual cause was never in
+the extensions code at all, and the reason it stayed hidden that long is
+worth recording as carefully as the fix.
+
+**What it actually was**: §8.30 hid the window's title bar, which left no
+title bar to drag the window by — so `.rail`, `#sidebar` and `#toolbar`
+were all marked `-webkit-app-region: drag` to serve as the drag handle.
+macOS resolves draggable regions at the **window** level, computed from
+the window's own document, with **no knowledge of any `BrowserView`
+stacked on top of them**. Every popover (§8.28) is such a view, and every
+one of them opens anchored to a rail button or the toolbar — i.e. always
+directly over a draggable region. So AppKit's window-drag machinery
+consumed every mouse event aimed at a popover before it reached any
+webContents at all. Not the popover's, not the chrome window's: nowhere.
+
+That is why nothing in four releases of extension fixes ever helped —
+**this was never extension-specific.** Bookmarks, history, downloads, the
+profile switcher, tab context menus, the permission prompt: every popover
+in the app was equally, silently unclickable. The extensions popover was
+simply the only one whose entire purpose is clicking something inside it,
+so it was the only one anyone reported.
+
+**How it finally got found**: by driving the real, packaged app with real
+OS-level mouse input instead of programmatic clicks. Every previous
+"verified" claim, this session's §8.38 included, was made against
+`Input.dispatchMouseEvent` or a direct IPC call — both of which deliver
+straight to a chosen webContents and therefore **cannot** observe a bug
+that happens before event routing picks a target. §8.32 had already
+written down this exact lesson ("synthetic dispatch bypasses the real
+input pipeline and masks real bugs") and it still got repeated four more
+times. Real clicks reproduced it on the first attempt.
+
+The diagnosis then came from evidence rather than inspection: a click
+landing inside the popover's bounds produced **zero** events in the
+popover's document *and* zero in the chrome window's — so the event was
+being consumed above both. AppKit's own `Window move completed without
+beginning` warning appeared in the log at exactly that moment. A tab's
+`BrowserView`, which sits over the page area and therefore over no
+draggable region, received the identical synthetic-free click perfectly
+(`mousedown@939,579`, matching the computed coordinates exactly), which
+localized it to the drag regions rather than to `BrowserView` input in
+general. Confirmed by injecting `-webkit-app-region: no-drag` over those
+three surfaces at runtime and watching a real click immediately start
+working.
+
+Two plausible-sounding theories were killed by that same evidence before
+either could become a fifth wrong fix: attach ordering (`addBrowserView`
+before vs. after `setBounds`) and `setTopBrowserView` — neither changed
+anything, and the view dump showed the popover already correctly topmost
+with sane bounds (`{x:61, y:1253, width:248, height:149}` inside a
+3130×1410 content area). An auto-hidden Dock at the screen bottom looked
+promising too, since the popover is clamped to the window's bottom edge —
+killed by opening a popover at the *top* of the window and finding it
+equally dead.
+
+**Fix**: while any popover is open, the chrome window drops its own
+draggable regions — `PopoverManager` pushes `POPOVER_OPEN_STATE` on show
+and close, `index.js` toggles a `popover-open` class on `<html>`, and
+`styles.css` makes those three surfaces `no-drag` under it. The window
+just can't be dragged by them while a popover is showing, which is
+unnoticeable in practice and what other apps do anyway. Restoring them on
+close is part of the same signal, so nothing leaks.
+
+**Verified with real OS-level input, on the real app** — the only kind of
+verification that would have caught this: a real mouse click on the
+1Password row in the extensions popover opens its popup (new tab, correct
+`chrome-extension://aeblfdkhhhdcdjpifhhbdiojplfjncoa/popup/index.html`,
+UI rendering), a real click on a profile-switcher colour swatch moves the
+selection ring, real typing into the install field lands in the input, and
+the `popover-open` class is present exactly while a popover is open and
+gone the moment it closes.
+
+**Separate, still open**: the Escape key never reaches a popover's
+webContents at all — a logger in the popover records an `a` keypress but
+no `Escape`, and nothing in this app's own main process intercepts it, so
+it's being swallowed above the view by Electron/macOS. Popovers still
+dismiss by clicking outside (the `blur` path), so this is a small
+annoyance rather than the reported defect, and it is deliberately left
+alone here instead of being folded into a fix for something else — the
+habit that produced four wrong releases in the first place.

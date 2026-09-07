@@ -2351,3 +2351,19 @@ html.platform-mac .rail {
 html.platform-overlay-titlebar #toolbar {
   padding-right: 140px;
 }
+
+/* §8.39 — a popover is an overlaying BrowserView, and macOS resolves
+   `-webkit-app-region: drag` at the *window* level, from this document
+   alone, with no knowledge of any view stacked above it. Any click landing
+   in one of those regions is taken by AppKit's window-drag machinery and
+   never reaches the popover at all, which made every popover in the app
+   completely unclickable (see DESIGN.md §8.39). So for as long as one is
+   open, the chrome's draggable surfaces stop being draggable — the class
+   is toggled from main via POPOVER_OPEN_STATE. The window just can't be
+   dragged by them while a popover shows, which is the same thing every
+   other app does. */
+:root.popover-open .rail,
+:root.popover-open #sidebar,
+:root.popover-open #toolbar {
+  -webkit-app-region: no-drag;
+}

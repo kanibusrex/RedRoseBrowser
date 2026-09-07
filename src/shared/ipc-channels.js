@@ -82,6 +82,10 @@ const MAIN_TO_RENDERER = Object.freeze({
   FIND_RESULT: 'find:result',
   DOWNLOADS_CHANGED: 'downloads:changed',
   POPOVER_INIT: 'popover:init',
+  // §8.39 — tells the chrome window whether a popover is currently open,
+  // purely so it can drop its own draggable regions while one is (they
+  // swallow mouse input aimed at the popover's view stacked above them).
+  POPOVER_OPEN_STATE: 'popover:openState',
   SHORTCUT_FOCUS_ADDRESS_BAR: 'shortcut:focusAddressBar',
   SHORTCUT_OPEN_FIND_BAR: 'shortcut:openFindBar',
   SHORTCUT_TOGGLE_FOCUS_MODE: 'shortcut:toggleFocusMode',

@@ -83,6 +83,10 @@ const MAIN_TO_RENDERER = {
   FIND_RESULT: 'find:result',
   DOWNLOADS_CHANGED: 'downloads:changed',
   POPOVER_INIT: 'popover:init',
+  // §8.39 — tells the chrome window whether a popover is currently open,
+  // purely so it can drop its own draggable regions while one is (they
+  // swallow mouse input aimed at the popover's view stacked above them).
+  POPOVER_OPEN_STATE: 'popover:openState',
   SHORTCUT_FOCUS_ADDRESS_BAR: 'shortcut:focusAddressBar',
   SHORTCUT_OPEN_FIND_BAR: 'shortcut:openFindBar',
   SHORTCUT_TOGGLE_FOCUS_MODE: 'shortcut:toggleFocusMode',
@@ -181,6 +185,7 @@ contextBridge.exposeInMainWorld('browserAPI', {
   onFindResult: (cb) => subscribe(MAIN_TO_RENDERER.FIND_RESULT, cb),
   onDownloadsChanged: (cb) => subscribe(MAIN_TO_RENDERER.DOWNLOADS_CHANGED, cb),
   onPopoverInit: (cb) => subscribe(MAIN_TO_RENDERER.POPOVER_INIT, cb),
+  onPopoverOpenState: (cb) => subscribe(MAIN_TO_RENDERER.POPOVER_OPEN_STATE, cb),
   onShortcutFocusAddressBar: (cb) => subscribe(MAIN_TO_RENDERER.SHORTCUT_FOCUS_ADDRESS_BAR, cb),
   onShortcutOpenFindBar: (cb) => subscribe(MAIN_TO_RENDERER.SHORTCUT_OPEN_FIND_BAR, cb),
   onShortcutToggleFocusMode: (cb) => subscribe(MAIN_TO_RENDERER.SHORTCUT_TOGGLE_FOCUS_MODE, cb),

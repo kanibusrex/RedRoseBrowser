@@ -293,3 +293,12 @@ window.browserAPI.onShortcutToggleFocusMode(() => {
 window.browserAPI.onShortcutCopyUrl(() => {
   flashCopyUrlButton();
 });
+
+// §8.39 — while any popover is open, this document drops its own
+// draggable regions. They're applied by macOS at the window level with no
+// awareness of the popover's view stacked on top of them, so leaving them
+// on means AppKit's window-drag machinery silently eats every click aimed
+// at the popover. See popover-manager.js's _setChromeDragRegionsEnabled.
+window.browserAPI.onPopoverOpenState(({ popoverOpen } = {}) => {
+  document.documentElement.classList.toggle('popover-open', !!popoverOpen);
+});

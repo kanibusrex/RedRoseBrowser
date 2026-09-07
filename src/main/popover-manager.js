@@ -50,6 +50,28 @@ class PopoverManager {
     return !!this.view;
   }
 
+  // §8.39 — the chrome window marks its rail, sidebar and toolbar
+  // `-webkit-app-region: drag` (§8.30's hidden title bar left no title bar
+  // to drag the window by, so those surfaces became the drag handle).
+  // macOS applies draggable regions at the *window* level, computed from
+  // the window's own contents, with no knowledge of any BrowserView
+  // stacked on top — so a mouse event landing in one is consumed by
+  // AppKit's window-drag machinery and never delivered to any webContents
+  // at all, including a popover sitting directly above it. Every popover
+  // in this app opens over exactly those surfaces, which made all of them
+  // completely unclickable. Dropping the drag regions for as long as a
+  // popover is open is what actually fixes it; the window simply can't be
+  // dragged by those surfaces while a popover is showing, which is both
+  // unnoticeable in practice and what every other app does anyway.
+  _setChromeDragRegionsEnabled(enabled) {
+    if (this.win.isDestroyed()) return;
+    try {
+      this.win.webContents.send(MAIN_TO_RENDERER.POPOVER_OPEN_STATE, { popoverOpen: !enabled });
+    } catch {
+      /* best-effort — a window mid-teardown just keeps its regions */
+    }
+  }
+
   currentWebContents() {
     return this.view ? this.view.webContents : null;
   }
@@ -87,6 +109,9 @@ class PopoverManager {
     view.setBounds({ x: Math.round(anchor.x), y: Math.round(anchor.y), width: 1, height: 1 });
     this.win.addBrowserView(view);
     this.win.setTopBrowserView(view);
+
+    // Before the view can be clicked at all — see _setChromeDragRegionsEnabled.
+    this._setChromeDragRegionsEnabled(false);
 
     // Closes itself the instant it loses focus — covers every "clicked
     // outside" case (the page, a different part of the chrome window)
@@ -162,6 +187,10 @@ class PopoverManager {
     } catch {
       /* best-effort */
     }
+    // Nothing is overlaying the chrome's own surfaces any more, so the
+    // window goes back to being draggable by them (see
+    // _setChromeDragRegionsEnabled).
+    this._setChromeDragRegionsEnabled(true);
     // The popover's webContents had keyboard focus (see show()) — hand
     // it back to the chrome window's own document now that it's gone,
     // rather than leaving focus dangling on a destroyed webContents.
