@@ -745,6 +745,14 @@ button {
   stroke: #f2a300;
 }
 
+/* Copy-URL button's brief post-click confirmation (§8.36) — same
+   transition either trigger (a click, or Cmd/Ctrl+Shift+C) ends up
+   going through, since both just call flashCopyUrlButton(). */
+#btn-copy-url.copied {
+  color: var(--green);
+  transition: color 150ms var(--ease);
+}
+
 /* ---- Address/search bar — matches ScriptureDesk's .search-wrap: full
    pill, icon on the left, kbd-shortcut hint / clear button on the
    right, animated focus glow ring. ---- */

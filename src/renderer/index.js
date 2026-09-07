@@ -51,6 +51,7 @@ let bookmarks = [];
 
 const glyphBtn = document.getElementById('btnHome');
 const starBtn = document.getElementById('btn-star');
+const copyUrlBtn = document.getElementById('btn-copy-url');
 
 function activeTab() {
   return state.tabs.find((t) => t.id === state.activeTabId) || null;
@@ -73,6 +74,10 @@ function renderAll() {
   starBtn.classList.toggle('active', isBookmarked);
   starBtn.setAttribute('aria-pressed', String(isBookmarked));
   starBtn.title = isBookmarked ? 'Remove bookmark' : 'Bookmark this page';
+
+  // Same "nothing meaningful here" rule as the star button — copying
+  // about:blank (the home/new-tab page) isn't useful.
+  copyUrlBtn.disabled = !isBookmarkableUrl(tab?.url);
 }
 
 const tabStrip = createTabStrip(
@@ -172,6 +177,37 @@ starBtn.addEventListener('click', () => {
   window.browserAPI.toggleBookmark(tab.url, tab.title, tab.favicon);
 });
 
+// §8.36 — the copy-URL button (Cmd/Ctrl+Shift+C does the same thing;
+// see chrome-shortcuts.js, which does the actual clipboard write itself
+// and only notifies this document so the button can flash feedback the
+// same way either trigger ends up here). The actual copy always goes
+// through main (window.browserAPI.copyActiveTabUrl, itself
+// clipboard.writeText) rather than navigator.clipboard.writeText() here
+// — this document's own session has the same deny-by-default permission
+// handler every profile's pages get (security.js), and there was no
+// reason to carve out an exception for a trusted click when main can
+// just do it directly with no permission check involved at all.
+const copyUrlIcon = copyUrlBtn.innerHTML;
+const copyUrlTitle = copyUrlBtn.title;
+let copyUrlFlashTimer = null;
+function flashCopyUrlButton() {
+  clearTimeout(copyUrlFlashTimer);
+  copyUrlBtn.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  copyUrlBtn.title = 'Copied!';
+  copyUrlBtn.classList.add('copied');
+  copyUrlFlashTimer = setTimeout(() => {
+    copyUrlBtn.innerHTML = copyUrlIcon;
+    copyUrlBtn.title = copyUrlTitle;
+    copyUrlBtn.classList.remove('copied');
+  }, 1200);
+}
+
+copyUrlBtn.addEventListener('click', async () => {
+  const { url } = await window.browserAPI.copyActiveTabUrl();
+  if (url) flashCopyUrlButton();
+});
+
 // ---- subscribe to main-pushed state (§4.2) ----
 
 window.browserAPI.onTabsChanged(({ tabs, activeTabId, groups }) => {
@@ -232,8 +268,11 @@ window.browserAPI.listDownloads().then(({ downloads }) => {
 // these silently did nothing the instant the page itself had focus, not
 // this document — the normal state for most of the time actually spent
 // browsing. Cmd/Ctrl+T/+Shift+T/+W/+R/+[/+]/+Tab are now pure
-// TabManager calls with nothing left to do here at all; these three
-// still need this document's own DOM, so main pushes them here instead.
+// TabManager calls with nothing left to do here at all; these four
+// still need this document's own DOM (or, for copy-URL, just its own
+// button's brief "copied" flash — the actual clipboard write already
+// happened in main before this ever fires), so main pushes them here
+// instead.
 
 window.browserAPI.onShortcutFocusAddressBar(() => {
   // No-op unless focus mode currently has the toolbar hidden — brings
@@ -249,4 +288,8 @@ window.browserAPI.onShortcutOpenFindBar(() => {
 
 window.browserAPI.onShortcutToggleFocusMode(() => {
   focusMode.toggle();
+});
+
+window.browserAPI.onShortcutCopyUrl(() => {
+  flashCopyUrlButton();
 });

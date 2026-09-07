@@ -1,6 +1,6 @@
 'use strict';
 
-const { ipcMain } = require('electron');
+const { ipcMain, clipboard } = require('electron');
 
 const { RENDERER_TO_MAIN, MAIN_TO_RENDERER } = require('../shared/ipc-channels');
 const { resolvePendingPermission } = require('./permission-manager');
@@ -216,6 +216,21 @@ function registerIpcHandlers(chromeWin, profileManager, popoverManager) {
   // drawn; this had no accelerator of its own to fall back on).
   ipcMain.handle(RENDERER_TO_MAIN.UPDATES_CHECK, () => {
     checkForUpdatesNow();
+  });
+
+  // §8.36 — the button's own click path; Cmd/Ctrl+Shift+C reaches the
+  // exact same clipboard.writeText() call directly from
+  // chrome-shortcuts.js instead (no reason to round-trip through the
+  // renderer for a shortcut that needs nothing from it). No URL for the
+  // home/new-tab page (about:blank) — same "nothing meaningful here"
+  // rule the star button's own isBookmarkableUrl already uses — so the
+  // button knows whether to show its "copied" feedback from this
+  // response rather than assuming success.
+  ipcMain.handle(RENDERER_TO_MAIN.COPY_ACTIVE_URL, () => {
+    const tab = activeTabs().tabs.get(activeTabs().activeTabId);
+    const url = tab && tab.url && tab.url !== 'about:blank' ? tab.url : null;
+    if (url) clipboard.writeText(url);
+    return { url };
   });
 
   // Popovers (§8.28) — a genuine overlay on top of the page, not chrome-

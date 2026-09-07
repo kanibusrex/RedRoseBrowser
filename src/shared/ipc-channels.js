@@ -64,6 +64,7 @@ const RENDERER_TO_MAIN = Object.freeze({
   FOCUS_MODE_SET: 'focusMode:set',
   TITLEBAR_OVERLAY_SET: 'titlebar:overlaySet',
   UPDATES_CHECK: 'updates:check',
+  COPY_ACTIVE_URL: 'clipboard:copyActiveUrl',
   POPOVER_SHOW: 'popover:show',
   POPOVER_CLOSE: 'popover:close',
   POPOVER_REPORT_SIZE: 'popover:reportSize',
@@ -84,6 +85,7 @@ const MAIN_TO_RENDERER = Object.freeze({
   SHORTCUT_FOCUS_ADDRESS_BAR: 'shortcut:focusAddressBar',
   SHORTCUT_OPEN_FIND_BAR: 'shortcut:openFindBar',
   SHORTCUT_TOGGLE_FOCUS_MODE: 'shortcut:toggleFocusMode',
+  SHORTCUT_COPY_URL: 'shortcut:copyUrl',
 });
 
 // Flat allowlist of every channel name the chrome preload/main may use.

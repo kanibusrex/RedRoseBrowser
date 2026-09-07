@@ -1,15 +1,17 @@
 'use strict';
 
+const { clipboard } = require('electron');
 const { MAIN_TO_RENDERER } = require('../shared/ipc-channels');
 
 /**
  * Chrome-level keyboard shortcuts (§1: Cmd/Ctrl+T, +Shift+T, +W, +L, +F,
- * +Shift+F, +R, +[ / +], +Tab) — reserved at the browser level, the same
- * way a real browser never lets a page's own JS intercept Cmd+T or
- * Cmd+L. These used to be handled purely in the chrome renderer
- * (index.js) via a plain `window.addEventListener('keydown', ...)`, which
- * only ever sees a keydown while *that specific document* has OS input
- * focus — not while the active tab's own page does, which is the normal
+ * +Shift+F, +Shift+C, +R, +[ / +], +Tab) — reserved at the browser
+ * level, the same way a real browser never lets a page's own JS
+ * intercept Cmd+T or Cmd+L. These used to be handled purely in the
+ * chrome renderer (index.js) via a plain `window.addEventListener
+ * ('keydown', ...)`, which only ever sees a keydown while *that
+ * specific document* has OS input focus — not while the active tab's
+ * own page does, which is the normal
  * state for most of the time actually spent using the browser (found
  * the hard way — see DESIGN.md §8.32: reported as "Cmd+Shift+F is not
  * enabling focus mode", confirmed with a real webContents.sendInputEvent
@@ -66,6 +68,19 @@ function attachChromeShortcuts(webContents, chromeWin, getTabManager) {
     } else if (key === 'w') {
       event.preventDefault();
       if (tm.activeTabId) tm.closeTab(tm.activeTabId);
+    } else if (key === 'c' && input.shift) {
+      // §8.36 — copies straight from here (no round trip needed to
+      // decide *what* to copy, unlike +L/+F/+Shift+F above), then tells
+      // the renderer anyway so the address bar's own copy button can
+      // flash its "copied" feedback even when this fired from the
+      // keyboard rather than a click on it.
+      event.preventDefault();
+      const tab = tm.tabs.get(tm.activeTabId);
+      const url = tab && tab.url && tab.url !== 'about:blank' ? tab.url : null;
+      if (url) {
+        clipboard.writeText(url);
+        notifyRenderer(MAIN_TO_RENDERER.SHORTCUT_COPY_URL);
+      }
     } else if (key === 'l') {
       event.preventDefault();
       notifyRenderer(MAIN_TO_RENDERER.SHORTCUT_FOCUS_ADDRESS_BAR);

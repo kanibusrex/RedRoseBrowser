@@ -2885,3 +2885,55 @@ fail identically on the user's own machine regardless of anything on
 their end. Native messaging's own mechanics were independently proven
 to work; getting the right id to it was the missing piece this app
 controlled.
+
+### 8.36 Copy page URL — a toolbar button and Cmd/Ctrl+Shift+C
+
+A small, standalone addition: a button in the toolbar (right after the
+bookmark star) copies the active tab's URL, and Cmd/Ctrl+Shift+C does
+the same thing. Worth naming since it's the one combo real browsers
+already reserve for something else (Inspect Element in Chrome/Firefox/
+Edge) — implemented exactly as asked, since it doesn't collide with
+anything this app itself already binds (`attachDevToolsShortcut`,
+menu.js, uses F12/Cmd+Alt+I instead), just flagged in case the
+convention difference matters later.
+
+Built entirely on §8.32's already-established shortcut mechanism rather
+than a renderer-side keydown listener — chrome-shortcuts.js's
+`before-input-event` handler, wired to both the chrome window's own
+webContents and every tab's, so this works regardless of which one has
+focus, the same as everything else there. The actual `clipboard
+.writeText()` call happens directly in main for both triggers — the
+button's own click goes through a new `COPY_ACTIVE_URL` IPC round trip
+(main resolves the active tab's URL itself, rather than trusting
+whatever text macOS happens to have last set), and the keyboard
+shortcut does the identical thing right from chrome-shortcuts.js with
+no round trip needed at all, since it already has direct access to the
+same TabManager. Deliberately not `navigator.clipboard.writeText()`
+from the renderer — this document's own session carries the same
+deny-by-default permission handler every profile's pages get
+(security.js), and main's own `clipboard.writeText()` has no permission
+check to route around in the first place, so there was no reason to
+even test whether the chrome window's trusted-content status would
+exempt it.
+
+Disabled on the home/new-tab page (`about:blank`) — same "nothing
+meaningful here" rule the bookmark star already uses. A brief checkmark
+flash (reverting on its own after a moment) confirms the copy happened,
+for either trigger — the keyboard shortcut does the actual clipboard
+write straight from main, then separately notifies the renderer purely
+so the still-visible button can flash the same confirmation a click
+would have shown.
+
+**Verified** with a real button click (a real mouse event via
+`sendInputEvent`, not a synthetic method call — DOM `.click()` was
+already the wrong tool once this session, for the exact same category
+of "looks right in a test, wouldn't survive a real click" reason
+§8.32/§8.33 both ran into) and, more importantly, a real keypress
+targeted at the *active tab's own page* rather than the chrome window —
+the specific condition that made every earlier shortcut in this app
+silently do nothing before §8.32's fix, checked again here so this new
+one doesn't quietly reintroduce it. Both correctly wrote the real URL
+to the clipboard and flashed the button; a plain unmodified "c"
+keystroke still reached a page's own `<input>` normally, confirming
+nothing gets over-intercepted. Full rerun of every earlier suite to
+confirm no regression.

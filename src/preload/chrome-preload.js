@@ -66,6 +66,7 @@ const RENDERER_TO_MAIN = {
   FOCUS_MODE_SET: 'focusMode:set',
   TITLEBAR_OVERLAY_SET: 'titlebar:overlaySet',
   UPDATES_CHECK: 'updates:check',
+  COPY_ACTIVE_URL: 'clipboard:copyActiveUrl',
   POPOVER_SHOW: 'popover:show',
   POPOVER_CLOSE: 'popover:close',
   POPOVER_REPORT_SIZE: 'popover:reportSize',
@@ -85,6 +86,7 @@ const MAIN_TO_RENDERER = {
   SHORTCUT_FOCUS_ADDRESS_BAR: 'shortcut:focusAddressBar',
   SHORTCUT_OPEN_FIND_BAR: 'shortcut:openFindBar',
   SHORTCUT_TOGGLE_FOCUS_MODE: 'shortcut:toggleFocusMode',
+  SHORTCUT_COPY_URL: 'shortcut:copyUrl',
 };
 
 // Allowlist of push-event channels the renderer is permitted to subscribe
@@ -164,6 +166,7 @@ contextBridge.exposeInMainWorld('browserAPI', {
   setTitleBarOverlayColors: (color, symbolColor) =>
     ipcRenderer.invoke(RENDERER_TO_MAIN.TITLEBAR_OVERLAY_SET, { color, symbolColor }),
   checkForUpdates: () => ipcRenderer.invoke(RENDERER_TO_MAIN.UPDATES_CHECK),
+  copyActiveTabUrl: () => ipcRenderer.invoke(RENDERER_TO_MAIN.COPY_ACTIVE_URL),
   showPopover: (kind, anchor, data) => ipcRenderer.invoke(RENDERER_TO_MAIN.POPOVER_SHOW, { kind, anchor, data }),
   closePopover: () => ipcRenderer.invoke(RENDERER_TO_MAIN.POPOVER_CLOSE),
   reportPopoverSize: (width, height) => ipcRenderer.invoke(RENDERER_TO_MAIN.POPOVER_REPORT_SIZE, { width, height }),
@@ -181,4 +184,5 @@ contextBridge.exposeInMainWorld('browserAPI', {
   onShortcutFocusAddressBar: (cb) => subscribe(MAIN_TO_RENDERER.SHORTCUT_FOCUS_ADDRESS_BAR, cb),
   onShortcutOpenFindBar: (cb) => subscribe(MAIN_TO_RENDERER.SHORTCUT_OPEN_FIND_BAR, cb),
   onShortcutToggleFocusMode: (cb) => subscribe(MAIN_TO_RENDERER.SHORTCUT_TOGGLE_FOCUS_MODE, cb),
+  onShortcutCopyUrl: (cb) => subscribe(MAIN_TO_RENDERER.SHORTCUT_COPY_URL, cb),
 });
