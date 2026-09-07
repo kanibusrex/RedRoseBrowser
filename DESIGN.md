@@ -2751,3 +2751,42 @@ a tab that renders its genuine popup UI ("Clear cache for all domains
 from the last day? … Cancel / Clear"), not a blank page. Window Resizer
 re-confirmed unaffected (it already declared its popup statically). Full
 rerun of every earlier suite to confirm no regression.
+
+### 8.34 Closed §8.33's own residual gap: still not clickable right after install
+
+"I'm still not able to click on the extension in the extension popout
+menu" — after §8.33 shipped. §8.33's own write-up had already named the
+gap this turned out to be: `_withLivePopupUrls` reads the extension's
+*current* live popup state correctly, but nothing ever told the
+renderer to look again once that state changed — so the natural flow
+(install an extension, then click it, all in the same still-open
+popover) could land in the exact narrow window between "extension
+loaded" and "its background script got around to calling
+`chrome.action.setPopup()`", and just... stay there. Reproduced
+directly: opening the popover the instant `installExtension()` resolved
+showed the icon not-yet-clickable; closing and reopening it a couple
+hundred milliseconds later showed it correctly clickable — confirming
+the underlying state was fine, nothing was ever telling the *already
+open* popover to look again.
+
+**Fix**: `ProfileManager._schedulePopupRecheck(profileId)` — after
+installing or re-enabling an extension, and after the startup
+`loadAllForProfile()` load (a fresh app launch has this exact same gap,
+just with no explicit install/enable action to hang a recheck off of),
+a few short-lived re-checks (300ms/1s/3s out) re-resolve the live popup
+state and push another `EXTENSIONS_CHANGED` *only if it actually
+changed* — silent and free the rest of the time (an extension that
+already declared its popup statically, or has none at all, never
+triggers a second push). Deliberately not the "real" fix (subscribing to
+the library's own `browserAction.addObserver` mechanism, what
+`<browser-action-list>` itself uses, would close this instantly and
+exactly rather than polling a few times over a few seconds) — that
+still means implementing a preload-side observer handshake this app
+doesn't have any other reason to build, a meaningfully bigger change
+than this gap warranted.
+
+**Verified**: installed a real extension (Clear Cache again) and, in
+the *same* already-open popover with no reopening at all, watched it
+self-correct to clickable (~200ms in practice) and confirmed a real
+click on it then actually opens a tab. Full rerun of every earlier
+suite to confirm no regression.

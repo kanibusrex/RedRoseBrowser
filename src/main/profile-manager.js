@@ -269,9 +269,22 @@ class ProfileManager {
     // before this resolves isn't meaningfully exposed — not worth making
     // tab-manager creation (called synchronously all over this file)
     // async for.
-    this.extensionManager.loadAllForProfile(profileSession, profileId).catch((err) => {
-      console.warn(`Failed to load extensions for profile ${profileId}:`, err.message);
-    });
+    this.extensionManager
+      .loadAllForProfile(profileSession, profileId)
+      .then(() => {
+        // Same fresh-load popup-availability gap installExtension has
+        // (§8.33) — on a normal app launch with extensions already
+        // installed, this is the *only* place that ever loads them, so
+        // without this, opening the Extensions popover right after
+        // startup could show the same "nothing to click yet" state with
+        // no later correction at all (no install/enable action to
+        // trigger one).
+        this.onExtensionsChanged({ extensions: this._withLivePopupUrls(profileId, this.extensionManager.list(profileId)) });
+        this._schedulePopupRecheck(profileId);
+      })
+      .catch((err) => {
+        console.warn(`Failed to load extensions for profile ${profileId}:`, err.message);
+      });
 
     return tm;
   }
@@ -530,11 +543,41 @@ class ProfileManager {
     return this._withLivePopupUrls(this.activeProfileId, this.extensionManager.list(this.activeProfileId));
   }
 
+  // The one gap _withLivePopupUrls can't close on its own (§8.33): right
+  // when an extension is first loaded (a fresh install, or re-enabling
+  // one), its background script hasn't necessarily run its own
+  // chrome.action.setPopup() call yet — there's no event this app can
+  // subscribe to for "the popup just became available" short of
+  // reimplementing <browser-action-list>'s own observer handshake, a
+  // bigger change than this warrants. A few cheap, short-lived re-checks
+  // instead: if the popover was already open and showing "nothing to
+  // click" the moment the extension loaded, this self-corrects it a
+  // beat later on its own, matching what closing and reopening the
+  // popover already did manually (confirmed to settle within ~200ms in
+  // practice). Only pushes again if something actually changed, so this
+  // is silent/free the rest of the time (an extension that already
+  // declared its popup statically, or one with no popup at all).
+  _schedulePopupRecheck(profileId) {
+    const delaysMs = [300, 1000, 3000];
+    let lastSignature = JSON.stringify(this._withLivePopupUrls(profileId, this.extensionManager.list(profileId)).map((e) => e.popupUrl));
+    for (const delay of delaysMs) {
+      setTimeout(() => {
+        if (profileId !== this.activeProfileId) return; // switched away — not worth pushing stale UI for
+        const fresh = this._withLivePopupUrls(profileId, this.extensionManager.list(profileId));
+        const signature = JSON.stringify(fresh.map((e) => e.popupUrl));
+        if (signature === lastSignature) return;
+        lastSignature = signature;
+        this.onExtensionsChanged({ extensions: fresh });
+      }, delay);
+    }
+  }
+
   async installExtension(ref) {
     const profileId = this.activeProfileId;
     const profileSession = this.getActiveTabManager().session;
     const record = await this.extensionManager.install(profileSession, profileId, ref);
     this.onExtensionsChanged({ extensions: this._withLivePopupUrls(profileId, this.extensionManager.list(profileId)) });
+    this._schedulePopupRecheck(profileId);
     return record;
   }
 
@@ -554,6 +597,10 @@ class ProfileManager {
       await this.extensionManager.setEnabled(profileSession, profileId, extensionId, enabled)
     );
     this.onExtensionsChanged({ extensions: list });
+    // Re-enabling reloads the extension (extensionManager.setEnabled),
+    // the same fresh-load timing gap installExtension has — see
+    // _schedulePopupRecheck.
+    if (enabled) this._schedulePopupRecheck(profileId);
     return list;
   }
 
