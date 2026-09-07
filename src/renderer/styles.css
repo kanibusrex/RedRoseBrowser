@@ -1430,28 +1430,32 @@ button {
 }
 
 /* ============================================================
-   Popups — shared root for context menus, color pickers, and the
-   profile switcher. Rendered into a single #popup-root appended to
-   <body>, positioned absolutely, styled like a small floating card
-   (matches .modal's palette) so it reads consistently in every theme.
-   ============================================================ */
+   Popups — context menus, color pickers, the profile switcher,
+   bookmarks/history/downloads/extensions, and the permission prompt.
+   Styled like a small floating card (matches .modal's palette) so it
+   reads consistently in every theme.
 
-#popup-root {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 100;
-}
+   §8.28: each of these now renders inside popover.html's own dedicated
+   document — its own small BrowserView, stacked on top of the page
+   itself, rather than a `<div>` appended to this (index.html's) body
+   under a shared #popup-root the way ContextMenu.js used to do it. That
+   changes nothing about how the classes below look or nest (still one
+   .popup-menu-rooted element per popover, e.g. .bookmarks-popover
+   applies alongside .popup-menu/.popup-popover exactly as before) — only
+   *which* document they get appended into, so this stylesheet (shared,
+   via its own <link>, by both index.html and popover.html) is unchanged
+   here. popover.html supplies its own #popover-root positioning instead.
+   ============================================================ */
 
 .popup-menu {
   position: absolute;
   pointer-events: auto;
   min-width: 180px;
-  /* A fallback only — ContextMenu.js's positionWithinViewport always sets
-     its own inline max-width (based on the full window now, §8.27, not
-     just the sidebar), which overrides this. Individual popover classes
-     (.bookmarks-popover, .history-popover, ...) set their own, more
-     specific max-width for plain content-driven sizing. */
+  /* A fallback only — individual popover classes (.bookmarks-popover,
+     .history-popover, ...) set their own, more specific max-width.
+     Combined with popover.html's `width: max-content` (§8.28), this is
+     what makes each popup shrink-to-fit its own content rather than
+     stretch to fill its BrowserView. */
   max-width: 248px;
   background: var(--paper);
   border: 1px solid var(--line);
@@ -1720,12 +1724,18 @@ button {
   /* Caps the WHOLE popover (search box + list + footer together), not
      just the list below — without this, a short window could never show
      enough of the list AND the always-visible search/footer sections at
-     once, since nothing constrained their combined height and
-     positionWithinViewport (ContextMenu.js) only ever repositions a
-     popover, never shrinks one. Found the hard way: reported as "the
-     history menu is getting cut off and the whole thing is not
-     displaying" — see DESIGN.md §8.26. */
-  max-height: min(70vh, 480px);
+     once. Found the hard way: reported as "the history menu is getting
+     cut off and the whole thing is not displaying" — see DESIGN.md
+     §8.26. A plain pixel value, not vh-relative: since §8.28, this
+     renders in the popover's own dedicated page (popover.html), where
+     vh means "however tall PopoverManager happens to have sized this
+     specific BrowserView so far" — not the app window — so it can't be
+     used to size relative to the window at all; PopoverManager's own
+     reportSize() clamps the *displayed* size against the real window
+     instead (shrinking the BrowserView, which the browser's normal
+     native page scroll then handles as a last resort — see
+     popover.html's own comment). */
+  max-height: 480px;
   display: flex;
   flex-direction: column;
   padding: 8px;
@@ -1861,11 +1871,10 @@ button {
 .downloads-popover {
   min-width: 280px;
   max-width: 320px;
-  /* Same fix as .history-popover above (§8.26) — caps the whole popover
-     (list + footer together), not just the list, so a short window can
-     never leave the always-visible footer pushed out of reach below the
-     bottom edge with nothing to scroll it back into view. */
-  max-height: min(70vh, 480px);
+  /* Same fix as .history-popover above (§8.26), same plain-pixel-value
+     reasoning as its comment above too (§8.28 — vh means something
+     different in the popover's own dedicated page now). */
+  max-height: 480px;
   display: flex;
   flex-direction: column;
   padding: 8px;

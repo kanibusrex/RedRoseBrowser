@@ -68,14 +68,15 @@ const tabStrip = createTabStrip(
     onActivate: (tabId) => window.browserAPI.activateTab(tabId),
     onClose: (tabId) => window.browserAPI.closeTab(tabId),
     onNewTab: () => window.browserAPI.createTab(),
-    pinActions: {
-      setPinned: (tabId, pinned) => window.browserAPI.pinTab(tabId, pinned),
-    },
+    // createGroup/setTabGroup used to live here too, but the tab context
+    // menu that was their only caller calls window.browserAPI directly
+    // now (§8.28 — it's a popover in its own separate webContents; see
+    // src/renderer/popovers/tabMenu.js). renameGroup/deleteGroup are
+    // still called from right here in TabStrip.js's own DOM (the group
+    // header's rename-field commit and its ungroup button), so those two
+    // stay.
     groupActions: {
-      createGroup: (tabId) => window.browserAPI.createGroup(undefined, undefined, tabId),
-      setTabGroup: (tabId, groupId) => window.browserAPI.setTabGroup(tabId, groupId),
       renameGroup: (groupId, name) => window.browserAPI.renameGroup(groupId, name),
-      setGroupColor: (groupId, color) => window.browserAPI.setGroupColor(groupId, color),
       deleteGroup: (groupId) => window.browserAPI.deleteGroup(groupId),
     },
     splitActions: {
@@ -138,54 +139,19 @@ window.browserAPI.onFindResult((result) => findBar.onResult(result));
 
 // The rail glyph doubles as the profile switcher entry point (click to
 // open the switcher popover), same spot ScriptureDesk uses for its
-// "Home" glyph.
-const profileSwitcher = createProfileSwitcher(
-  { glyphBtn },
-  {
-    onSwitch: (profileId) => window.browserAPI.switchProfile(profileId),
-    onCreate: (name, color) => window.browserAPI.createProfile(name, color),
-    onRename: (profileId, name) => window.browserAPI.renameProfile(profileId, name),
-    onDelete: (profileId) => window.browserAPI.deleteProfile(profileId),
-  }
-);
+// "Home" glyph. §8.28: the popover itself now fetches/subscribes to
+// whatever it needs directly (its own separate webContents), so none of
+// these trigger functions take injected callbacks or a snapshot to
+// render anymore — see each one's own file.
+createProfileSwitcher({ glyphBtn });
 
-const bookmarksButton = createBookmarksButton(
-  { btn: document.getElementById('btn-bookmarks') },
-  {
-    onOpen: (url) => window.browserAPI.createTab(url),
-    onRemove: (id) => window.browserAPI.removeBookmark(id),
-  }
-);
+createBookmarksButton({ btn: document.getElementById('btn-bookmarks') });
 
-createHistoryButton(
-  { btn: document.getElementById('btn-history') },
-  {
-    onQuery: (query) => window.browserAPI.listHistory(query).then(({ entries }) => entries),
-    onRemove: (id) => window.browserAPI.removeHistoryEntry(id),
-    onClear: () => window.browserAPI.clearHistory(),
-  }
-);
+createHistoryButton({ btn: document.getElementById('btn-history') });
 
-const downloadsButton = createDownloadsButton(
-  { btn: document.getElementById('btn-downloads') },
-  {
-    onCancel: (id) => window.browserAPI.cancelDownload(id),
-    onRemove: (id) => window.browserAPI.removeDownloadEntry(id),
-    onClear: () => window.browserAPI.clearDownloads(),
-    onOpen: (id) => window.browserAPI.openDownload(id),
-    onShowInFolder: (id) => window.browserAPI.showDownloadInFolder(id),
-  }
-);
+const downloadsButton = createDownloadsButton({ btn: document.getElementById('btn-downloads') });
 
-const extensionsButton = createExtensionsButton(
-  { btn: document.getElementById('btn-extensions') },
-  {
-    onInstall: (ref) => window.browserAPI.installExtension(ref),
-    onRemove: (id) => window.browserAPI.removeExtension(id),
-    onSetEnabled: (id, enabled) => window.browserAPI.setExtensionEnabled(id, enabled),
-    onOpenPage: (id, kind) => window.browserAPI.openExtensionPage(id, kind),
-  }
-);
+createExtensionsButton({ btn: document.getElementById('btn-extensions') });
 
 starBtn.addEventListener('click', () => {
   const tab = activeTab();
@@ -216,18 +182,13 @@ window.browserAPI.onTabLoadFailed(({ tabId, errorDescription, validatedURL }) =>
   console.warn(`Tab ${tabId} failed to load ${validatedURL}: ${errorDescription}`);
 });
 
-window.browserAPI.onProfilesChanged((snapshot) => {
-  profileSwitcher.render(snapshot);
-});
-
 window.browserAPI.onBookmarksChanged(({ bookmarks: list }) => {
+  // Still needed here for AddressBar's autocomplete (getBookmarks) and
+  // the star button's own pressed state below (renderAll) — §8.28 only
+  // moved the *popover's* copy of this list into its own webContents
+  // (src/renderer/popovers/bookmarks.js), not this one.
   bookmarks = list || [];
-  bookmarksButton.render(bookmarks);
   renderAll();
-});
-
-window.browserAPI.onExtensionsChanged(({ extensions }) => {
-  extensionsButton.render(extensions);
 });
 
 window.browserAPI.onDownloadsChanged(({ downloads }) => {
@@ -241,18 +202,9 @@ window.browserAPI.getAllTabs().then(({ tabs, activeTabId, groups }) => {
   renderAll();
 });
 
-window.browserAPI.listProfiles().then((snapshot) => {
-  profileSwitcher.render(snapshot);
-});
-
 window.browserAPI.listBookmarks().then(({ bookmarks: list }) => {
   bookmarks = list || [];
-  bookmarksButton.render(bookmarks);
   renderAll();
-});
-
-window.browserAPI.listExtensions().then(({ extensions }) => {
-  extensionsButton.render(extensions);
 });
 
 window.browserAPI.listDownloads().then(({ downloads }) => {

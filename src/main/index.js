@@ -5,6 +5,7 @@ const { app, session } = require('electron');
 
 const { createChromeWindow } = require('./chrome-window');
 const { ProfileManager } = require('./profile-manager');
+const { PopoverManager } = require('./popover-manager');
 const { registerIpcHandlers } = require('./ipc-handlers');
 const { buildApplicationMenu, attachDevToolsShortcut } = require('./menu');
 const { installPermissionHandler } = require('./security');
@@ -12,6 +13,7 @@ const { initAutoUpdater } = require('./updater');
 
 let chromeWin = null;
 let profileManager = null;
+let popoverManager = null;
 
 function createAppWindow() {
   chromeWin = createChromeWindow();
@@ -22,7 +24,10 @@ function createAppWindow() {
   installPermissionHandler(session.defaultSession);
 
   profileManager = new ProfileManager(chromeWin);
-  registerIpcHandlers(chromeWin, profileManager);
+  // Chrome-level UI, not per-profile (§8.28) — one popover host for the
+  // whole window, same as the tab panel's width.
+  popoverManager = new PopoverManager(chromeWin);
+  registerIpcHandlers(chromeWin, profileManager, popoverManager);
   attachDevToolsShortcut(chromeWin, profileManager);
 
   chromeWin.webContents.once('did-finish-load', () => {
@@ -45,6 +50,7 @@ function createAppWindow() {
   chromeWin.on('closed', () => {
     chromeWin = null;
     profileManager = null;
+    popoverManager = null;
   });
 }
 

@@ -63,6 +63,9 @@ const RENDERER_TO_MAIN = {
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   ADDRESS_SUGGEST_TOGGLE: 'address:suggestToggle',
+  POPOVER_SHOW: 'popover:show',
+  POPOVER_CLOSE: 'popover:close',
+  POPOVER_REPORT_SIZE: 'popover:reportSize',
 };
 
 const MAIN_TO_RENDERER = {
@@ -75,6 +78,7 @@ const MAIN_TO_RENDERER = {
   PERMISSION_REQUEST: 'permission:request',
   FIND_RESULT: 'find:result',
   DOWNLOADS_CHANGED: 'downloads:changed',
+  POPOVER_INIT: 'popover:init',
 };
 
 // Allowlist of push-event channels the renderer is permitted to subscribe
@@ -150,6 +154,9 @@ contextBridge.exposeInMainWorld('browserAPI', {
   getGeneralSettings: () => ipcRenderer.invoke(RENDERER_TO_MAIN.SETTINGS_GET),
   updateGeneralSettings: (partial) => ipcRenderer.invoke(RENDERER_TO_MAIN.SETTINGS_SET, partial),
   setAddressSuggestOpen: (open) => ipcRenderer.invoke(RENDERER_TO_MAIN.ADDRESS_SUGGEST_TOGGLE, { open }),
+  showPopover: (kind, anchor, data) => ipcRenderer.invoke(RENDERER_TO_MAIN.POPOVER_SHOW, { kind, anchor, data }),
+  closePopover: () => ipcRenderer.invoke(RENDERER_TO_MAIN.POPOVER_CLOSE),
+  reportPopoverSize: (width, height) => ipcRenderer.invoke(RENDERER_TO_MAIN.POPOVER_REPORT_SIZE, { width, height }),
 
   onTabsChanged: (cb) => subscribe(MAIN_TO_RENDERER.TABS_CHANGED, cb),
   onTabUpdated: (cb) => subscribe(MAIN_TO_RENDERER.TAB_UPDATED, cb),
@@ -160,4 +167,5 @@ contextBridge.exposeInMainWorld('browserAPI', {
   onPermissionRequest: (cb) => subscribe(MAIN_TO_RENDERER.PERMISSION_REQUEST, cb),
   onFindResult: (cb) => subscribe(MAIN_TO_RENDERER.FIND_RESULT, cb),
   onDownloadsChanged: (cb) => subscribe(MAIN_TO_RENDERER.DOWNLOADS_CHANGED, cb),
+  onPopoverInit: (cb) => subscribe(MAIN_TO_RENDERER.POPOVER_INIT, cb),
 });

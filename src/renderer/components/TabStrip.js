@@ -4,8 +4,7 @@
 // (under a colored, renamable header), then ungrouped tabs. Plain vanilla
 // JS, no framework (DESIGN.md §2.2 / §6).
 
-import { showContextMenu, showPopover, closePopup } from './ContextMenu.js';
-import { GROUP_COLORS, groupColorHex } from './GroupColors.js';
+import { groupColorHex } from './GroupColors.js';
 
 const ALLOWED_FAVICON_SCHEMES = new Set(['http:', 'https:', 'data:']);
 
@@ -50,7 +49,7 @@ function fallbackLetter(tab) {
 // and wouldn't reach this listener regardless, but this is defensive).
 const TAB_DRAG_MIME = 'application/x-redrose-tab-id';
 
-export function createTabStrip(container, { onActivate, onClose, onNewTab, groupActions, pinActions, splitActions, reorderActions }) {
+export function createTabStrip(container, { onActivate, onClose, onNewTab, groupActions, splitActions, reorderActions }) {
   let lastState = { tabs: [], activeTabId: null, groups: [] };
 
   function faviconOrSpinner(tab, { compact } = {}) {
@@ -71,32 +70,22 @@ export function createTabStrip(container, { onActivate, onClose, onNewTab, group
     return favicon;
   }
 
+  // §8.28: the popover itself (src/renderer/popovers/tabMenu.js) builds
+  // the item list and calls window.browserAPI directly — it runs in its
+  // own separate webContents, so none of groupActions/onClose (this
+  // module's own injected callbacks, all thin browserAPI wrappers
+  // anyway — see index.js) would even be reachable from there. Only the
+  // specific tab's own state, and the other groups it could move to,
+  // need to cross that boundary — passed as `data` since neither lives
+  // anywhere main can hand back on its own.
   function openTabMenu(tab, anchor) {
-    const items = [
-      {
-        label: tab.pinned ? 'Unpin tab' : 'Pin tab',
-        onClick: () => pinActions.setPinned(tab.id, !tab.pinned),
-      },
-    ];
-
-    if (tab.groupId) {
-      items.push({ label: 'Remove from group', onClick: () => groupActions.setTabGroup(tab.id, null) });
-    }
-    items.push({ label: 'New group from tab', onClick: () => groupActions.createGroup(tab.id) });
-    for (const group of lastState.groups) {
-      if (group.id === tab.groupId) continue;
-      items.push({ label: `Move to “${group.name}”`, onClick: () => groupActions.setTabGroup(tab.id, group.id) });
-    }
-
-    if (tab.splitWithTabId) {
-      items.push({ separator: true });
-      items.push({ label: 'Close split view', onClick: () => splitActions.unsplit(tab.id) });
-    }
-
-    items.push({ separator: true });
-    items.push({ label: 'Close tab', danger: true, onClick: () => onClose(tab.id) });
-
-    showContextMenu(items, anchor);
+    window.browserAPI.showPopover('tabMenu', anchor, {
+      tabId: tab.id,
+      pinned: tab.pinned,
+      groupId: tab.groupId,
+      splitWithTabId: tab.splitWithTabId,
+      groups: lastState.groups.map((g) => ({ id: g.id, name: g.name })),
+    });
   }
 
   function buildTabRow(tab, { compact }) {
@@ -200,28 +189,15 @@ export function createTabStrip(container, { onActivate, onClose, onNewTab, group
     return el;
   }
 
+  // §8.28: the swatch grid itself lives in
+  // src/renderer/popovers/groupColorPicker.js now — just the group id and
+  // its current color name need to cross into that popover's own
+  // webContents.
   function openGroupColorPicker(group, anchor) {
-    showPopover(
-      (popover) => {
-        const grid = document.createElement('div');
-        grid.className = 'group-color-grid';
-        for (const c of GROUP_COLORS) {
-          const sw = document.createElement('button');
-          sw.type = 'button';
-          sw.className = 'group-color-sw' + (c.name === group.color ? ' selected' : '');
-          sw.style.background = c.hex;
-          sw.title = c.name;
-          sw.addEventListener('click', () => {
-            groupActions.setGroupColor(group.id, c.name);
-            closePopup();
-          });
-          grid.appendChild(sw);
-        }
-        popover.appendChild(grid);
-      },
-      anchor,
-      { className: 'group-color-popover' }
-    );
+    window.browserAPI.showPopover('groupColorPicker', anchor, {
+      groupId: group.id,
+      currentColor: group.color,
+    });
   }
 
   function buildGroupHeader(group) {

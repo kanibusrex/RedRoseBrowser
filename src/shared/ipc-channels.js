@@ -61,6 +61,9 @@ const RENDERER_TO_MAIN = Object.freeze({
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   ADDRESS_SUGGEST_TOGGLE: 'address:suggestToggle',
+  POPOVER_SHOW: 'popover:show',
+  POPOVER_CLOSE: 'popover:close',
+  POPOVER_REPORT_SIZE: 'popover:reportSize',
 });
 
 // Main -> Renderer (webContents.send / ipcRenderer.on)
@@ -74,6 +77,7 @@ const MAIN_TO_RENDERER = Object.freeze({
   PERMISSION_REQUEST: 'permission:request',
   FIND_RESULT: 'find:result',
   DOWNLOADS_CHANGED: 'downloads:changed',
+  POPOVER_INIT: 'popover:init',
 });
 
 // Flat allowlist of every channel name the chrome preload/main may use.

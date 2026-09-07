@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!--
+    Same CSP as index.html (§7.12) — this is trusted, app-bundled content
+    loaded via loadFile() from local disk (§7.11), never remote content,
+    same as the chrome window itself.
+  -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';"
+  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Popover</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* This page IS the popover's content — unlike index.html, there's no
+       surrounding chrome to size around; PopoverManager sizes this
+       page's own BrowserView to match whatever popover.js measures and
+       reports (a ResizeObserver on #popover-root). No background here:
+       each popover type's own class (.popup-menu, .bookmarks-popover,
+       ...) already draws its own background/border/shadow, reused as-is
+       from styles.css — same visual result as when these were plain
+       <div>s in the chrome window (§8.27's now-removed workaround).
+
+       No overflow:hidden on html/body: if a popover's natural size
+       genuinely doesn't fit the real app window even after
+       PopoverManager's own clamping, native page scroll is the
+       last-resort fallback — the same "don't silently clip content with
+       no way to reach it" principle the old positionWithinViewport's own
+       last resort followed (DESIGN.md §8.26). */
+    html,
+    body {
+      margin: 0;
+      background: transparent;
+    }
+    #popover-root > * {
+      /* Each popover's root class (.popup-menu et al) was always
+         position:absolute — load-bearing, not incidental: that's what
+         makes it size to its own content (min/max-width, not stretch to
+         fill its container) the way a plain block element wouldn't.
+         The old ContextMenu.js paired that with inline left/top offsets
+         computed against the much larger chrome-window viewport; here,
+         this page's own viewport already IS exactly the popover's
+         footprint, so it only ever needs to sit at its own top-left. */
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+
+      /* This page's own BrowserView starts at 1x1 (PopoverManager.show)
+         and only grows once popover.js measures and reports this
+         element's real size — deliberately, so nothing flashes at the
+         wrong size/position first. But a plain `width: auto` (what every
+         popover class actually gets, having set only min/max-width, not
+         width) resolves via CSS's shrink-to-fit algorithm, which sizes
+         toward the *available* width of its containing block before
+         clamping to min/max-width — and while this view is still 1x1,
+         "available width" is ~0, so it'd measure the narrowest possible
+         wrapped layout, then get forced up to min-width regardless of
+         what the content actually wants (e.g. a wide history row title
+         made to wrap into three lines when 300px of max-width would have
+         fit it on one). `width: max-content` sidesteps that entirely —
+         it's defined purely by the element's own preferred size, with no
+         dependency on the containing block's width at all — and is still
+         clamped by min/max-width same as auto would be, so the rendered
+         result is identical to how these already behaved when hosted in
+         the old, much-larger chrome-window viewport (§8.27 and earlier),
+         where "available width" was never the limiting factor anyway. */
+      width: max-content !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="popover-root"></div>
+  <script type="module" src="popover.js"></script>
+</body>
+</html>

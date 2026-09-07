@@ -2167,3 +2167,217 @@ instead of its own — still correctly hides/shows across both an
 explicit Allow/Block click and an outside-click dismiss, with the
 underlying page's permission request still resolving correctly
 (`granted`/`denied`) either way.
+
+### 8.28 True-overlay popovers: a dedicated BrowserView per popover
+
+Follow-up to §8.27: "do the popover menus have to hide the page
+content?" They didn't have to in principle — hiding the page was a
+workaround for one specific constraint (a `BrowserView` always paints
+above the chrome window's own content, §2.3), not something popovers
+needed for their own sake. Two ways forward: migrate the chrome UI off
+`BrowserView` entirely onto the newer `WebContentsView` (which composites
+via the same content-view tree as regular DOM, so ordinary CSS z-index
+would work), or give each popover its own small `BrowserView`, sized to
+exactly its own footprint, stacked on top of the page's view instead of
+detaching it. Asked which to pursue; the migration was picked first.
+
+**Spike 1 (rejected): `WebContentsView` migration.** The premise was a
+transparent, click-through chrome layer covering the whole window,
+letting the page show through everywhere except where actual chrome
+content was drawn. Built an isolated throwaway script to test the one
+load-bearing assumption *before* touching any real code — Electron has
+no CSS-driven click-through between two stacked views. A transparent
+`WebContentsView`/`BrowserView` positioned over another one still
+captures every mouse event inside its own bounds regardless of its
+visual transparency; `setIgnoreMouseEvents()` is a `BrowserWindow`-level
+API for forwarding input to a separate OS window *behind* this one, not
+something that applies between two views stacked inside the same
+window's own content-view tree. That killed the whole-window-overlay
+idea outright — not a matter of degree or extra plumbing, the mechanism
+this plan depended on doesn't exist. Reported this back rather than
+building further on a premise that didn't hold.
+
+**Spike 2 (confirmed, built on): small per-popover `BrowserView`s.** The
+same experiment, run the other way: a `BrowserView` sized via
+`setBounds()` to *exactly* its own content's footprint (not the whole
+window) and raised with `setTopBrowserView()` overlays the page correctly
+in just that region, while the page stays fully live and clickable
+everywhere else — because "everywhere else" simply isn't covered by any
+view at all, no click-through trickery needed. This is the approach
+built here, confirmed working before writing a line of the real
+implementation.
+
+**Architecture.** `PopoverManager` (`src/main/popover-manager.js`) owns
+one on-demand `BrowserView` per chrome window, created fresh on every
+`show({kind, anchor, data})` and destroyed on every close — never reused,
+so there's no stale-listener/stale-state cleanup to reason about
+anywhere in this feature; closing one is just letting the whole realm go.
+It loads a new dedicated page, `popover.html` → `popover.js`, using the
+same `chromeWindowWebPreferences()` (contextIsolation/sandbox on,
+`chrome-preload.js`) as the chrome window itself, so every popover gets
+the exact same trusted `window.browserAPI` surface for free. Three new
+IPC channels (`popover:show`, `popover:close`, `popover:reportSize`) plus
+one push (`popover:init`) replace `ContextMenu.js`'s in-document
+`showContextMenu`/`showPopover`/`closePopup`, which is now dead code and
+removed — nothing imports it any more (`ViewOverlay.js` stays; `theme.js`
+still uses it directly for the settings modal, which stays a full DOM
+overlay — it's a centered modal, not an anchored dropdown, so it was
+never part of this).
+
+Each popover kind has a small standalone render function under
+`src/renderer/popovers/` (`bookmarks.js`, `history.js`, `downloads.js`,
+`extensions.js`, `profileSwitcher.js`, `tabMenu.js`,
+`groupColorPicker.js`, `permission.js`) that `popover.js` dispatches to
+by `kind`. Moving each one out of the old `ContextMenu.js`-based
+components turned out to be a small, low-risk change: every injected
+callback the old chrome-side modules passed in (`onOpen`, `onRemove`,
+`onCancel`, `groupActions.setGroupColor`, ...) was already nothing but a
+thin `window.browserAPI.X()` wrapper (see the old `index.js`), so the
+popover's own content, now running in its own separate webContents, just
+calls `window.browserAPI` directly instead of receiving it secondhand.
+Only genuinely tab/group-specific state that main can't hand back on its
+own crosses as `data` — the tab id, its pinned/group/split state, and the
+other groups it could move to for the tab context menu; the group id and
+current color name for the color picker; the requestId/origin/permission
+for the permission prompt. Each chrome-side trigger file (`Bookmarks.js`,
+`History.js`, etc.) shrank to just the click handler that calls
+`window.browserAPI.showPopover(kind, anchor, data)` — `Downloads.js` also
+keeps its rail-button "something's downloading" badge logic, since
+that's chrome-window DOM the popover has no reason to reach into.
+
+Live-updating popovers (bookmarks/downloads/extensions) subscribe to the
+same `onBookmarksChanged`/`onDownloadsChanged`/`onExtensionsChanged`
+pushes the chrome window gets — which required widening
+`ipc-handlers.js`'s central `send()` broadcaster to also forward to
+whatever popover is currently open, not just the chrome window; sending
+every channel to both is harmless, a popover of a kind that doesn't care
+about a given channel just never subscribes to it.
+
+**Two-phase sizing**, replacing `repositionCurrentPopup()`'s old manual
+call sites scattered through `ContextMenu.js`/`History.js`/`Downloads.js`:
+the `BrowserView` starts at a minimal 1×1 (invisible) size; `popover.js`
+renders the popover's actual content into `#popover-root`, watches its
+one top-level child (`.popup-menu`/`.bookmarks-popover`/etc. — the
+element that class was always applied to) with a `ResizeObserver`, and
+reports its measured width/height to main via `reportPopoverSize()` on
+every change — a search keystroke narrowing the list, a download's
+progress rows changing height, anything. `PopoverManager.reportSize()`
+clamps that against the real window size and calls `setBounds()`,
+positioning it against its anchor and flipping to whichever corner still
+fits. Dismissal is a single `blur` listener on the popover's own
+webContents — covers "clicked the page" and "clicked elsewhere in the
+chrome window" as one signal, since only one webContents can hold OS
+input focus at a time; no mousedown-listener/timing-hack needed the way
+`ContextMenu.js`'s same-document version required (deferring its own
+listener by a tick so the click that *opened* the popup didn't also
+close it) — that whole class of problem doesn't exist once the popover
+is a separate webContents from whatever opened it.
+
+**Two bugs caught by reasoning about the two-phase sizing before ever
+running it**, both in `popover.html`'s CSS:
+
+- Each popover's root class was already `position: absolute` (load-
+  bearing — that's what makes it shrink-to-fit its own content via
+  min/max-width, rather than stretch to fill its container the way a
+  plain block element would) with `width` left at the CSS default
+  (`auto`). But CSS's shrink-to-fit algorithm for `width: auto` sizes
+  toward the *available width of the containing block* before clamping
+  to min/max-width — and while the view is still 1×1 (before the first
+  real measurement), available width is ~0, so it would measure the
+  narrowest possible word-wrapped layout, not what the content actually
+  wants. Fixed with `width: max-content !important` on the popover's
+  root element — sized purely from its own preferred size, with no
+  dependency on the containing block's width at all, still clamped by
+  min/max-width exactly like `auto` would be. Reproduces, for the new
+  1×1-then-resize case, the same result `auto` already gave for free in
+  the old architecture (hosted in the much-larger chrome-window
+  viewport, where available width was never the limiting factor anyway).
+- `#popover-root` itself is a plain `position: static` box — an
+  absolutely positioned child never contributes to a static ancestor's
+  own auto-sized box, in any browser, regardless of the ancestor's own
+  `position`. So `popover.js` measures the popover's actual top-level
+  content element (`root.firstElementChild`), not `#popover-root` itself,
+  which would always read 0×0.
+
+**One bug caught only by actually looking at a screenshot, not by
+reasoning beforehand**: the first working version rendered every popover
+in the default light "classic" theme regardless of what theme the rest
+of the app was actually in — obvious in hindsight (this app's whole
+theme system, `theme.js`, works by toggling classes on the chrome
+window's own `<html>` element, persisted to that document's own
+`localStorage`; `popover.html` is a separate document with no theme
+state or `localStorage` access of its own, even though it shares the
+same `styles.css`) but not something the sizing-focused design work
+above had reason to surface. Fixed by having `PopoverManager.show()` ask
+the chrome window's own document what it's currently wearing
+(`executeJavaScript('document.documentElement.className')`) and pass
+that along as part of `popover:init`'s payload; `popover.js` applies it
+to its own `<html>` before rendering anything.
+
+**Also found while testing, not a bug**: `BrowserWindow.capturePage()`
+does not include a separately-attached `BrowserView` composited on top
+of it — confirmed against Electron's own issue tracker, not just this
+app's behavior. A screenshot taken this way of a chrome window with a
+popover open shows the chrome window *without* the popover, even though
+the popover genuinely exists, is correctly sized/positioned
+(`view.getBounds()`), and is correctly rendering (its own
+`webContents.capturePage()`, called directly on the popover's own
+webContents rather than the window's, shows it fine). Worth recording so
+a future screenshot-based check of this feature isn't mistaken for a
+regression — it's a `capturePage()` characteristic, not a compositing
+failure; real on-screen compositing of a `BrowserView` above its
+window's own content is the exact, long-relied-upon mechanism §8.27's
+whole workaround existed *because of* (a popover rendering invisibly
+behind the page was only possible because a `BrowserView` really does
+paint on top of everything else in the window).
+
+**Verified** end-to-end for every popover kind (bookmarks, history,
+downloads, extensions, the profile switcher, the tab context menu, the
+group color picker, the permission prompt), via an isolated Electron
+script (throwaway `--user-data-dir`, a local HTTP server for real pages
+to bookmark/visit/request permissions from) driving the real app's main-
+process wiring directly rather than through the packaged entry point, so
+`PopoverManager`/`ProfileManager` stay directly inspectable rather than
+only reachable through IPC:
+
+- every kind opens, is sized well past 1×1, and its actual rendered
+  content (not just "a view exists") matches what was expected — the
+  bookmarked page's title, the visited page's history entry, all 8 group
+  color swatches, the tab menu's Pin/Close items, the permission
+  prompt's origin and copy;
+- clicking a row/item both performs the action (opens a tab, changes a
+  group's color) and closes the popover;
+- Escape closes the open popover;
+- clicking into the active tab's own page (simulated by focusing its
+  webContents directly) closes the popover via the `blur` mechanism —
+  and, checked explicitly via `electron.webContents.getFocusedWebContents()`
+  rather than trusting `webContents.isFocused()` (which reported `true`
+  on both sides at once and turned out not to be the right signal here),
+  the page genuinely keeps real input focus afterward rather than
+  `PopoverManager.close()`'s own unconditional refocus-the-chrome-window
+  call stealing it back — a plausible-sounding regression that direct
+  testing showed doesn't actually happen;
+- opening a second popover while a first is open closes the first
+  first (checked via the permission-prompt case specifically, since
+  that's the one where getting superseded needs to fall back to "deny,
+  don't remember" — see below);
+- the permission prompt resolves the page's actual
+  `navigator.geolocation.getCurrentPosition()` call correctly both ways:
+  `allow` when answered explicitly, and `deny` (without remembering)
+  when dismissed *any* other way (superseded by a different popover, in
+  the test) — via `PopoverManager`'s new `onClose` callback, wired up
+  only for this one kind in `ipc-handlers.js`'s `POPOVER_SHOW` handler,
+  replacing `PermissionPrompt.js`'s old `MutationObserver`-on-
+  `document.body` (which detected its own popup's DOM node disappearing,
+  regardless of why) with something that fires no matter how the popover
+  actually goes away. `resolvePendingPermission`'s existing idempotency
+  (deletes its pending entry on first call) is what makes this safe to
+  wire unconditionally rather than needing to track "was this already
+  answered" separately — a call after an explicit answer is just a
+  no-op.
+- reopening the exact same suite of checks after the theme-class fix
+  confirmed no regression (28 checks, then 28 again), plus a further 3
+  checks specifically for theme propagation (a forced dark accent theme
+  is picked up by a freshly opened popover, both as the right CSS class
+  and as the right computed `--paper` background color) and 6 more for
+  the Escape/page-click dismissal paths above.

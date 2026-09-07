@@ -13,10 +13,18 @@ const { resolvePendingPermission } = require('./permission-manager');
  * profile is currently active (`profileManager.getActiveTabManager()`)
  * since that can change between calls as the user switches profiles.
  */
-function registerIpcHandlers(chromeWin, profileManager) {
+function registerIpcHandlers(chromeWin, profileManager, popoverManager) {
+  // Also forwarded to whatever popover is currently open (§8.28) — a
+  // popover is its own separate webContents now, not a `<div>` in the
+  // chrome window's own document, so it doesn't otherwise see any of
+  // these pushes at all. Downloads/bookmarks/extensions popovers need
+  // this for their live-updating lists; sending the rest too is harmless
+  // — a popover of a kind that doesn't care about a given channel simply
+  // never subscribes to it.
   const send = (channel, payload) => {
-    if (chromeWin.isDestroyed()) return;
-    chromeWin.webContents.send(channel, payload);
+    if (!chromeWin.isDestroyed()) chromeWin.webContents.send(channel, payload);
+    const popoverWc = popoverManager.currentWebContents();
+    if (popoverWc && !popoverWc.isDestroyed()) popoverWc.send(channel, payload);
   };
 
   profileManager.onTabsChanged = (snapshot) => send(MAIN_TO_RENDERER.TABS_CHANGED, snapshot);
@@ -177,6 +185,41 @@ function registerIpcHandlers(chromeWin, profileManager) {
 
   ipcMain.handle(RENDERER_TO_MAIN.ADDRESS_SUGGEST_TOGGLE, (_event, { open } = {}) => {
     activeTabs().setAddressSuggestOpen(!!open);
+  });
+
+  // Popovers (§8.28) — a genuine overlay on top of the page, not chrome-
+  // window DOM, so this is the one set of channels a caller other than
+  // the chrome window's own document can also be the *sender* of:
+  // POPOVER_CLOSE/POPOVER_REPORT_SIZE are just as often invoked from the
+  // popover's own webContents (event.sender) as from the chrome window's.
+  ipcMain.handle(RENDERER_TO_MAIN.POPOVER_SHOW, (_event, { kind, anchor, data } = {}) => {
+    // The permission prompt is the one popover whose dismissal, however
+    // it happens, needs a side effect even when the user never made an
+    // explicit choice — replaces PermissionPrompt.js's old
+    // MutationObserver-on-document.body (§8.16), which detected removal
+    // of its own DOM node the same way regardless of *why* it went away.
+    // resolvePendingPermission is idempotent (deletes its pending entry
+    // on first call — permission-manager.js), so this fires harmlessly
+    // as a no-op when the popover instead closed because the user
+    // already answered Allow/Block (which resolves the request itself,
+    // then calls closePopover()).
+    const onClose =
+      kind === 'permission' && data && data.requestId
+        ? () => resolvePendingPermission(data.requestId, { allow: false, remember: false })
+        : undefined;
+    popoverManager.show({ kind, anchor, data, onClose });
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.POPOVER_CLOSE, (event) => {
+    // No args: called either by the chrome window (dismissing whatever's
+    // open, unconditionally) or by the popover itself (Escape, an item
+    // selection) — in the latter case pass event.sender so a stale close
+    // from an already-replaced popover can't close a *newer* one.
+    popoverManager.close(event.sender === chromeWin.webContents ? undefined : event.sender);
+  });
+
+  ipcMain.handle(RENDERER_TO_MAIN.POPOVER_REPORT_SIZE, (event, { width, height } = {}) => {
+    popoverManager.reportSize(event.sender, { width, height });
   });
 
   ipcMain.handle(RENDERER_TO_MAIN.PROFILES_LIST, () => {
