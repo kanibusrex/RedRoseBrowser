@@ -3313,16 +3313,39 @@ popover, which belongs to no tab, falls back to the active tab.
 DOM path doesn't fire — the two are complements, not duplicates, and
 can't both fire on the same platform.
 
-**Verified** by injecting real `back`/`forward` button presses through
-Chromium's own input pipeline (CDP `Input.dispatchMouseEvent` supports
-those button values, and the resulting DOM events are `isTrusted: true` —
-so unlike a synthetic `dispatchEvent`, this exercises the same path a
-physical button does and is not the kind of fake input §8.32 and §8.39
-were both burned by). Confirmed the DOM genuinely receives them
-(`mouseup:btn=3:trusted=true`), then confirmed real navigation in both
-directions on a page with real session history, from **both** listener
-locations: dispatched at the page, and dispatched at the chrome window
-(which correctly navigated the active tab).
+**This first shipped listening only for `mouseup`, and did nothing at
+all.** The user reported it still dead; instrumenting every layer showed
+why, and it is worth recording because the original "verified" claim was
+real but far too narrow. Logging every mouse-ish DOM event in both
+preloads' isolated worlds, against real presses:
+
+- on a **tab's page**, only `mouseup` fired;
+- on the **chrome window**, `mouseup` never fired at all — only
+  `pointerdown`/`pointerup`/`click` did.
+
+The chrome window's own drag regions and drag handlers call
+`preventDefault()` on `pointerdown`, and doing that suppresses the
+compatibility mouse events (`mousedown`/`mouseup`) entirely — the same
+draggable-region machinery that caused §8.39, reaching a second feature
+by a completely different mechanism. So there is no single event that
+fires everywhere in this app, and the original verification only ever
+exercised the page, which happened to be the half where `mouseup` works.
+
+The fix is to listen for **`mouseup`, `auxclick` and `pointerup`
+together** — their union always fires — with a 400ms guard collapsing the
+duplicates when more than one does.
+
+**Verified** by injecting real `back`/`forward` presses through Chromium's
+own input pipeline (CDP `Input.dispatchMouseEvent` supports those button
+values and produces `isTrusted: true` events, so unlike a synthetic
+`dispatchEvent` this exercises the same path a physical button does), with
+a log inside the *main-process handler* rather than inferring success from
+the navigation alone — which matters, because navigation happening is not
+by itself proof that this app's code caused it. Confirmed the handler
+fires from **both** listener locations (dispatched at the page, and at the
+chrome window), and then confirmed real navigation both directions on a
+tab with genuine session history: `entries=2 activeIndex=1
+nh.canGoBack=true` → back moved the page, and forward moved it back.
 
 **The one link not verifiable from here**: whether a given physical
 mouse's thumb buttons are delivered by macOS to Chromium as buttons 3/4
@@ -3331,10 +3354,14 @@ proven above; the hardware-to-Chromium mapping needs the actual mouse,
 and is the one thing left for the user to confirm. It is the standard
 mapping, but it is not something this sandbox can press.
 
-**Noticed while testing, not fixed here**: after a `navigate()` (address
-bar / `loadURL`) the tab's back history can end up genuinely empty even
-though the page's own `history.length` is 2, so the toolbar back button
-correctly reports and behaves as disabled. Real in-page navigations
-(link clicks) build history normally and back works fine, which is why
-this hasn't shown up in use. Flagged rather than folded in — bundling
-unrelated fixes is the habit §8.39 came out of.
+**A second "bug" that wasn't, worth recording because it nearly got
+fixed**: back appeared broken independently of any of this —
+`canGoBack()` kept returning false on a tab whose own page could still
+run `history.back()` successfully. Dumping the actual navigation
+controller state instead of trusting that inference showed `entries=1
+activeIndex=0`: the tab genuinely had one entry, because restarting the
+app during testing restores each tab with only its current URL, which is
+exactly what session restore is supposed to do. `canGoBack()` was right
+every time. The page's own `history.length` of 2 was a leftover from
+before the restart and was never evidence of anything. No fix was
+needed, and shipping one would have been a fix for nothing.

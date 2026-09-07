@@ -27,13 +27,29 @@ const NAV_MOUSE_BUTTON = 'nav:mouseButton'; // keep in sync with src/shared/ipc-
 // DOM mouse events: button 3 = back, button 4 = forward. Capture phase,
 // so a page can't swallow them before the browser gets its say — the
 // same "the browser wins, not the page" rule §8.32 applies to Cmd+T.
-window.addEventListener(
-  'mouseup',
-  (event) => {
-    if (!event.isTrusted) return;
-    if (event.button !== 3 && event.button !== 4) return;
-    event.preventDefault();
-    ipcRenderer.send(NAV_MOUSE_BUTTON, { direction: event.button === 3 ? 'back' : 'forward' });
-  },
-  true
-);
+let lastNavAt = 0;
+function handleNavButton(event) {
+  if (!event.isTrusted) return;
+  if (event.button !== 3 && event.button !== 4) return;
+  event.preventDefault();
+  // All three listened-for events can fire for the same physical press,
+  // so the first to arrive wins and the rest are ignored.
+  const now = Date.now();
+  if (now - lastNavAt < 400) return;
+  lastNavAt = now;
+  ipcRenderer.send(NAV_MOUSE_BUTTON, { direction: event.button === 3 ? 'back' : 'forward' });
+}
+
+// All three are listened for because no single one of them is reliable
+// across this app's documents (§8.40) — measured, not assumed: on a tab's
+// page only `mouseup` fired for a real back-button press, while on the
+// chrome window only `pointerup`/`auxclick`/`click` did and `mouseup`
+// never arrived at all (anything calling preventDefault() on
+// `pointerdown` — the window's own drag regions and drag handlers do —
+// suppresses the compatibility mouse events entirely). Shipping only
+// `mouseup`, as this first did, is why it worked nowhere the user tried.
+// Their union always fires; the guard above collapses the duplicates.
+// Capture phase, so a page can't swallow them before the browser acts.
+for (const type of ['mouseup', 'auxclick', 'pointerup']) {
+  window.addEventListener(type, handleNavButton, true);
+}
