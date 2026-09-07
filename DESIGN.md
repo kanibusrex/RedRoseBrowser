@@ -2682,3 +2682,72 @@ every earlier suite (popovers, focus mode — updated to use
 `sendInputEvent` for its own shortcut checks, since the synthetic
 dispatch they used before this fix would now silently test nothing at
 all — and the hidden title bar) to confirm no regression.
+
+### 8.33 Fixed: some real extensions weren't clickable in the popover at all
+
+"Can't get to the extension settings, not able to click on the
+extension." Reproduced with a hand-built fake extension first (worked
+fine — icon, name, options gear, enable toggle, all correctly clickable
+via a real simulated mouse click) before realizing the *mechanism*
+wasn't the problem; a specific *kind* of real extension was. Confirmed
+by actually installing real ones from the Chrome Web Store through this
+app's own real install flow: **Window Resizer** rendered its popup
+correctly; **Clear Cache**, an entirely ordinary, popular real
+extension, showed up in the popover with nothing clickable on it at
+all — no cursor-pointer affordance, no click handler, exactly what "not
+able to click on the extension" describes.
+
+**Root cause**: `extensionManager.list()`'s `popupUrl` only ever read
+the *static* manifest's `action.default_popup` /
+`browser_action.default_popup`. Clear Cache's manifest has an `action`
+block with no `default_popup` field at all — its popup path
+(`pages/popup/index.html`) only appears under `web_accessible_resources`,
+because it sets its own popup at *runtime* instead, via
+`chrome.action.setPopup()` from its background service worker once it
+starts up. This is a completely ordinary, common MV3 pattern (useful for
+extensions that show a different popup depending on some runtime
+state) — not a malformed or unusual extension in any way — so this
+wasn't a rare edge case, just one this app's static-manifest-only
+reading had never accounted for.
+
+**Fix**: `electron-chrome-extensions` (already a dependency, §8.8) has
+to track this dynamic value internally anyway — it's what powers its
+own `<browser-action-list>` toolbar element, which this app doesn't use
+(favoring its own simpler custom popover instead), but the underlying
+state exists regardless of which UI reads it. `ProfileManager
+._withLivePopupUrls()` now overlays the *live* value
+(`extensionBridges.get(profileId).api.browserAction.getPopupUrl(id)`)
+on top of `extensionManager.list()`'s static-only result, wherever an
+extension record reaches the renderer or gets resolved to an actual URL
+(the popover's list, and `openExtensionPage`'s own lookup) — reached via
+an internal (undocumented at the top level) property, so guarded to
+silently fall back to the static-only value if a future version of the
+library ever changes that shape, rather than throwing. Confirmed this
+genuinely subsumes the static case too, not just adds to it: the
+library seeds that same internal state from the manifest default the
+moment an extension loads (before any `setPopup()` call, if it ever
+makes one at all), so this one read now correctly covers both extensions
+that declare their popup statically and ones that set it at runtime.
+
+**Known residual gap, not chased further**: right at the instant an
+extension is first installed, there's a brief window where its
+background script hasn't run `setPopup()` yet — reopening the popover a
+moment later (or any subsequent use) always reflects the settled state
+correctly, since `_withLivePopupUrls` re-reads it fresh every time, but
+the *very first* render immediately after install could, in principle,
+still miss a popup that gets set a beat later. Fully closing
+that would mean subscribing to the library's own live-update mechanism
+(`browserAction.addObserver`, what `<browser-action-list>` itself uses)
+and pushing a follow-up `EXTENSIONS_CHANGED` — a bigger change than this
+fix warranted on its own.
+
+**Verified** against real Chrome Web Store extensions installed through
+this app's own real install flow (not a synthetic stand-in) — Clear
+Cache specifically, before the fix showing `popupUrl: null` and no
+clickable affordance at all, after the fix showing the correct
+`chrome-extension://.../pages/popup/index.html` and a real click (via
+`sendInputEvent`, not a synthetic DOM call — see §8.32) actually opening
+a tab that renders its genuine popup UI ("Clear cache for all domains
+from the last day? … Cancel / Clear"), not a blank page. Window Resizer
+re-confirmed unaffected (it already declared its popup statically). Full
+rerun of every earlier suite to confirm no regression.

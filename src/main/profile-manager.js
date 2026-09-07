@@ -494,22 +494,54 @@ class ProfileManager {
 
   // ---- extensions (scoped to whichever profile is active right now) ------
 
+  // extensionManager.list() only ever knows the *static* manifest's
+  // action.default_popup — plenty of real extensions (§8.33 — found
+  // debugging "can't click on the extension") never declare one there at
+  // all, setting it at runtime instead via chrome.action.setPopup() from
+  // their own background script once it starts up (a normal, common MV3
+  // pattern — Clear Cache and Window Resizer, two ordinary real Web
+  // Store extensions, both do this). extensionBridges' own
+  // ElectronChromeExtensions instance already tracks that live value —
+  // it has to, to support a real chrome.action-based toolbar
+  // (<browser-action-list>, which this app doesn't use, favoring its own
+  // simpler popover) — so this overlays it on top of the static-only
+  // list, correcting exactly the extensions that would otherwise render
+  // with nothing clickable at all despite genuinely having a popup.
+  // Reached via the internal api.browserAction.getPopupUrl rather than
+  // any documented top-level method (none exists for this), so it's
+  // guarded to fail open (silently fall back to the static-only value)
+  // if a future version of the library ever changes that shape.
+  _withLivePopupUrls(profileId, extensions) {
+    const bridge = this.extensionBridges.get(profileId);
+    const getPopupUrl = bridge?.api?.browserAction?.getPopupUrl;
+    if (typeof getPopupUrl !== 'function') return extensions;
+    return extensions.map((ext) => {
+      let liveUrl;
+      try {
+        liveUrl = getPopupUrl.call(bridge.api.browserAction, ext.id);
+      } catch {
+        liveUrl = null;
+      }
+      return liveUrl ? { ...ext, popupUrl: liveUrl } : ext;
+    });
+  }
+
   listExtensions() {
-    return this.extensionManager.list(this.activeProfileId);
+    return this._withLivePopupUrls(this.activeProfileId, this.extensionManager.list(this.activeProfileId));
   }
 
   async installExtension(ref) {
     const profileId = this.activeProfileId;
     const profileSession = this.getActiveTabManager().session;
     const record = await this.extensionManager.install(profileSession, profileId, ref);
-    this.onExtensionsChanged({ extensions: this.extensionManager.list(profileId) });
+    this.onExtensionsChanged({ extensions: this._withLivePopupUrls(profileId, this.extensionManager.list(profileId)) });
     return record;
   }
 
   async removeExtensionById(extensionId) {
     const profileId = this.activeProfileId;
     const profileSession = this.getActiveTabManager().session;
-    const list = this.extensionManager.remove(profileSession, profileId, extensionId);
+    const list = this._withLivePopupUrls(profileId, this.extensionManager.remove(profileSession, profileId, extensionId));
     this.onExtensionsChanged({ extensions: list });
     return list;
   }
@@ -517,7 +549,10 @@ class ProfileManager {
   async setExtensionEnabled(extensionId, enabled) {
     const profileId = this.activeProfileId;
     const profileSession = this.getActiveTabManager().session;
-    const list = await this.extensionManager.setEnabled(profileSession, profileId, extensionId, enabled);
+    const list = this._withLivePopupUrls(
+      profileId,
+      await this.extensionManager.setEnabled(profileSession, profileId, extensionId, enabled)
+    );
     this.onExtensionsChanged({ extensions: list });
     return list;
   }
@@ -525,11 +560,15 @@ class ProfileManager {
   // The renderer can only ask to open "extension X's popup/options" —
   // never an arbitrary URL — so this is the one place that resolves
   // that request to an actual chrome-extension:// URL and is trusted
-  // to open it. The URL itself comes from extensionManager.list(),
-  // which computed it from the manifest this app downloaded and
-  // installed, not from anything page- or user-supplied.
+  // to open it. The URL itself comes from extensionManager.list()
+  // (patched through _withLivePopupUrls above), which computed it from
+  // the manifest this app downloaded and installed and/or the
+  // extension's own live chrome.action state — never from anything
+  // page- or user-supplied.
   openExtensionPage(extensionId, kind) {
-    const record = this.extensionManager.list(this.activeProfileId).find((e) => e.id === extensionId);
+    const record = this._withLivePopupUrls(this.activeProfileId, this.extensionManager.list(this.activeProfileId)).find(
+      (e) => e.id === extensionId
+    );
     if (!record) throw new Error('Extension not found.');
     const url = kind === 'options' ? record.optionsUrl : record.popupUrl;
     if (!url) throw new Error(kind === 'options' ? "This extension doesn't have an options page." : "This extension doesn't have a popup.");
