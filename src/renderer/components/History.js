@@ -7,7 +7,7 @@
 // it's opened and every time the search box changes, rather than main
 // pushing an update on every single navigation.
 
-import { showPopover, closePopup } from './ContextMenu.js';
+import { showPopover, closePopup, repositionCurrentPopup } from './ContextMenu.js';
 
 const ALLOWED_FAVICON_SCHEMES = new Set(['http:', 'https:', 'data:']);
 
@@ -75,6 +75,13 @@ export function createHistoryButton({ btn }, { onQuery, onRemove, onClear }) {
         empty.className = 'history-empty';
         empty.textContent = currentQuery ? 'No matching history.' : 'No history yet.';
         list.appendChild(empty);
+        // Re-clamps this popover's position/height against however tall
+        // it actually is now — a search result count (or the initial
+        // fetch, both async) changing the popover's height *after* it
+        // was first positioned would otherwise leave it positioned for
+        // whatever size it happened to be before that content arrived
+        // (§8.26 — "the history menu is getting cut off").
+        repositionCurrentPopup();
         return;
       }
       for (const entry of entries) {
@@ -115,6 +122,7 @@ export function createHistoryButton({ btn }, { onQuery, onRemove, onClear }) {
 
         list.appendChild(row);
       }
+      repositionCurrentPopup();
     };
 
     searchInput.addEventListener('input', () => {

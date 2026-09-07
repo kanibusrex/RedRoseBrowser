@@ -8,7 +8,7 @@
 // a list is watching its progress change, not something you'd expect to
 // have to reopen the popover to see.
 
-import { showPopover } from './ContextMenu.js';
+import { showPopover, repositionCurrentPopup } from './ContextMenu.js';
 
 function formatBytes(n) {
   if (!n && n !== 0) return '';
@@ -148,8 +148,16 @@ export function createDownloadsButton({ btn }, { onCancel, onRemove, onClear, on
     render(list) {
       downloads = list || [];
       btn.classList.toggle('has-active-download', downloads.some((d) => d.state === 'progressing'));
-      if (openPopoverEl && openPopoverEl.isConnected) renderPopover(openPopoverEl);
-      else openPopoverEl = null;
+      if (openPopoverEl && openPopoverEl.isConnected) {
+        renderPopover(openPopoverEl);
+        // This live update (browserAPI.onDownloadsChanged) doesn't go
+        // through showPopover() — a growing download list can change
+        // this popover's height with nothing to re-clamp it otherwise
+        // (§8.26, same underlying issue as History.js's async fetch).
+        repositionCurrentPopup();
+      } else {
+        openPopoverEl = null;
+      }
     },
   };
 }

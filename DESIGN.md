@@ -2025,3 +2025,79 @@ an intermediate fraction while downloading, `-1` on completion, a
 second profile's download — deliberately triggered while that profile is
 in the *background* — still updating the one shared progress bar, and
 `-1` again once every profile is back to idle.
+
+### 8.26 Fixed: the history (and downloads) popover getting cut off
+
+Reported plainly: "the history menu is getting cut off and the whole
+thing is not displaying." Two distinct bugs, both in the shared popover
+plumbing (`ContextMenu.js`), not anything specific to History.js itself
+— found in that order, and the second, more fundamental one was hiding
+behind the first.
+
+**Bug one: nothing capped a popover's *total* height.**
+`positionWithinViewport` has always clamped a popover's *position* (its
+`x`/`y`) to keep it from starting past the window's edge, and clamped
+its *width* — but never its height. `History.js`'s popover (and
+`Downloads.js`'s, structured the same way) puts an always-visible search
+box and a "Clear all history" footer *outside* the scrollable
+`.history-list`, which only capped *itself* at a fixed 320px — the
+search box, list, and footer's combined height was never capped
+anywhere, so on a shorter window (this app's own documented 480px
+minimum included) the total could genuinely run past the bottom of the
+window with no scrollbar anywhere to reach the rest. Fixed by making
+`.history-popover`/`.downloads-popover` themselves `display: flex;
+flex-direction: column` with their own `max-height: min(70vh, 480px)`,
+and turning the inner list's fixed `max-height` into `flex: 1 1 auto;
+min-height: 0` so *it's* the part that shrinks and scrolls internally
+once the search box and footer take their (fixed, always-visible)
+share — the standard "header + scrollable middle + footer, capped to
+available height" flexbox pattern. `positionWithinViewport` also grew a
+last-resort fallback (an inline `max-height` + `overflow-y: auto` on the
+popover itself) for the rare case even that per-popover cap doesn't
+leave enough room — deliberately last-resort, since it can only scroll
+a popover as one whole unit, losing the "header/footer stay put"
+behavior the per-popover CSS fix gives the common case.
+
+**Bug two, the actual root cause: positioning ran before the real
+content did.** Testing bug one's fix at a *normal*, plenty-tall window
+size still failed — the popover was positioned at `y=568` in a 768px-
+tall window with a 480px height, running well past the bottom despite
+plenty of room existing higher up. `showPopover(build, anchor, ...)`
+calls `build(popover)` and immediately measures/positions the result —
+but `History.js`'s `build` (`renderList`) is `async`: it awaits
+`HISTORY_LIST` (an IPC round trip) before the real rows ever exist in
+the DOM. `positionWithinViewport` was measuring and clamping against
+whatever was in `popover` *before* that await resolved — just an empty
+list between a search box and a footer, maybe 100px tall — computing a
+`y` that had plenty of room for *that* height, then never re-running
+once the real ~30-row content actually rendered in and grew the popover
+to its full capped height. The exact same thing happens on every
+*later* re-render too: typing in the search box, or (`Downloads.js`)
+a live `downloads:changed` push arriving while the popover is already
+open, can each change the content's height without ever re-triggering
+`positionWithinViewport` on their own.
+
+Fixed with `repositionCurrentPopup()`, a new export tracking whatever
+popover is currently open (`{ el, anchor, fullWidth }`) so the same
+position/clamp logic can be re-run later, not just once at creation:
+`showPopover` itself calls it automatically once an async `build`'s
+promise resolves (covers `History.js`'s and `Downloads.js`'s *first*
+render), and `History.js`/`Downloads.js` each call it again at the end
+of their own later re-renders (a search keystroke, a live push) — the
+one thing `showPopover` can't know about on its own, since those happen
+long after the initial call returns.
+
+**Verified**: at the app's own 720×480 minimum window size, a 30-entry
+history list — search box, list (now genuinely scrolling internally,
+`scrollHeight` far exceeding `clientHeight`), and the "Clear all
+history" footer all measured, via real `getBoundingClientRect()` calls,
+to render fully within the window; the same popover at a normal, tall
+window size (the case that exposed bug two — failed until
+`repositionCurrentPopup()` existed); narrowing via search and then
+clearing it back to the full list (content shrinking then growing back
+after the popover is already open) still fitting afterward; the same
+flex fix applied to `.downloads-popover` verified independently (its
+footer visible and the popover still fitting after a real, live
+`downloads:changed` push arrives while it's open); and a regression pass
+confirming the synchronous Bookmarks popover (no search box, no footer,
+unaffected by either bug) still behaves exactly as before.

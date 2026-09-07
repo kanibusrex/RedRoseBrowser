@@ -1716,10 +1716,22 @@ button {
 .history-popover {
   min-width: 260px;
   max-width: 300px;
+  /* Caps the WHOLE popover (search box + list + footer together), not
+     just the list below — without this, a short window could never show
+     enough of the list AND the always-visible search/footer sections at
+     once, since nothing constrained their combined height and
+     positionWithinViewport (ContextMenu.js) only ever repositions a
+     popover, never shrinks one. Found the hard way: reported as "the
+     history menu is getting cut off and the whole thing is not
+     displaying" — see DESIGN.md §8.26. */
+  max-height: min(70vh, 480px);
+  display: flex;
+  flex-direction: column;
   padding: 8px;
 }
 
 .history-search {
+  flex: 0 0 auto;
   padding: 0 2px 8px;
 }
 
@@ -1741,7 +1753,14 @@ button {
 }
 
 .history-list {
-  max-height: 320px;
+  /* flex (not a fixed max-height) so this is the part that actually
+     shrinks to fit whatever room the popover's own max-height above
+     leaves once the search box and footer take theirs — min-height: 0
+     is required for a flex item to shrink below its content's natural
+     size at all, which is what lets overflow-y:auto engage instead of
+     just pushing the footer off the bottom. */
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -1815,6 +1834,7 @@ button {
 }
 
 .history-footer {
+  flex: 0 0 auto;
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px solid var(--line2);
@@ -1840,11 +1860,22 @@ button {
 .downloads-popover {
   min-width: 280px;
   max-width: 320px;
+  /* Same fix as .history-popover above (§8.26) — caps the whole popover
+     (list + footer together), not just the list, so a short window can
+     never leave the always-visible footer pushed out of reach below the
+     bottom edge with nothing to scroll it back into view. */
+  max-height: min(70vh, 480px);
+  display: flex;
+  flex-direction: column;
   padding: 8px;
 }
 
 .downloads-list {
-  max-height: 360px;
+  /* flex (not a fixed max-height), same reasoning as .history-list —
+     this is the part that shrinks to fit whatever the popover's own
+     max-height above leaves once the footer takes its share. */
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -1931,6 +1962,7 @@ button {
 }
 
 .downloads-footer {
+  flex: 0 0 auto;
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px solid var(--line2);
