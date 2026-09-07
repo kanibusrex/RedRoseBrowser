@@ -68,12 +68,19 @@ every push to `main`, and attaches installers to a draft GitHub Release whenever
 
 ```bash
 npm run check-electron        # checks for a newer stable Electron release
+npm run smoke-test            # launches the app headlessly and confirms it comes up cleanly
 npm run update-blocklist      # refreshes the local malicious-site blocklist
 npm run update-adblock-lists  # rebuilds the bundled ad/tracker filter engine
 ```
 
-None of these run automatically — refreshing them is a deliberate, manual
-maintainer action, not something the shipped app does on its own.
+`update-blocklist`/`update-adblock-lists` are a deliberate, manual
+maintainer action only. Electron updates within the current major version
+(routine Chromium/Node/security patches) are different: a scheduled workflow
+(`.github/workflows/electron-auto-update.yml`, DESIGN.md §8.37) checks daily
+and, if one's available, bumps it, verifies the app still launches cleanly,
+and publishes a new release automatically, with no human review step — a
+newer *major* version is never applied automatically, only flagged with a
+GitHub issue, since a major bump can carry breaking API changes.
 
 ## Architecture
 

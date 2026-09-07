@@ -2937,3 +2937,121 @@ to the clipboard and flashed the button; a plain unmodified "c"
 keystroke still reached a page's own `<input>` normally, confirming
 nothing gets over-intercepted. Full rerun of every earlier suite to
 confirm no regression.
+
+### 8.37 Automated Electron security updates — no human review for routine patches
+
+"I need to have this auto update with chromium security updates, can
+that be done?" The honest architectural answer first, since it shapes
+everything here: Electron bundles Chromium whole. There's no channel
+for "just the security patch" — a Chromium CVE fix only reaches this
+app when Electron itself ships a new version and the app rebuilds
+against it, unlike a real installed browser with its own always-running
+background updater. `src/main/updater.js` (§8.17) already gets a
+*published* new version of this app onto users' machines automatically;
+what was missing was turning "Electron shipped a patch" into "a new
+release exists" without a human having to notice and do it by hand.
+
+**The one real policy question, put to the maintainer directly**: once
+an automated check confirms a same-major Electron update (routine
+Chromium/Node/security patches, never a breaking API change) builds and
+launches cleanly, should it publish on its own, or wait for a human to
+look first? Every release up to this point in the project's history
+went through an explicit "yes, publish" each time — asked anyway,
+because breaking that pattern for anything is a real, consequential
+choice, not a default to assume. Chose full automation: check, bump,
+build, verify, publish, with no review step, for the routine case.
+A *newer major* version is different — real breaking-change risk an
+automated check can't evaluate — and is never auto-applied; it opens a
+GitHub issue instead; and if that same-major routine check ever fails
+its own verification (smoke test, or CI), that failure is loud (an
+issue), never silent.
+
+**Pieces**:
+
+- `scripts/smoke-test.js` — launches the real, unpackaged app (the same
+  `electron .` `npm start` uses) against a disposable `--user-data-dir`
+  and confirms a real window actually loads its own chrome UI within a
+  generous timeout, via the standard `--remote-debugging-port` DevTools
+  Protocol endpoint every Chromium app exposes with that flag — not
+  code this app had to add, the same free ride `--user-data-dir` itself
+  already was. Answers "does it actually work", not just "did the
+  process not immediately exit" — also runnable directly, any time, via
+  `npm run smoke-test`.
+- `scripts/electron-auto-update.js` — the actual pipeline: reads the
+  installed Electron version, asks npm for every stable version
+  (excluding beta/nightly channels) newer within the same major, bumps
+  and smoke-tests it, and if that passes, commits, pushes to `main`,
+  waits for `build.yml` to build it, tags, pushes the tag, waits for
+  `build.yml` again (this time the tag-triggered run that drafts a
+  release), and publishes it — bailing out with a GitHub issue instead
+  of silently continuing at any step that doesn't check out. A `--dry-
+  run` flag runs the real npm-registry check and prints what it would
+  do, with every write anywhere (npm install, the smoke test, every
+  git/gh command) skipped — deliberately safe to run by anyone, anytime,
+  against the real repo, specifically so this could be verified against
+  live data before ever being trusted unattended (see Verified below).
+- `.github/workflows/electron-auto-update.yml` — runs the above daily
+  (rather than weekly — the whole point is not sitting on a published
+  Chromium security fix any longer than needed; a no-op day costs one
+  npm registry lookup) plus on-demand via `workflow_dispatch`.
+
+**Why a plain, deterministic script, not an LLM agent making the call
+each run**: this is a security-relevant, auto-publishing pipeline — the
+routine case ships with nobody looking. A scripted, auditable sequence
+of the *exact* git/gh commands a maintainer would type by hand (this
+project's own git history has that exact manual sequence, repeated for
+every release before this existed) is a better fit for "must behave
+identically every time" than a fresh judgment call each run.
+
+**Why the default `GITHUB_TOKEN` isn't enough, and what `RELEASE_PAT`
+is for**: GitHub deliberately doesn't let a push authenticated with the
+workflow's own auto-provided token trigger *other* workflow runs (an
+anti-recursion rule) — but this pipeline's entire mechanism is its own
+push/tag triggering `build.yml`'s real mac/windows builds and its
+draft-release step. **Requires a repository secret named `RELEASE_PAT`**
+— a fine-grained personal access token, scoped to just this repo, with
+"Contents: read and write" permission (nothing else needed — that alone
+covers pushing commits/tags and editing releases) — for this to
+actually work end to end; `scripts/electron-auto-update.js` checks for
+this upfront (`gh auth status`) and fails with a clear message rather
+than a confusing partial run if it's missing. This is a one-time setup
+step only the repo owner can do (creating a personal access token is an
+account-level action); until it's added, the scheduled/dispatched
+workflow will still run but fail at that first check.
+
+**Verified**: `scripts/smoke-test.js` correctly reports PASS on a real
+launch, and correctly reports FAIL (with the real stdout/stderr
+attached) both when the app exits early and when no window ever loads —
+confirmed by literally swapping in a fake "electron" binary that prints
+to stderr and exits 1, not just reading the code and assuming. A
+cleanup race caught this way too, before it ever shipped: killing the
+child and immediately deleting its `--user-data-dir` could throw
+`ENOTEMPTY` against the (still-shutting-down) app's own in-flight
+writes to that same directory, which — since cleanup ran *after* the
+real pass/fail decision but before this fix wrapped it in its own
+try/catch — was turning genuine passes into reported failures.
+`scripts/electron-auto-update.js`'s pure version-comparison logic (unit
+tested: stable-vs-prerelease filtering, same-major vs. newer-major
+detection, the exact real installed-version case) and, via `--dry-run`,
+its live decision against the *real* npm registry — which at the time
+of writing correctly identified both a real pending same-major update
+and a real newer major version simultaneously, exactly the two-branch
+case this was built for.
+
+**Honestly out of reach here**: whether the Linux+Xvfb smoke-test step
+actually launches Electron cleanly on a real GitHub Actions
+`ubuntu-latest` runner — this sandbox is macOS, where the smoke test
+was verified directly; the runner's exact set of pre-installed shared
+libraries Electron needs beyond a display (Chromium apps commonly want
+a handful — GTK, NSS, ALSA, and similar — that vary slightly by Ubuntu
+version) can't be confirmed from here. Worth triggering once by hand
+(`workflow_dispatch`) to confirm before relying on the schedule alone;
+if it's missing a package, the failure will be loud and diagnosable
+(smoke-test.js's own stdout/stderr dump) rather than silent. Likewise,
+the full git/gh orchestration (push → wait for CI → tag → wait again →
+publish) is verified by careful construction and a live dry run of its
+*decision* logic, not by an actual end-to-end live run — deliberately
+held back from actually publishing anything as part of building this,
+consistent with the project's own established pattern of never
+publishing without it being a genuine, current decision, not an
+incidental side effect of something else.

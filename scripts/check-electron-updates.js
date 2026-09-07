@@ -7,6 +7,13 @@
 // script checks whether a newer Electron is available and tells you what
 // to do; it never modifies anything on its own. Run it periodically
 // (`npm run check-electron`) — see DESIGN.md §6.
+//
+// Same-major updates (the routine, security-patch case) now also happen
+// on their own, daily, with no need to run this by hand — see
+// scripts/electron-auto-update.js and DESIGN.md §8.37. This script is
+// still here for a quick, zero-side-effect look at where things stand
+// (including whether a newer *major* is out, which the automated
+// pipeline only ever opens an issue about, never applies on its own).
 
 const { execFileSync } = require('node:child_process');
 const path = require('node:path');

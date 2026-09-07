@@ -1,0 +1,64 @@
+name: Electron auto-update
+
+# Runs the automated half of `npm run check-electron` (DESIGN.md §8.37):
+# checks for a newer Electron *within the current major version* —
+# routine Chromium/Node/security patches, never a breaking API change —
+# and if one exists, bumps it, verifies it, and publishes a new release
+# with no human review step, by explicit choice made when this was
+# built. A newer *major* version never gets auto-applied; it opens a
+# GitHub issue flagging it for manual review instead.
+#
+# Requires a repository secret named RELEASE_PAT — a fine-grained
+# personal access token, scoped to just this repo, with "Contents:
+# read and write" permission. The default, automatically-provided
+# GITHUB_TOKEN can push commits/tags just fine, but deliberately can't
+# trigger *other* workflow runs (GitHub's own anti-recursion rule) — and
+# this pipeline's whole point is for its own push/tag to trigger
+# build.yml's real mac/windows builds and draft the release. Without
+# this secret set, the job below fails fast with a clear message
+# instead of silently doing a partial, confusing job.
+
+on:
+  schedule:
+    # Daily rather than weekly — the whole point is not sitting on a
+    # published Chromium security fix any longer than necessary. A
+    # no-op day (already up to date) costs one npm registry lookup.
+    - cron: '0 12 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Must be the PAT, not the default token — see the note above.
+          # Everything this job's own git/gh commands do (push, tag,
+          # issue create, release edit) authenticates through whatever
+          # checkout wires up here.
+          token: ${{ secrets.RELEASE_PAT }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Configure git identity for the automated commit/tag
+        run: |
+          git config user.name "RedRose Auto-Updater"
+          git config user.email "actions@users.noreply.github.com"
+
+      - name: Install Xvfb (the smoke test launches the real app, which needs a display even to check it starts)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Check for an Electron update and, if routine, ship it
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+        run: xvfb-run --auto-servernum node scripts/electron-auto-update.js

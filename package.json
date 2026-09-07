@@ -15,6 +15,7 @@
     "dist:mac": "electron-builder --mac --publish never",
     "dist:win": "electron-builder --win --publish never",
     "check-electron": "node scripts/check-electron-updates.js",
+    "smoke-test": "node scripts/smoke-test.js",
     "update-blocklist": "node scripts/update-blocklist.js",
     "update-adblock-lists": "node scripts/update-adblock-lists.js"
   },
