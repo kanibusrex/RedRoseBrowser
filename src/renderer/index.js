@@ -9,6 +9,7 @@ import { createHistoryButton } from './components/History.js';
 import { createDownloadsButton } from './components/Downloads.js';
 import { createExtensionsButton } from './components/Extensions.js';
 import { initSidebarResize } from './components/SidebarResize.js';
+import { initFocusMode } from './components/FocusMode.js';
 import { initPermissionPrompts } from './components/PermissionPrompt.js';
 import { createFindBar } from './components/FindBar.js';
 import { initGeneralSettings } from './components/GeneralSettings.js';
@@ -26,6 +27,10 @@ const generalSettings = initGeneralSettings({
 });
 initTheme({ onOpen: () => generalSettings.populate() });
 initSidebarResize(document.getElementById('sidebar-resize-handle'));
+const focusMode = initFocusMode({
+  chromeRoot: document.getElementById('chrome-root'),
+  toggleBtn: document.getElementById('btn-focus-mode'),
+});
 
 function isMac() {
   return navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -232,7 +237,14 @@ window.addEventListener('keydown', (event) => {
     if (state.activeTabId) window.browserAPI.closeTab(state.activeTabId);
   } else if (key === 'l') {
     event.preventDefault();
+    // No-op unless focus mode currently has the toolbar hidden — brings
+    // it into view first so this doesn't silently focus an invisible
+    // field (§8.29).
+    focusMode.peekForInteraction();
     addressBar.focus();
+  } else if (key === 'f' && event.shiftKey) {
+    event.preventDefault();
+    focusMode.toggle();
   } else if (key === 'f') {
     event.preventDefault();
     if (state.activeTabId) findBar.open(state.activeTabId);

@@ -48,6 +48,15 @@ const FIND_BAR_H = 44;
 // FIND_BAR_H makes, to avoid a two-way renderer<->main height sync for
 // something whose row count varies with every keystroke.
 const ADDRESS_SUGGEST_H = 240;
+// Focus mode (§8.29) — while active (and not currently "peeking"), the
+// rail/sidebar/toolbar are hidden and the BrowserView fills almost the
+// entire window. This one sliver at the very top is deliberately left
+// unreserved even then: it's chrome-window DOM the renderer can still
+// see mousemove events in, which is what lets hovering the top edge
+// bring the chrome back temporarily (FocusMode.js) — if the BrowserView
+// covered the *entire* window, there'd be nowhere left for that hover to
+// even be detected.
+const FOCUS_HOTZONE_H = 6;
 
 const NEW_TAB_URL = 'about:blank';
 
@@ -83,6 +92,7 @@ class TabManager {
       onFindResult,
       onHistoryVisit,
       tabPanelWidth,
+      focusMode,
       getSettings,
     } = {}
   ) {
@@ -122,6 +132,11 @@ class TabManager {
     // set by the renderer (it alone knows whether it currently has any
     // suggestions to show) via setAddressSuggestOpen.
     this.addressSuggestOpen = false;
+    // Focus mode (§8.29) — chrome-level UI state, like tabPanelWidth, and
+    // kept in sync across profile switches the same way (ProfileManager
+    // owns the canonical value); unlike tabPanelWidth this is never
+    // persisted to disk, so it's always false again on a fresh launch.
+    this.focusMode = focusMode ?? false;
 
     /** @type {Map<string, { id: string, view: BrowserView, url: string, title: string, favicon: string|null, isLoading: boolean, canGoBack: boolean, canGoForward: boolean, pinned: boolean, groupId: string|null }>} */
     this.tabs = new Map();
@@ -626,6 +641,15 @@ class TabManager {
     this.recomputeBounds();
   }
 
+  // Focus mode (§8.29) — called once the renderer's own chrome-collapse
+  // (entering) or chrome-reveal (leaving/peeking) is ready for the
+  // BrowserView to actually move; see FocusMode.js for why those two
+  // directions are sequenced oppositely relative to this call.
+  setFocusMode(on) {
+    this.focusMode = !!on;
+    this.recomputeBounds();
+  }
+
   // ---- split view (§8.12) — creating/breaking the pairing ---------------
 
   // Links two tabs into a split-view pair — closing or unsplitting
@@ -673,7 +697,16 @@ class TabManager {
     if (!this.activeTabId) return;
     const tab = this.tabs.get(this.activeTabId);
     if (!tab) return;
-    const sidebarW = RAIL_W + this.tabPanelWidth;
+    // Focus mode (§8.29): the rail + tab panel collapse to nothing, and
+    // the topbar collapses to just FOCUS_HOTZONE_H — a hover target for
+    // the renderer, not really "chrome" — rather than CHROME_TOP_H's
+    // usual full height. The find bar/address-suggestions dropdown can
+    // still be triggered while focused (Cmd+F, Cmd+L) and still need
+    // their own space reserved above the BrowserView when they are, same
+    // as always — focus mode only changes the *baseline* on top of which
+    // those stack.
+    const sidebarW = this.focusMode ? 0 : RAIL_W + this.tabPanelWidth;
+    const topBaseline = this.focusMode ? FOCUS_HOTZONE_H : CHROME_TOP_H;
     // The find bar (§8.19) and address-suggestions dropdown (§8.23) both
     // live in the chrome renderer's own DOM, in the gap this reserves
     // above the BrowserView — not an overlay on top of it (unlike the
@@ -683,7 +716,7 @@ class TabManager {
     // stacking both is harmless (and correct) on the rare chance both
     // were somehow open at once.
     const topReserve =
-      CHROME_TOP_H + (this.findBarOpen ? FIND_BAR_H : 0) + (this.addressSuggestOpen ? ADDRESS_SUGGEST_H : 0);
+      topBaseline + (this.findBarOpen ? FIND_BAR_H : 0) + (this.addressSuggestOpen ? ADDRESS_SUGGEST_H : 0);
     const [winWidth, winHeight] = this.win.getContentSize();
     const contentX = sidebarW;
     const contentY = topReserve;

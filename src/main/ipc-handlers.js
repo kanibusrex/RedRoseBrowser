@@ -187,6 +187,13 @@ function registerIpcHandlers(chromeWin, profileManager, popoverManager) {
     activeTabs().setAddressSuggestOpen(!!open);
   });
 
+  // Focus mode (§8.29) — routed through profileManager (not
+  // activeTabs().setFocusMode directly) so switching profiles while
+  // focused keeps the setting, the same as sidebar width does.
+  ipcMain.handle(RENDERER_TO_MAIN.FOCUS_MODE_SET, (_event, { on } = {}) => {
+    profileManager.setFocusMode(!!on);
+  });
+
   // Popovers (§8.28) — a genuine overlay on top of the page, not chrome-
   // window DOM, so this is the one set of channels a caller other than
   // the chrome window's own document can also be the *sender* of:

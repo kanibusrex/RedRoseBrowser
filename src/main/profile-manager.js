@@ -84,6 +84,11 @@ class ProfileManager {
     // showing (see _ensureTabManager and switchProfile).
     this.tabPanelWidth = loadSidebarWidth();
     this._sidebarSaveTimer = null;
+    // Focus mode (§8.29) — same "one canonical value, synced to whichever
+    // TabManager is active" pattern as tabPanelWidth above, but never
+    // persisted: unlike the sidebar width, this always starts false on a
+    // fresh launch rather than reopening into a chromeless window.
+    this.focusMode = false;
     // One debounce timer per profile (§8.15) — every profile's tabs can
     // change independently (background profiles keep running), so a
     // single shared timer would let one profile's rapid changes swallow
@@ -201,6 +206,7 @@ class ProfileManager {
 
     tm = new TabManager(this.win, profileSession, {
       tabPanelWidth: this.tabPanelWidth,
+      focusMode: this.focusMode,
       onTabsChanged: (snapshot) => {
         if (profileId === this.activeProfileId) this.onTabsChanged(snapshot);
         this._scheduleSessionSave(profileId);
@@ -281,6 +287,7 @@ class ProfileManager {
     // A resize while a different profile was active only updated that
     // profile's TabManager (setSidebarWidth) — this one may be stale.
     tm.tabPanelWidth = this.tabPanelWidth;
+    tm.focusMode = this.focusMode;
     tm.showActiveView();
 
     this._saveProfiles();
@@ -310,6 +317,14 @@ class ProfileManager {
     clearTimeout(this._sidebarSaveTimer);
     this._sidebarSaveTimer = setTimeout(() => saveSidebarWidth(clamped), 500);
     return clamped;
+  }
+
+  // ---- focus mode (§8.29, chrome-level, shared across every profile) ----
+
+  setFocusMode(on) {
+    this.focusMode = !!on;
+    const tm = this.tabManagers.get(this.activeProfileId);
+    if (tm) tm.setFocusMode(this.focusMode);
   }
 
   // ---- session restore (§8.15) — persisted per profile, in the background ---

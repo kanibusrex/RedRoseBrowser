@@ -61,6 +61,7 @@ const RENDERER_TO_MAIN = Object.freeze({
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   ADDRESS_SUGGEST_TOGGLE: 'address:suggestToggle',
+  FOCUS_MODE_SET: 'focusMode:set',
   POPOVER_SHOW: 'popover:show',
   POPOVER_CLOSE: 'popover:close',
   POPOVER_REPORT_SIZE: 'popover:reportSize',

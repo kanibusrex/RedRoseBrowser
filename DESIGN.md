@@ -2381,3 +2381,110 @@ only reachable through IPC:
   is picked up by a freshly opened popover, both as the right CSS class
   and as the right computed `--paper` background color) and 6 more for
   the Escape/page-click dismissal paths above.
+
+### 8.29 Focus mode
+
+"I want to have the side rail, side bar, and top url bar slowly hide
+away leaving only the main web window with no distractions." Two open
+product questions asked up front: how to get the chrome back
+temporarily without fully leaving focus mode (hovering the very top
+edge of the window "peeks" it back, auto-hiding again a moment after —
+the same idea as fullscreen video controls or macOS's auto-hiding menu
+bar), and what toggles it (Cmd/Ctrl+Shift+F, plus a rail button that —
+necessarily — only ever helps turn it *on*, since it's part of the rail
+that disappears once it's active).
+
+**The same `BrowserView`-always-on-top constraint from §8.27/§8.28
+shows up again here, in the opposite direction.** The rail/sidebar/
+toolbar collapsing is a CSS transition in this document
+(`#chrome-root.focus-hide`, styles.css) — cheap, ordinary, nothing new.
+But the page itself is a separate `BrowserView`, positioned by main
+(`TabManager.recomputeBounds()`) with no awareness of this document's
+own CSS at all. Expanding it to fill the window is what actually
+reveals more of the page — and since a `BrowserView` always paints
+*above* this document, doing that at the wrong moment breaks the
+illusion entirely:
+
+- **Entering** (hide): if the `BrowserView` expanded *before* the CSS
+  collapse finishes, it would instantly cover the still-fading-out rail/
+  toolbar — the "slowly hide away" transition would be hidden behind the
+  now-full-size page from its very first frame, not actually visible.
+- **Leaving/peeking** (reveal): the opposite risk — if the CSS reveal
+  started *before* the `BrowserView` shrinks back down, the reappearing
+  chrome would render *underneath* the still-full-size page and never
+  actually be seen.
+
+So the two directions are deliberately sequenced oppositely
+(`FocusMode.js`'s `setDesiredHidden`): hiding waits for the CSS
+`transitionend` before telling main to expand the view; revealing tells
+main to shrink the view first, and only removes the CSS class once
+that's confirmed. A monotonic token guards the case a hide and a reveal
+race each other (toggling twice fast, or a peek starting and ending
+faster than a 340ms transition) — found and fixed by reasoning through
+that scenario before ever running it, the same way §8.28 caught its own
+CSS bugs ahead of testing: a stale `transitionend` listener from an
+abandoned hide, left attached, would otherwise fire later and re-hide a
+view that had already been told to reveal.
+
+**Peeking** is a temporary, fully-reversible suspension of the same
+hide/reveal mechanism, not a separate code path — `startPeek()`/
+`endPeek()` call exactly the same `setDesiredHidden()` the top-level
+toggle does. What decides when to end a peek turned out to need three
+signals, not just "did the mouse leave":
+
+- the mouse position (`clientX`/`clientY` against the revealed rail's/
+  toolbar's own live `getBoundingClientRect()` — both are revealed
+  together as one unit, since the rail+tab panel run the window's full
+  height on the left while the toolbar is a strip across the top);
+- whether something *in* the revealed chrome currently has real
+  keyboard focus (`document.activeElement`) — needed because Cmd/Ctrl+L
+  (focus the address bar) can peek the chrome and then be followed by
+  typing with the mouse sitting anywhere, nowhere near the toolbar;
+- whether the chrome window's own document currently has focus at all
+  (`document.hasFocus()`) — needed because opening a popover (§8.28)
+  from the peeked rail hands input focus to that popover's own separate
+  webContents, which would otherwise read as "mouse left, nothing
+  focused, hide it" out from under whatever the user just opened.
+  `PopoverManager.close()` already hands focus back to this document the
+  moment a popover closes (§8.28), which is what lets the hide countdown
+  correctly resume right then instead of however long was left on a
+  stale timer, or hanging forever.
+
+Cmd/Ctrl+L peeks the chrome first if it's currently hidden
+(`peekForInteraction()`) before focusing the address bar — without this,
+the shortcut would silently focus an invisible field (a plain `.focus()`
+call works on a zero-opacity, zero-size, `pointer-events: none` element
+same as any other, just with the user unable to see it happened).
+Cmd/Ctrl+F (find-in-page) deliberately does *not* do this — the find bar
+can float on its own near the very top of an otherwise-clean window
+without needing the rest of the chrome back, which reads as reasonable
+rather than broken.
+
+`focusMode` follows the exact same "one canonical value on
+`ProfileManager`, synced to whichever `TabManager` is currently active"
+pattern §8.11's `tabPanelWidth` already established for the sidebar's
+width — chrome-level UI, not per-profile, kept correct across a profile
+switch the same way. Unlike `tabPanelWidth` it's never written to disk:
+always `false` again on a fresh launch, the same convention `findBarOpen`
+already used, rather than an app that quit while focused reopening into
+a chromeless window with no visible way back in.
+
+One sliver, `FOCUS_HOTZONE_H` (6px, tab-manager.js), is deliberately
+*never* covered by the `BrowserView` even at full focus — it's what
+makes hovering the top edge detectable at all in this document's own
+`mousemove` listener; if the page filled the entire window with nothing
+left uncovered, there would be nowhere left for that hover to ever
+reach this side.
+
+**Verified** via an isolated Electron script (21 checks): entering via
+the rail button and via the shortcut, exiting via the shortcut, and the
+`BrowserView`'s actual bounds (not just the CSS class) expanding/
+contracting correctly each time; hovering the top edge peeks the rail/
+sidebar/toolbar back (both the reported `TabManager.focusMode` flag and
+the rail's own computed opacity checked, not just one or the other);
+moving away re-hides it after the delay; Cmd/Ctrl+L peeks the chrome and
+actually focuses the address bar, and typing in it (mouse left
+untouched) holds the peek open past where the plain auto-hide delay
+would otherwise have fired; opening a popover from the peeked rail holds
+the peek open regardless of where the mouse then goes, and closing that
+popover lets the hide countdown resume and actually complete.

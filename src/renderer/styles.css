@@ -2236,3 +2236,57 @@ button {
   background: var(--mist);
   color: var(--text);
 }
+
+/* ============================================================
+   Focus mode (§8.29) — the rail, tab panel, and toolbar collapse away
+   (width/height to 0, fading as they go) rather than just disappearing,
+   leaving the page as close to edge-to-edge as this shell's own frame
+   allows. The transition lives on the base rules so it plays the same
+   way both hiding (FocusMode.js adds #chrome-root.focus-hide) and
+   revealing (removing it) — including for a hover "peek", which is the
+   exact same class toggle as the full on/off switch, just shorter-lived.
+
+   FocusMode.js — not this stylesheet — is what actually keeps the
+   BrowserView in sync with this: because a BrowserView always paints
+   above this document (DESIGN.md §2.3), these can only visually cover
+   the page once the page's own bounds have shrunk to match, and can
+   only be visually uncovered *before* the page's bounds grow back — see
+   that file for why entering and leaving are sequenced in opposite
+   order around this transition.
+   ============================================================ */
+
+.rail,
+#sidebar,
+#sidebar-resize-handle {
+  transition: flex-basis 340ms var(--ease), width 340ms var(--ease), opacity 220ms var(--ease);
+}
+
+#toolbar,
+#progress-bar {
+  transition: flex-basis 340ms var(--ease), height 340ms var(--ease), opacity 220ms var(--ease);
+}
+
+#chrome-root.focus-hide .rail,
+#chrome-root.focus-hide #sidebar,
+#chrome-root.focus-hide #sidebar-resize-handle {
+  flex-basis: 0;
+  width: 0;
+  min-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#chrome-root.focus-hide #toolbar,
+#chrome-root.focus-hide #progress-bar {
+  flex-basis: 0;
+  height: 0;
+  min-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* #toolbar's border-bottom is 1px solid, not part of its own box
+     height — without this it would sit there as a lone hairline even
+     once every other trace of the toolbar has collapsed away. */
+  border-bottom-width: 0;
+}
