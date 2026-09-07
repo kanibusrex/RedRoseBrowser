@@ -10,6 +10,7 @@ const { registerIpcHandlers } = require('./ipc-handlers');
 const { buildApplicationMenu, attachDevToolsShortcut } = require('./menu');
 const { installPermissionHandler } = require('./security');
 const { initAutoUpdater } = require('./updater');
+const { attachChromeShortcuts } = require('./chrome-shortcuts');
 
 let chromeWin = null;
 let profileManager = null;
@@ -29,6 +30,11 @@ function createAppWindow() {
   popoverManager = new PopoverManager(chromeWin);
   registerIpcHandlers(chromeWin, profileManager, popoverManager);
   attachDevToolsShortcut(chromeWin, profileManager);
+  // §8.32 — same shortcuts each tab's own webContents gets wired for
+  // (TabManager._wireWebContents), just for the chrome window's own
+  // document; together these are what make Cmd/Ctrl+T, +W, +L, ... work
+  // regardless of which one currently has focus.
+  attachChromeShortcuts(chromeWin.webContents, chromeWin, () => profileManager.getActiveTabManager());
 
   chromeWin.webContents.once('did-finish-load', () => {
     profileManager.start();

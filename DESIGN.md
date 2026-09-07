@@ -2610,3 +2610,75 @@ still re-resolves correctly under every theme's own override) that both
 now use verbatim — same value at every point along the seam, in every
 theme, by construction rather than by keeping two copies in sync by
 hand.
+
+### 8.32 Fixed: chrome-level keyboard shortcuts not working while a page had focus
+
+"Cmd+Shift+F is not enabling focus mode." Every one of §1's shortcuts
+(Cmd/Ctrl+T, +Shift+T, +W, +L, +F, +Shift+F, +R, +[/+], +Tab) had this
+same bug, not just focus mode's — it was just the one most likely to get
+pressed in exactly the condition that triggered it: wanting to declutter
+a page *while actually looking at it*.
+
+**Root cause**: these were handled entirely by a plain
+`window.addEventListener('keydown', ...)` in the chrome renderer
+(index.js). A DOM keydown listener only ever fires while *that specific
+document* currently holds real OS input focus — and the active tab's
+page is a separate `BrowserView`/webContents with its own independent
+focus state (the same fact §8.28's popover-dismiss-on-blur and §8.29's
+focus-mode peek both already depend on). Clicking anywhere on a page —
+the ordinary, most-of-the-time state while actually browsing — hands it
+keyboard focus, silently starving every one of these shortcuts with no
+error, no console warning, nothing: the event simply never reached
+index.js at all.
+
+**Caught by direct reasoning, not by the existing test suite** — every
+earlier round of testing (§8.29's own included) used
+`window.dispatchEvent(new KeyboardEvent(...))`, a purely synthetic DOM
+event injected directly into the chrome document. That bypasses
+Electron's native input pipeline entirely, so it could only ever prove
+the JS logic was correct once an event reached the DOM — never that a
+real keypress actually gets there in the first place. Confirmed with
+`webContents.sendInputEvent()` (a real native-level key event) instead,
+targeted at the *page's* webContents specifically: `document.hasFocus()`
+on the chrome document read `false`, and a diagnostic listener recorded
+`null` — the keydown never arrived, at all, exactly as suspected.
+
+**Fix**: moved the check into `before-input-event` — the same mechanism
+`menu.js`'s `attachDevToolsShortcut` already used for F12/Cmd+Alt+I, on
+the assumption (turned out correct, but confirmed rather than trusted:
+see below) that it wouldn't share the DOM listener's blind spot. Unlike
+a DOM event, though, `before-input-event` is *also* scoped to whichever
+specific `webContents` it's attached to — attaching it only to the
+chrome window's own, the obvious first instinct, would have reproduced
+the exact same bug under a different API. So the new
+`src/main/chrome-shortcuts.js` is wired onto *every* webContents that
+can ever hold focus in this window: the chrome window's own (main/
+index.js) and every tab's, right alongside `TabManager
+._wireWebContents`'s other per-tab event wiring, as each tab is created.
+This also makes these genuinely browser-level reserved shortcuts for the
+first time — matching how a real browser never lets a page's own JS
+intercept Cmd+T — rather than something a page happening to hold focus
+could incidentally still block.
+
+Pure `TabManager` operations (new/close/reopen tab, reload, back/
+forward, cycle tabs — `activateNextTab()`, previously dead code written
+for exactly this but never wired up to anything) now run directly from
+this main-process handler, no round trip. The three that need the
+chrome renderer's own DOM (focusing the address bar, opening the find
+bar, focus mode's CSS transition) are pushed to it over three new
+`MAIN_TO_RENDERER` channels instead — index.js's keydown listener is
+gone entirely, replaced by three small subscriptions.
+
+**Verified** with `sendInputEvent` targeted at the page's own
+webContents throughout (not a synthetic dispatch, deliberately, given
+the above) — every one of Cmd+T/+W/+L/+F/+Shift+F/+[/+]/+Tab actually
+firing correctly while the page holds real focus, each checked against
+its real effect (a tab actually created/closed/cycled to, the address
+bar/find input actually gaining focus, focus mode's `BrowserView` bounds
+actually changing) rather than just "no error was thrown"; a plain
+unmodified "f" keystroke still reaching a page's own `<input>` completely
+normally, confirming nothing gets over-intercepted; and a full rerun of
+every earlier suite (popovers, focus mode — updated to use
+`sendInputEvent` for its own shortcut checks, since the synthetic
+dispatch they used before this fix would now silently test nothing at
+all — and the hidden title bar) to confirm no regression.

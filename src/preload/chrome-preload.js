@@ -82,6 +82,9 @@ const MAIN_TO_RENDERER = {
   FIND_RESULT: 'find:result',
   DOWNLOADS_CHANGED: 'downloads:changed',
   POPOVER_INIT: 'popover:init',
+  SHORTCUT_FOCUS_ADDRESS_BAR: 'shortcut:focusAddressBar',
+  SHORTCUT_OPEN_FIND_BAR: 'shortcut:openFindBar',
+  SHORTCUT_TOGGLE_FOCUS_MODE: 'shortcut:toggleFocusMode',
 };
 
 // Allowlist of push-event channels the renderer is permitted to subscribe
@@ -175,4 +178,7 @@ contextBridge.exposeInMainWorld('browserAPI', {
   onFindResult: (cb) => subscribe(MAIN_TO_RENDERER.FIND_RESULT, cb),
   onDownloadsChanged: (cb) => subscribe(MAIN_TO_RENDERER.DOWNLOADS_CHANGED, cb),
   onPopoverInit: (cb) => subscribe(MAIN_TO_RENDERER.POPOVER_INIT, cb),
+  onShortcutFocusAddressBar: (cb) => subscribe(MAIN_TO_RENDERER.SHORTCUT_FOCUS_ADDRESS_BAR, cb),
+  onShortcutOpenFindBar: (cb) => subscribe(MAIN_TO_RENDERER.SHORTCUT_OPEN_FIND_BAR, cb),
+  onShortcutToggleFocusMode: (cb) => subscribe(MAIN_TO_RENDERER.SHORTCUT_TOGGLE_FOCUS_MODE, cb),
 });

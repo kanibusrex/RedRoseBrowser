@@ -225,52 +225,28 @@ window.browserAPI.listDownloads().then(({ downloads }) => {
 });
 
 // ---- keyboard shortcuts (§1) ----
-// Handled here (not main-process accelerators) because these are pure UI
-// chrome actions; browserAPI already provides everything they need.
+// §8.32: moved to main (src/main/chrome-shortcuts.js), wired onto both
+// the chrome window's own webContents and every tab's — a plain
+// renderer-side keydown listener here only ever saw one of those two
+// (whichever currently has OS input focus), which meant every one of
+// these silently did nothing the instant the page itself had focus, not
+// this document — the normal state for most of the time actually spent
+// browsing. Cmd/Ctrl+T/+Shift+T/+W/+R/+[/+]/+Tab are now pure
+// TabManager calls with nothing left to do here at all; these three
+// still need this document's own DOM, so main pushes them here instead.
 
-window.addEventListener('keydown', (event) => {
-  const mod = isMac() ? event.metaKey : event.ctrlKey;
-  if (!mod) return;
+window.browserAPI.onShortcutFocusAddressBar(() => {
+  // No-op unless focus mode currently has the toolbar hidden — brings
+  // it into view first so this doesn't silently focus an invisible
+  // field (§8.29).
+  focusMode.peekForInteraction();
+  addressBar.focus();
+});
 
-  const key = event.key.toLowerCase();
+window.browserAPI.onShortcutOpenFindBar(() => {
+  if (state.activeTabId) findBar.open(state.activeTabId);
+});
 
-  if (key === 't' && event.shiftKey) {
-    event.preventDefault();
-    window.browserAPI.reopenLastClosedTab();
-  } else if (key === 't') {
-    event.preventDefault();
-    window.browserAPI.createTab();
-  } else if (key === 'w') {
-    event.preventDefault();
-    if (state.activeTabId) window.browserAPI.closeTab(state.activeTabId);
-  } else if (key === 'l') {
-    event.preventDefault();
-    // No-op unless focus mode currently has the toolbar hidden — brings
-    // it into view first so this doesn't silently focus an invisible
-    // field (§8.29).
-    focusMode.peekForInteraction();
-    addressBar.focus();
-  } else if (key === 'f' && event.shiftKey) {
-    event.preventDefault();
-    focusMode.toggle();
-  } else if (key === 'f') {
-    event.preventDefault();
-    if (state.activeTabId) findBar.open(state.activeTabId);
-  } else if (key === 'r') {
-    event.preventDefault();
-    if (state.activeTabId) window.browserAPI.reload(state.activeTabId);
-  } else if (key === '[') {
-    event.preventDefault();
-    if (state.activeTabId) window.browserAPI.goBack(state.activeTabId);
-  } else if (key === ']') {
-    event.preventDefault();
-    if (state.activeTabId) window.browserAPI.goForward(state.activeTabId);
-  } else if (event.key === 'Tab') {
-    event.preventDefault();
-    if (state.tabs.length > 1 && state.activeTabId) {
-      const idx = state.tabs.findIndex((t) => t.id === state.activeTabId);
-      const next = state.tabs[(idx + 1) % state.tabs.length];
-      window.browserAPI.activateTab(next.id);
-    }
-  }
+window.browserAPI.onShortcutToggleFocusMode(() => {
+  focusMode.toggle();
 });

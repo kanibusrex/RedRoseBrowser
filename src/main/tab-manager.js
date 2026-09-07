@@ -8,6 +8,7 @@ const { pathToFileURL } = require('node:url');
 const { pageViewWebPreferences, classifyNavigation } = require('./security');
 const { resolveNavigationTarget, attachNavigationPolicy } = require('./navigation');
 const { showPageContextMenu } = require('./page-context-menu');
+const { attachChromeShortcuts } = require('./chrome-shortcuts');
 
 const ERROR_PAGE_PATH = path.join(__dirname, '..', 'renderer', 'error-page.html');
 
@@ -985,6 +986,14 @@ class TabManager {
 
   _wireWebContents(tab) {
     const wc = tab.view.webContents;
+
+    // Chrome-level shortcuts (§1) reserved at the browser level — a page
+    // never gets first dibs on Cmd/Ctrl+T, +W, +L, ... (§8.32). The
+    // owning TabManager for a given tab never changes across its
+    // lifetime, so `() => this` is already correct here — no "whichever
+    // profile is active" lookup needed the way the chrome window's own
+    // wiring (index.js) does.
+    attachChromeShortcuts(wc, this.win, () => this);
 
     attachNavigationPolicy(wc, {
       // attachNavigationPolicy only ever calls this once its own

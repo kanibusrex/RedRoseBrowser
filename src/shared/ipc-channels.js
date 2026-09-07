@@ -81,6 +81,9 @@ const MAIN_TO_RENDERER = Object.freeze({
   FIND_RESULT: 'find:result',
   DOWNLOADS_CHANGED: 'downloads:changed',
   POPOVER_INIT: 'popover:init',
+  SHORTCUT_FOCUS_ADDRESS_BAR: 'shortcut:focusAddressBar',
+  SHORTCUT_OPEN_FIND_BAR: 'shortcut:openFindBar',
+  SHORTCUT_TOGGLE_FOCUS_MODE: 'shortcut:toggleFocusMode',
 });
 
 // Flat allowlist of every channel name the chrome preload/main may use.
