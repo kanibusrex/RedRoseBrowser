@@ -284,6 +284,18 @@ class ProfileManager {
       })
       .catch((err) => {
         console.warn(`Failed to load extensions for profile ${profileId}:`, err.message);
+      })
+      .finally(() => {
+        // §8.15 — restored tabs defer their navigation so it doesn't race
+        // extension request-handler registration (a race that left
+        // restored tabs permanently blank with 1Password installed). Now
+        // that extensions are up, wake the foreground tab; background
+        // tabs still load lazily on first click.
+        try {
+          tm.loadDeferredForActiveTab();
+        } catch (err) {
+          console.warn(`Deferred tab load failed for profile ${profileId}:`, err.message);
+        }
       });
 
     return tm;

@@ -143,6 +143,10 @@ class TabManager {
     this.tabs = new Map();
     this.order = [];
     this.activeTabId = null;
+    // True only while restoreSession() is running its create loop (§8.15)
+    // — makes _runPendingLoad a no-op so the extensions bridge's per-tab
+    // activateTab calls during restore don't trigger navigations early.
+    this._restoringSession = false;
 
     /** @type {Map<string, { id: string, name: string, color: string }>} */
     this.groups = new Map();
@@ -214,6 +218,10 @@ class TabManager {
         // explicit url -> home page" branch a fresh new tab does, rather
         // than literally re-navigating to about:blank.
         url: tab.url === NEW_TAB_URL ? null : tab.url,
+        // Persisted only so a deferred (not-yet-loaded) restored tab shows
+        // a real label/icon in the strip before its first activation (§8.15).
+        title: tab.title || null,
+        favicon: tab.favicon || null,
         pinned: tab.pinned,
         groupId: tab.groupId,
         splitWithIndex: splitIndex,
@@ -241,25 +249,48 @@ class TabManager {
       }
     }
 
-    const ids = snapshot.tabs.map((t) => this.createTab(t && t.url, { silent: true }).tabId);
+    // Guards _runPendingLoad for the whole restore: creating each tab
+    // fires onTabCreated -> the extensions bridge's addTab -> its
+    // setActiveTab -> our activateTab, once per tab, before extensions
+    // have loaded. Without this guard those spurious activations would
+    // run every tab's pending navigation right here — exactly the
+    // eager-load-during-restore behavior (and extension race) this is
+    // meant to avoid. ProfileManager runs the active tab's real load
+    // once extensions are ready (loadDeferredForActiveTab); the rest
+    // load on first user activation.
+    this._restoringSession = true;
+    try {
+      const ids = snapshot.tabs.map(
+        (t) => this.createTab(t && t.url, { silent: true, deferLoad: true }).tabId
+      );
 
-    snapshot.tabs.forEach((t, i) => {
-      if (!t) return;
-      const id = ids[i];
-      if (t.pinned) this.setPinned(id, true);
-      if (t.groupId && this.groups.has(t.groupId)) this.setTabGroup(id, t.groupId);
-    });
+      snapshot.tabs.forEach((t, i) => {
+        if (!t) return;
+        const id = ids[i];
+        if (t.pinned) this.setPinned(id, true);
+        if (t.groupId && this.groups.has(t.groupId)) this.setTabGroup(id, t.groupId);
+        // Deferred tabs won't fire page-title-updated / page-favicon-updated
+        // until first activated, so seed the strip from the snapshot.
+        const tab = this.tabs.get(id);
+        if (tab) {
+          if (t.title) tab.title = t.title;
+          if (t.favicon) tab.favicon = t.favicon;
+        }
+      });
 
-    // Only link each pair from the lower index so splitTabs() isn't
-    // called twice (once from each side) for the same pair.
-    snapshot.tabs.forEach((t, i) => {
-      if (t && typeof t.splitWithIndex === 'number' && t.splitWithIndex > i && ids[t.splitWithIndex]) {
-        this.splitTabs(ids[i], ids[t.splitWithIndex]);
-      }
-    });
+      // Only link each pair from the lower index so splitTabs() isn't
+      // called twice (once from each side) for the same pair.
+      snapshot.tabs.forEach((t, i) => {
+        if (t && typeof t.splitWithIndex === 'number' && t.splitWithIndex > i && ids[t.splitWithIndex]) {
+          this.splitTabs(ids[i], ids[t.splitWithIndex]);
+        }
+      });
 
-    const activeId = ids[snapshot.activeIndex] || ids[ids.length - 1];
-    this.activateTab(activeId);
+      const activeId = ids[snapshot.activeIndex] || ids[ids.length - 1];
+      this.activateTab(activeId);
+    } finally {
+      this._restoringSession = false;
+    }
     this._emitTabsChanged();
     return true;
   }
@@ -285,7 +316,7 @@ class TabManager {
   // tabs-changed event — used only by restoreSession() below, which
   // creates a whole batch of tabs up front and wants exactly one
   // activate + one emit at the end instead of one per tab.
-  createTab(url, { trusted = false, silent = false } = {}) {
+  createTab(url, { trusted = false, silent = false, deferLoad = false } = {}) {
     const id = crypto.randomUUID();
     const view = new BrowserView({ webPreferences: pageViewWebPreferences(this.session) });
 
@@ -300,6 +331,10 @@ class TabManager {
       canGoForward: false,
       pinned: false,
       groupId: null,
+      // Set when this tab is restored (§8.15) with deferLoad — the
+      // navigation it should perform the first time it's shown, held here
+      // instead of run now. `null` once consumed (see _runPendingLoad).
+      pendingLoad: null,
       // Split view (§8.12) — bidirectional link to at most one other tab
       // in this same profile. Both tabs' BrowserViews show at once,
       // side by side, whenever either one is on screen.
@@ -310,7 +345,19 @@ class TabManager {
 
     this._wireWebContents(tab);
 
-    if (url) {
+    if (url && deferLoad) {
+      // Lazy session restore (§8.15): don't navigate now. Two reasons —
+      // (1) a restored background/pinned tab shouldn't fetch its page
+      // until the user actually looks at it, and (2) navigating here
+      // races extension startup: a restored tab whose loadURL fires
+      // before an installed extension's webRequest/declarativeNetRequest
+      // handlers are registered can deadlock and stay blank forever
+      // (reproduced with 1Password installed). The pending navigation
+      // runs on first activation (_runPendingLoad), by which point
+      // extensions have loaded.
+      const target = resolveNavigationTarget(url, this.getSettings().searchEngineUrl);
+      tab.pendingLoad = { verdict: trusted ? 'ok' : classifyNavigation(target), target };
+    } else if (url) {
       const target = resolveNavigationTarget(url, this.getSettings().searchEngineUrl);
       const verdict = trusted ? 'ok' : classifyNavigation(target);
       if (verdict === 'ok') {
@@ -318,6 +365,8 @@ class TabManager {
       } else {
         this._showBlockedError(tab, target, verdict);
       }
+    } else if (deferLoad) {
+      tab.pendingLoad = { home: true };
     } else {
       // A new tab with no explicit url (the "+" button, Cmd+T) opens
       // the home page (§8.10/§8.24) — never resolveNavigationTarget
@@ -596,9 +645,44 @@ class TabManager {
     if (tab) this.win.setTopBrowserView(tab.view);
   }
 
+  // Runs a tab's deferred session-restore navigation (§8.15) exactly
+  // once, the first time it's shown. No-op for any normally-created tab,
+  // and suppressed entirely while restoreSession() is mid-flight (see
+  // _restoringSession).
+  _runPendingLoad(tab) {
+    if (this._restoringSession) return;
+    const p = tab && tab.pendingLoad;
+    if (!p) return;
+    tab.pendingLoad = null;
+    if (p.home) {
+      this._loadHomePage(tab.view.webContents);
+    } else if (p.verdict === 'ok') {
+      tab.view.webContents.loadURL(p.target).catch(() => {});
+    } else {
+      this._showBlockedError(tab, p.target, p.verdict);
+    }
+  }
+
+  // Called by ProfileManager once this profile's extensions have finished
+  // loading: runs the deferred navigation for the active tab (and its
+  // split partner) so a restored session's foreground tab loads promptly
+  // without racing extension request-handler registration. Background
+  // tabs stay deferred until first clicked.
+  loadDeferredForActiveTab() {
+    const tab = this.activeTabId && this.tabs.get(this.activeTabId);
+    if (!tab) return;
+    this._runPendingLoad(tab);
+    if (tab.splitWithTabId) this._runPendingLoad(this.tabs.get(tab.splitWithTabId));
+  }
+
   activateTab(tabId) {
     const tab = this.tabs.get(tabId);
     if (!tab) return;
+
+    // First time this tab (or its split partner, shown alongside it) is
+    // brought forward after a lazy restore, kick off its real load.
+    this._runPendingLoad(tab);
+    if (tab.splitWithTabId) this._runPendingLoad(this.tabs.get(tab.splitWithTabId));
 
     const prevId = this.activeTabId;
     const prevTab = prevId ? this.tabs.get(prevId) : null;
@@ -850,6 +934,12 @@ class TabManager {
   reload(tabId) {
     const tab = this.tabs.get(tabId);
     if (!tab) return;
+    // A restored tab reloaded before it was ever shown is still on
+    // about:blank with its real navigation pending — run that instead.
+    if (tab.pendingLoad) {
+      this._runPendingLoad(tab);
+      return;
+    }
     tab.view.webContents.reload();
   }
 

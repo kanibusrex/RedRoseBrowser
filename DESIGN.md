@@ -1312,6 +1312,27 @@ A few decisions worth recording:
   actually active; with it, only the explicit `activateTab()` call at
   the very end of `restoreSession()` does any of that work, and only
   once.
+- **Restored tabs load lazily — and this fixes a blank-tab bug.** With
+  an extension installed (reproduced with 1Password), restored tabs used
+  to come back **permanently blank**: `restoreSession()` ran each tab's
+  `webContents.loadURL()` synchronously, which — for a session restore —
+  happens *before* the profile's extensions finish loading a few lines
+  later in `_ensureTabManager()`. A main-frame navigation that starts
+  before an extension's `webRequest`/`declarativeNetRequest` handlers are
+  registered deadlocks: the load never commits and never errors.
+  `restoreSession()` now passes a new `createTab` option, `deferLoad:
+  true` — instead of navigating, each tab stashes what it *would* have
+  loaded on `tab.pendingLoad`. `_runPendingLoad()` runs it later:
+  `ProfileManager` calls `tm.loadDeferredForActiveTab()` from the
+  extension-load `.finally()` for the foreground tab, and `activateTab()`
+  runs it for any other tab (or split partner) the first time it's
+  shown — the Chrome/Safari "don't load tabs until selected" default, and
+  by then extensions are up. A `_restoringSession` guard on
+  `_runPendingLoad()` swallows the burst of `activateTab()` calls the
+  extensions bridge fires (one per tab, via `addTab` → `setActiveTab`)
+  during the restore loop itself. The snapshot now also persists each
+  tab's `title`/`favicon`, purely so a not-yet-loaded tab still shows a
+  real label and icon in the strip.
 - **A save sitting in its 500ms debounce timer at quit time would
   otherwise be lost.** `ProfileManager.flushSessionSaves()` — called
   from `chromeWin`'s `'close'` event (not `'closed'` — webContents are
