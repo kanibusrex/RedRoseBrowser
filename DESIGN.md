@@ -1,4 +1,4 @@
-# RedRose Browser — v1 Design
+# Vellum — v1 Design
 
 A minimal, secure, Chromium-based desktop browser built with Electron. Custom
 UI chrome (tab strip, toolbar) rendered as a normal Electron renderer;
@@ -736,7 +736,7 @@ is dual-licensed — free under GPL-3.0 (copyleft: whatever links it
 must also be GPL-3.0), or a paid "Patron License" for closed-source
 use. This project chose the free GPL-3.0 path — see `LICENSE` and
 `package.json`'s `license` field — rather than a recurring paid
-license, meaning RedRose Browser's source must stay available under
+license, meaning Vellum's source must stay available under
 GPL-3.0 to anyone it's distributed to.
 
 **What this does *not* fix — a real, verified Electron limitation**:
@@ -980,7 +980,7 @@ previously built by the same author as its own standalone project
 (`~/My Stuff/SimpleHome`) and bundled here as
 `src/renderer/home/index.html`. Bundled as a copy rather than
 referenced from its original location outside this project, so
-RedRose stays self-contained and doesn't break if that other project's
+Vellum stays self-contained and doesn't break if that other project's
 folder ever moves — re-sync manually if SimpleHome gets updated later.
 
 - Loaded via `webContents.loadFile()` — like `error-page.html` (§8.6),
@@ -1116,7 +1116,7 @@ the tab strip rather than collapsing into one combined entry.
   one it was just showing reads as more natural. Verified: the survivor
   correctly returns to full width.
 - **Drag-and-drop** (`TabStrip.js`): tab rows are `draggable`, using a
-  namespaced custom MIME type (`application/x-redrose-tab-id`) so a
+  namespaced custom MIME type (`application/x-vellum-tab-id`) so a
   drop only ever means "split with this tab" — there's no competing
   drag interaction (list-reorder-by-drag isn't implemented) to
   disambiguate against. Verified with real `DragEvent`s carrying an
@@ -1333,6 +1333,22 @@ A few decisions worth recording:
   during the restore loop itself. The snapshot now also persists each
   tab's `title`/`favicon`, purely so a not-yet-loaded tab still shows a
   real label and icon in the strip.
+- **The pinned Gmail tab reopened blank — two causes.**
+  1. *Wrong URL persisted.* `did-navigate-in-page` fires for in-page
+     history navigations in **sub-frames** too, and the handler took
+     every one as `tab.url`. Gmail's contacts hover-card is an iframe
+     that pushes history entries constantly, so the pinned tab got saved
+     pointed at a `contacts.google.com/widget/hovercard/...` widget URL,
+     which restores to a blank page. The handler now ignores
+     `isMainFrame === false`.
+  2. *Never loaded.* Even with the right URL, a pinned tab is a
+     background tab on restore, so it stayed deferred until clicked.
+     Chrome loads pinned tabs eagerly on startup — a pinned tab (mail,
+     calendar, chat) is pinned precisely to be live and glanceable the
+     moment the browser opens. `loadDeferredForActiveTab()` now also
+     walks `this.tabs` and runs `_runPendingLoad()` for every pinned
+     tab, still from the post-extension-load `.finally()` so it doesn't
+     reintroduce the blank-tab race.
 - **A save sitting in its 500ms debounce timer at quit time would
   otherwise be lost.** `ProfileManager.flushSessionSaves()` — called
   from `chromeWin`'s `'close'` event (not `'closed'` — webContents are

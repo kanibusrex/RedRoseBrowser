@@ -260,7 +260,7 @@ button {
     inset 0 2px 5px rgba(0, 0, 0, 0.6);
 }
 
-.glyph-rose {
+.glyph-vellum {
   width: 100%;
   height: 100%;
   display: block;
@@ -268,25 +268,54 @@ button {
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
 }
 
-/* Loading animation — a gentle bloom pulse + slow spin while the active
-   tab is loading, toggled via the .loading class on #btnHome (index.js). */
-@keyframes rose-bloom {
+.vellum-leaf {
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+}
+.vellum-shade {
+  transform-box: fill-box;
+}
+
+/* Loading animation — while the active tab is loading, the top leaf turns
+   like a page over the sheet beneath it, a shadow band sweeping through as
+   it stands on edge. Toggled via the .loading class on #btnHome (index.js). */
+@keyframes vellum-turn {
   0%,
-  100% {
-    transform: scale(1) rotate(0deg);
+  14% {
+    transform: scaleX(1);
   }
-  50% {
-    transform: scale(1.12) rotate(10deg);
+  52%,
+  58% {
+    transform: scaleX(0.04);
+  }
+  100% {
+    transform: scaleX(1);
   }
 }
 
-.glyph.loading .glyph-rose {
-  animation: rose-bloom 1.1s ease-in-out infinite;
-  transform-origin: 50% 52%;
+@keyframes vellum-shade {
+  0%,
+  22% {
+    opacity: 0;
+  }
+  52% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.glyph.loading .vellum-leaf {
+  animation: vellum-turn 1.3s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+.glyph.loading .vellum-shade {
+  animation: vellum-shade 1.3s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .glyph.loading .glyph-rose {
+  .glyph.loading .vellum-leaf,
+  .glyph.loading .vellum-shade {
     animation: none;
   }
 }
@@ -304,37 +333,46 @@ button {
 .rail-name {
   writing-mode: vertical-rl;
   text-orientation: mixed;
-  font-weight: 300;
-  font-size: clamp(11px, 2.2vh, 20px);
-  letter-spacing: clamp(1px, 0.6vh, 5px);
+  /* Regal display serif. These ship with macOS (the only platform this
+     Electron chrome runs on) so no @font-face / remote fetch is needed —
+     which matters given the renderer CSP has connect-src 'none'. */
+  font-family: "Hoefler Text", "Baskerville", "Palatino Linotype", Palatino,
+    "Iowan Old Style", "Cormorant Garamond", Garamond, "Times New Roman", serif;
+  font-weight: 400;
+  font-variant: small-caps;
+  font-size: clamp(12px, 2.5vh, 23px);
+  letter-spacing: clamp(1.5px, 0.55vh, 5px);
   white-space: nowrap;
   user-select: none;
+  /* Two stacked backgrounds clipped to the text: a travelling highlight
+     band (layer 1) over a static base gradient (layer 2). The base is kept
+     deliberately muted so the bright sweep actually reads against it. */
   background: linear-gradient(
       180deg,
-      transparent 8%,
-      rgba(255, 255, 255, 0.6) 36%,
+      transparent 30%,
+      rgba(255, 255, 255, 0.55) 44%,
       #ffffff 50%,
-      rgba(255, 255, 255, 0.6) 64%,
-      transparent 92%
+      rgba(255, 246, 224, 0.85) 55%,
+      transparent 70%
     ),
-    linear-gradient(180deg, #bcc9de 0%, #eaf1fa 45%, var(--accent) 125%);
-  background-size: 100% 60%, 100% 100%;
-  background-position: 0 -150%, 0 0;
+    linear-gradient(180deg, #8798b4 0%, #b9c6da 45%, var(--accent) 125%);
+  background-size: 100% 45%, 100% 100%;
+  background-position: 0 -120%, 0 0;
   background-repeat: no-repeat;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
-  animation: railShimmer 12s ease-in-out infinite;
+  animation: railShimmer 9s ease-in-out infinite;
 }
 
 @keyframes railShimmer {
-  0%, 15% {
-    background-position: 0 -150%, 0 0;
+  0%, 12% {
+    background-position: 0 -120%, 0 0;
   }
-  50%, 100% {
-    background-position: 0 150%, 0 0;
+  78%, 100% {
+    background-position: 0 260%, 0 0;
   }
 }
 

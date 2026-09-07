@@ -4,7 +4,7 @@ const { app, dialog, shell } = require('electron');
 const https = require('node:https');
 
 const REPO_OWNER = 'kanibusrex';
-const REPO_NAME = 'RedRoseBrowser';
+const REPO_NAME = 'VellumBrowser';
 const RELEASES_PAGE_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest`;
 
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // every 4 hours while running
@@ -97,7 +97,7 @@ function checkForUpdatesWindows({ silent }) {
           defaultId: 0,
           cancelId: 1,
           title: 'Update available',
-          message: `RedRose Browser ${info.version} is available (you have ${app.getVersion()}).`,
+          message: `Vellum ${info.version} is available (you have ${app.getVersion()}).`,
           detail: 'Download it now? It will install the next time you restart the app.',
         })
         .then(({ response }) => {
@@ -113,7 +113,7 @@ function checkForUpdatesWindows({ silent }) {
           defaultId: 0,
           cancelId: 1,
           title: 'Update ready',
-          message: 'RedRose Browser has downloaded an update.',
+          message: 'Vellum has downloaded an update.',
           detail: 'Restart now to finish installing it, or it will install the next time you quit.',
         })
         .then(({ response }) => {
@@ -140,7 +140,7 @@ function checkForUpdatesWindows({ silent }) {
         dialog.showMessageBox({
           type: 'info',
           message: "You're up to date.",
-          detail: `RedRose Browser ${app.getVersion()}`,
+          detail: `Vellum ${app.getVersion()}`,
         });
       }
       // If it IS newer, the always-on 'update-available' listener above
@@ -174,7 +174,7 @@ function checkForUpdatesMac({ silent }) {
             defaultId: 0,
             cancelId: 1,
             title: 'Update available',
-            message: `RedRose Browser ${latest} is available (you have ${current}).`,
+            message: `Vellum ${latest} is available (you have ${current}).`,
             detail: "This build isn't signed, so it can't install updates automatically — download the new version and replace the app manually.",
           })
           .then(({ response }) => {
@@ -186,7 +186,7 @@ function checkForUpdatesMac({ silent }) {
         dialog.showMessageBox({
           type: 'info',
           message: "You're up to date.",
-          detail: `RedRose Browser ${current}`,
+          detail: `Vellum ${current}`,
         });
       }
     })
@@ -215,7 +215,7 @@ function fetchLatestReleaseTag() {
       {
         hostname: 'api.github.com',
         path: `/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`,
-        headers: { 'User-Agent': 'RedRose-Browser-Updater' },
+        headers: { 'User-Agent': 'Vellum-Browser-Updater' },
         timeout: 10000,
       },
       (res) => {

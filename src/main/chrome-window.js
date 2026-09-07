@@ -28,7 +28,7 @@ function createChromeWindow() {
     // styles.css) so there's no white/black flash before index.html paints,
     // same convention ScriptureDesk's shell uses with its own brand color.
     backgroundColor: '#eef1f6',
-    title: 'RedRose Browser',
+    title: 'Vellum',
     icon: path.join(__dirname, '..', '..', 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     show: false,
     // Hidden title bar (§8.30) — no title text/bar, but native window

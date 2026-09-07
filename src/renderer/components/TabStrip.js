@@ -47,7 +47,7 @@ function fallbackLetter(tab) {
 // else (an OS file drag, a page's own drag source, e.g. SimpleHome's
 // shortcut-tile reordering, which is a separate webContents entirely
 // and wouldn't reach this listener regardless, but this is defensive).
-const TAB_DRAG_MIME = 'application/x-redrose-tab-id';
+const TAB_DRAG_MIME = 'application/x-vellum-tab-id';
 
 export function createTabStrip(container, { onActivate, onClose, onNewTab, groupActions, splitActions, reorderActions }) {
   let lastState = { tabs: [], activeTabId: null, groups: [] };

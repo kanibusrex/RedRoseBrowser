@@ -59,7 +59,7 @@ async function main() {
     return;
   }
 
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'redrose-smoke-test-'));
+  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vellum-smoke-test-'));
 
   const args = [
     '.',

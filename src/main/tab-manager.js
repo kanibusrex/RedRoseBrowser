@@ -664,15 +664,23 @@ class TabManager {
   }
 
   // Called by ProfileManager once this profile's extensions have finished
-  // loading: runs the deferred navigation for the active tab (and its
-  // split partner) so a restored session's foreground tab loads promptly
-  // without racing extension request-handler registration. Background
-  // tabs stay deferred until first clicked.
+  // loading: runs the deferred navigation for the tabs that Chrome/Safari
+  // also load eagerly on a session restore — the foreground tab (and its
+  // split partner) and every pinned tab. Doing it here, rather than in
+  // restoreSession, keeps it from racing extension request-handler
+  // registration. Unpinned background tabs stay deferred until first
+  // clicked.
   loadDeferredForActiveTab() {
     const tab = this.activeTabId && this.tabs.get(this.activeTabId);
-    if (!tab) return;
-    this._runPendingLoad(tab);
-    if (tab.splitWithTabId) this._runPendingLoad(this.tabs.get(tab.splitWithTabId));
+    if (tab) {
+      this._runPendingLoad(tab);
+      if (tab.splitWithTabId) this._runPendingLoad(this.tabs.get(tab.splitWithTabId));
+    }
+    // Pinned tabs are persistent by intent (mail, calendar, chat) — the
+    // user expects them live on launch, not blank until clicked.
+    for (const t of this.tabs.values()) {
+      if (t.pinned) this._runPendingLoad(t);
+    }
   }
 
   activateTab(tabId) {
@@ -1183,7 +1191,14 @@ class TabManager {
       }
     });
 
-    wc.on('did-navigate-in-page', (_event, url) => {
+    wc.on('did-navigate-in-page', (_event, url, isMainFrame) => {
+      // Fires for in-page (history API / hash) navigations in *sub-frames*
+      // too — e.g. the Gmail contacts hover-card iframe, which pushes its
+      // own history entries constantly. Taking those as tab.url meant a
+      // pinned Gmail tab got persisted (§8.15) pointed at a hover-card
+      // widget URL and "reopened" to a blank page. Only the main frame is
+      // the tab's address.
+      if (!isMainFrame) return;
       tab.url = url;
       updateNavFlags();
       this._emitTabUpdated(tab);

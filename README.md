@@ -1,6 +1,6 @@
-# RedRose Browser
+# Vellum
 
-[![Build](https://github.com/kanibusrex/RedRoseBrowser/actions/workflows/build.yml/badge.svg)](https://github.com/kanibusrex/RedRoseBrowser/actions/workflows/build.yml)
+[![Build](https://github.com/kanibusrex/VellumBrowser/actions/workflows/build.yml/badge.svg)](https://github.com/kanibusrex/VellumBrowser/actions/workflows/build.yml)
 
 A Chromium-based desktop browser, built with Electron, with a custom UI shell and a
 few things stock Chrome doesn't do out of the box: built-in ad/tracker blocking, a
@@ -8,7 +8,7 @@ local malicious-site blocklist, split-view tabs, and a resizable tab panel.
 
 ## Download
 
-Grab the latest build from [Releases](https://github.com/kanibusrex/RedRoseBrowser/releases) —
+Grab the latest build from [Releases](https://github.com/kanibusrex/VellumBrowser/releases) —
 a `.dmg` for macOS, `Setup.exe` for Windows.
 
 > **Note:** these builds aren't code-signed yet, so the first launch will show an

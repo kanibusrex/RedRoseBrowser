@@ -76,7 +76,7 @@ async function main() {
   const sorted = [...merged].sort();
 
   const header = [
-    '# RedRose Browser known-malicious hostname blocklist',
+    '# Vellum known-malicious hostname blocklist',
     '# Merged snapshot from abuse.ch URLhaus (malware) + OpenPhish (phishing) free feeds.',
     '# Static, offline, checked locally per navigation — no network calls made at runtime.',
     '# Refresh with: npm run update-blocklist',
