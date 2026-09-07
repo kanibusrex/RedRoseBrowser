@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { app } = require('electron');
 
-const { parseExtensionRef, downloadCrx, extractZipFromCrx } = require('./crx-download');
+const { parseExtensionRef, downloadCrx, parseCrx, manifestKeyFromCrx } = require('./crx-download');
 const { safeUnzipBuffer } = require('./safe-unzip');
 
 const REGISTRY_FILE = () => path.join(app.getPath('userData'), 'extensions.json');
@@ -152,18 +152,38 @@ class ExtensionManager {
     }
 
     const crx = await downloadCrx(extensionId);
-    const zip = extractZipFromCrx(crx);
+    const { zip, publicKeyDer } = parseCrx(crx);
 
     const dir = this._extensionDir(profileId, extensionId);
     fs.rmSync(dir, { recursive: true, force: true }); // clear any stale partial install
     await safeUnzipBuffer(zip, dir);
 
     let manifest;
+    const manifestPath = path.join(dir, 'manifest.json');
     try {
-      manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
+      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     } catch {
       fs.rmSync(dir, { recursive: true, force: true });
       throw new Error("This package doesn't look like a valid Chrome extension (no readable manifest.json).");
+    }
+
+    // §8.35 — without this, Electron assigns the unpacked directory a
+    // fresh, directory-derived id that changes on every (re)install and
+    // never matches the *real* Web Store id anything outside this app
+    // already expects — a native messaging host's own allowed_origins
+    // list (installed by the extension's real desktop counterpart, e.g.
+    // 1Password) chief among them, since that's scoped to the one real
+    // id, not whatever this app happened to assign locally. manifest.key
+    // (the publisher's own DER public key, recovered from the CRX
+    // container above — Chrome's own documented mechanism for pinning an
+    // unpacked extension's id) is what makes Electron's loader compute
+    // that same real id instead. Extensions this can't recover a key for
+    // (an unsigned CRX2, or one signed with a non-RSA algorithm) just
+    // keep Electron's own fallback id, exactly as before this existed.
+    const manifestKey = manifestKeyFromCrx(publicKeyDer);
+    if (manifestKey && !manifest.key) {
+      manifest.key = manifestKey;
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
     }
 
     _injectBrowserPolyfill(dir, manifest);

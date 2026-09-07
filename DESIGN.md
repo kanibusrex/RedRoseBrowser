@@ -2790,3 +2790,98 @@ the *same* already-open popover with no reopening at all, watched it
 self-correct to clickable (~200ms in practice) and confirmed a real
 click on it then actually opens a tab. Full rerun of every earlier
 suite to confirm no regression.
+
+### 8.35 1Password specifically: extensions never kept their real, stable id
+
+"Still not able to click on the extension" — turned out to be 1Password,
+which §8.33/§8.34 never actually affected (its manifest already
+declares its popup statically, confirmed — its icon was clickable from
+the start). Clicking it really did open a tab at the right URL, but the
+page rendered as an empty shell — a real UI framework mounted (a
+loading-spinner DOM structure, confirmed via the rendered page's own
+HTML, not literally blank), just stuck, never finishing. Its background
+service worker's console was flooded with `Could not establish
+connection`, `Access to the native messaging host was disabled by the
+system administrator`, `The message port closed before a response was
+received` — 1Password's whole architecture talks to its own desktop app
+over **native messaging**, and initial research pointed at "Electron
+doesn't support native messaging at all" as the explanation, reported
+to the user as such.
+
+**That explanation was wrong, and a spike proved it wrong before any
+more time went into it.** `electron-chrome-extensions` (already a
+dependency, §8.8) turns out to already ship a complete, correct native
+messaging implementation — the right per-OS host-manifest search paths,
+the right `allowed_origins` security check, the right stdio length-
+prefixed framing. Confirmed by building a throwaway test extension +
+a fake native-messaging host process + a manifest registered at the
+library's own real per-user search path, and watching a real message
+round-trip through it successfully. So native messaging itself isn't
+the wall — something else was making it fail even when a real host
+should have been reachable.
+
+**The real cause**: `extensionManager.list()`'s own doc comment already
+named it, for a different symptom, one section up — "Electron only
+reproduces the real Web Store id when the extension's manifest.json
+embeds a signing `key` field; many extensions (1Password's, confirmed
+empirically) don't have one, and get a different, directory-derived id
+instead." A native messaging host's manifest has an `allowed_origins`
+list scoped to the extension's *real*, Web-Store-published id — but
+this app was loading 1Password with a locally-assigned, effectively
+random id, different on every single install. `NativeMessagingHost`'s
+own origin check (correctly, faithfully reproducing Chrome's own
+security model) would reject a connection from an id that manifest
+never allowlisted — on the user's own machine, with 1Password's real
+desktop app and its real host manifest both present, exactly as much as
+in a sandbox with neither.
+
+**Fix**: recover the extension's real id at install time instead of
+letting Electron assign an arbitrary one. A downloaded `.crx`'s
+container header — discarded until now, only the inner ZIP ever kept —
+carries the original publisher's own DER-encoded public key; Chrome
+derives the extension's id from that key's SHA256 (first 16 bytes, hex-
+mapped a-p) the same way regardless of who's asking, so writing that
+same key into the unpacked copy's `manifest.json` under Chrome's own
+documented `"key"` field is what tells Electron's loader to compute the
+identical, real, stable id — the same mechanism developers already use
+to pin an unpacked dev extension's own id.
+
+CRX2's key sits at a fixed offset (trivial to slice out — already knew
+where it was, just hadn't kept it). CRX3's header is a serialized
+protobuf, hand-parsed here rather than pulling in a general protobuf
+library for one message shape (`src/main/crx-download.js`'s
+`readProtobufFields`/`extractCrx3PublicKey`) — and hit one real snag
+along the way, again caught by verification rather than assumed away:
+Web Store CRX3 packages are effectively double-signed (the original
+publisher's key survives from upload, but Google's own publishing
+pipeline adds its own additional proof alongside it), so blindly taking
+the first `sha256_with_rsa` entry derived the *same* id for two
+completely different real extensions — only possible if that entry
+wasn't actually either publisher's own key. Fixed by cross-checking
+each candidate key's own hash against `signed_header_data.crx_id`,
+Chromium's own already-computed, authoritative answer embedded in the
+same header, and using whichever key actually matches it.
+
+**Verified**: real crypto, not a trusted assertion — independently
+re-derived the expected id from the extracted key by hand (SHA256, a-p
+mapping) and confirmed it matches 1Password's actual published id
+(`aeblfdkhhhdcdjpifhhbdiojplfjncoa`) exactly; then confirmed the same
+result end to end through the app's real `installExtension()` flow —
+`record.id` now equals `record.sourceId`, where before this it never
+did. A second, differently-signed real extension (Clear Cache)
+installed alongside it correctly got its *own*, different, still-
+correct id — the regression the double-signing bug above produced the
+first time (both landing on the same wrong id) doesn't recur. Full
+rerun of every earlier suite to confirm no regression.
+
+**Where this honestly runs out in this environment**: whether
+1Password's popup now actually finishes rendering real UI can only be
+confirmed on a real machine with 1Password's desktop app (and the host
+manifest it registers) actually present — nothing this sandbox can
+stand up itself, unlike everything else verified above. What's
+concretely fixed and proven here is the specific, confirmed-real defect
+in the chain: the wrong id, which would have made a real connection
+fail identically on the user's own machine regardless of anything on
+their end. Native messaging's own mechanics were independently proven
+to work; getting the right id to it was the missing piece this app
+controlled.
