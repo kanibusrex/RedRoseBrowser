@@ -21,6 +21,18 @@
   --muted: #5b6676;
   --faint: #636b76;
   --rail: #142033;
+  /* Shared by .rail and #sidebar so they read as one continuous surface
+     (no seam between them) — a single definition here means both
+     always resolve to *exactly* the same gradient, in every theme,
+     without needing to keep two separately-hand-tuned copies in sync.
+     References --rail, not a fixed color, so it still re-resolves
+     correctly under every theme's own --rail override further down. */
+  --rail-panel-gradient: linear-gradient(
+    178deg,
+    color-mix(in srgb, var(--rail) 78%, #fff) 0%,
+    var(--rail) 42%,
+    color-mix(in srgb, var(--rail) 82%, #000) 100%
+  );
   --scroll: rgba(120, 140, 165, 0.45);
 
   --accent: #1e5fa8;
@@ -182,12 +194,7 @@ button {
   gap: 6px;
   padding: 14px 0;
   background: var(--rail);
-  background: linear-gradient(
-    178deg,
-    color-mix(in srgb, var(--rail) 78%, #fff) 0%,
-    var(--rail) 42%,
-    color-mix(in srgb, var(--rail) 82%, #000) 100%
-  );
+  background: var(--rail-panel-gradient);
   box-shadow: 2px 0 22px -12px rgba(15, 27, 45, 0.6);
   z-index: 20;
   -webkit-app-region: drag;
@@ -434,14 +441,12 @@ button {
   flex-direction: column;
   min-height: 0;
   padding: 8px;
+  /* Same --rail-panel-gradient the rail itself uses, no border between
+     them — reads as one continuous surface rather than two adjoining
+     panels (previously a slightly different gradient plus a 1px
+     border-left seam). */
   background: var(--rail);
-  background: linear-gradient(
-    178deg,
-    color-mix(in srgb, var(--rail) 70%, #fff) 0%,
-    color-mix(in srgb, var(--rail) 92%, #000) 42%,
-    color-mix(in srgb, var(--rail) 88%, #000) 100%
-  );
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--rail-panel-gradient);
   -webkit-app-region: drag;
 }
 

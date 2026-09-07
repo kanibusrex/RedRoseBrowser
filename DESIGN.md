@@ -2594,3 +2594,19 @@ it were. The positioning/padding above is based on Electron's documented
 behavior and reasonable, generous spacing rather than a pixel-measured
 fit — worth a glance once actually running it, especially on Windows,
 which couldn't be exercised here at all (this sandbox is macOS).
+
+### 8.31 Seamless rail/sidebar join
+
+"Remove the line between the side rail and the side bar. Make them
+seamless." The literal line was `#sidebar`'s own 1px `border-left` —
+removed — but the two panels also never actually shared one gradient:
+`.rail` and `#sidebar` each had their own hand-tuned `color-mix()` stops
+(matching only at the exact vertical center, diverging everywhere else),
+a leftover of styling them as two visually-related-but-distinct panels
+rather than one surface. Border alone gone would still have left a
+faint seam most of the way down. Factored the gradient out to one
+`--rail-panel-gradient` custom property (referencing `--rail`, so it
+still re-resolves correctly under every theme's own override) that both
+now use verbatim — same value at every point along the seam, in every
+theme, by construction rather than by keeping two copies in sync by
+hand.
