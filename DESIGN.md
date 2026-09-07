@@ -3038,20 +3038,33 @@ of writing correctly identified both a real pending same-major update
 and a real newer major version simultaneously, exactly the two-branch
 case this was built for.
 
-**Honestly out of reach here**: whether the Linux+Xvfb smoke-test step
-actually launches Electron cleanly on a real GitHub Actions
-`ubuntu-latest` runner — this sandbox is macOS, where the smoke test
-was verified directly; the runner's exact set of pre-installed shared
-libraries Electron needs beyond a display (Chromium apps commonly want
-a handful — GTK, NSS, ALSA, and similar — that vary slightly by Ubuntu
-version) can't be confirmed from here. Worth triggering once by hand
-(`workflow_dispatch`) to confirm before relying on the schedule alone;
-if it's missing a package, the failure will be loud and diagnosable
-(smoke-test.js's own stdout/stderr dump) rather than silent. Likewise,
-the full git/gh orchestration (push → wait for CI → tag → wait again →
-publish) is verified by careful construction and a live dry run of its
-*decision* logic, not by an actual end-to-end live run — deliberately
-held back from actually publishing anything as part of building this,
-consistent with the project's own established pattern of never
-publishing without it being a genuine, current decision, not an
-incidental side effect of something else.
+**Update — the first real `workflow_dispatch` run, and what it found**:
+exactly the risk flagged above turned out to be real. The first live
+run correctly found the pending 43.4.1 → 43.6.0 update, correctly
+flagged 44.2.0 as a newer major (opened both issues as designed), but
+then failed its own smoke test — a genuine finding, not a false
+alarm: Chromium's setuid sandbox helper
+(`node_modules/electron/dist/chrome-sandbox`) has to be owned by root
+with mode 4755 to run at all, which is true after `electron-builder`
+packages a real installer but NOT true of a plain `npm install`'s
+extracted binary on a fresh CI runner — it aborted with `SIGTRAP`
+citing exactly that. The pipeline's own failure handling worked
+exactly as designed here: it discarded the bump, opened a diagnosable
+issue with the real stderr, and exited nonzero rather than shipping a
+broken build or failing silently. Fixed in `scripts/smoke-test.js` by
+adding `--no-sandbox` to the launch args, scoped to `process.platform
+=== 'linux'` only — this is a Linux CI packaging detail specifically,
+not something macOS/Windows or a real end-user install ever hits, and
+it only weakens this ad hoc smoke-test launch, never the actual
+shipped app (which end users always run through a proper installer,
+sandboxing untouched). Re-verified with a second live
+`workflow_dispatch` run after the fix — see below for the outcome.
+
+**Honestly out of reach here**: the full git/gh orchestration (push →
+wait for CI → tag → wait again → publish) was, at the time the above
+fix landed, still only verified by careful construction and a live
+dry run of its *decision* logic, not an actual end-to-end live run —
+deliberately held back from actually publishing anything as part of
+building this, consistent with the project's own established pattern
+of never publishing without it being a genuine, current decision, not
+an incidental side effect of something else.

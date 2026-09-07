@@ -69,6 +69,20 @@ async function main() {
     // this to avoid the renderer falling back to slow/failing software
     // paths — harmless on a real machine either way.
     '--disable-gpu',
+    // Chromium's setuid sandbox helper (node_modules/electron/dist/
+    // chrome-sandbox) has to be owned by root with mode 4755 to work at
+    // all — true after electron-builder packages a real installer, but
+    // NOT true of a plain `npm install`'s extracted binary on a fresh
+    // CI runner, which fails this exact check and aborts with SIGTRAP
+    // (found by actually running this in GitHub Actions — see the
+    // "Automated Electron bump ... failed its smoke test" issue this
+    // produced). Scoped to Linux only: this is a Linux-specific
+    // packaging detail, macOS/Windows never hit it, and every local
+    // verification of this script ran unsandboxed-flag-free on macOS.
+    // Only weakens this ad hoc CI smoke-test launch, never the actual
+    // shipped app — end users' installed copies run with their
+    // platform's normal sandboxing untouched.
+    ...(process.platform === 'linux' ? ['--no-sandbox'] : []),
   ];
 
   console.log(`Launching: ${ELECTRON_BIN} ${args.join(' ')}`);
