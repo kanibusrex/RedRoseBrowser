@@ -7,9 +7,12 @@
 // user-initiated, from a rail/toolbar button), this one originates from
 // something a *page* did, so it's driven by an incoming IPC event rather
 // than a click handler here.
+//
+// The active view being hidden while this is open (so the popover isn't
+// painted over by the BrowserView) is handled by ContextMenu.js itself
+// now (§8.27) — every popup it shows does this, not just this one.
 
 import { showPopover, closePopup } from './ContextMenu.js';
-import { pushHideActiveView, popHideActiveView } from './ViewOverlay.js';
 
 const PERMISSION_COPY = {
   media: 'use your camera and microphone',
@@ -25,17 +28,11 @@ export function initPermissionPrompts({ securityIcon }) {
 
 function showPrompt({ requestId, origin, permission }, anchorEl) {
   let settled = false;
-  // A BrowserView always paints above the chrome window's own content
-  // (DESIGN.md §2.3) — detach it while this is up, same as the settings
-  // modal (theme.js), through the shared reference count so an overlapping
-  // prompt/modal can't make either one prematurely re-show the page.
-  pushHideActiveView();
 
   const finish = (allow, remember) => {
     if (settled) return;
     settled = true;
     observer.disconnect();
-    popHideActiveView();
     window.browserAPI.respondToPermission(requestId, allow, remember);
   };
 
@@ -80,7 +77,7 @@ function showPrompt({ requestId, origin, permission }, anchorEl) {
       popover.appendChild(actions);
     },
     { x: rect.right - 260, y: rect.bottom + 8 },
-    { className: 'permission-popover-wrap', fullWidth: true }
+    { className: 'permission-popover-wrap' }
   );
 
   // Dismissed without an explicit choice (clicked outside, Escape, or a

@@ -1,13 +1,27 @@
 'use strict';
 
 // A small reusable popup menu (right-click context menus, the group color
-// picker, the profile switcher). Renders into a single shared container
-// appended to <body> so it can float above everything and closes itself
-// on outside click / Escape / picking an item.
+// picker, the profile switcher, bookmarks/history/downloads/extensions).
+// Renders into a single shared container appended to <body> so it can
+// float above everything and closes itself on outside click / Escape /
+// picking an item.
+//
+// Every popup shown here detaches the active tab's BrowserView for as
+// long as it's open (§8.27) — a BrowserView always paints above the
+// chrome window's own content (DESIGN.md §2.3), so without this, any
+// popup positioned over the page (which every one of these can now be —
+// there's no reason a popover should be squeezed into the sidebar just
+// because that's where its anchor button happens to live) would render
+// invisibly behind it. Goes through ViewOverlay.js's reference count
+// (not window.browserAPI.hideActiveView directly) so an overlapping
+// popup and permission prompt/settings modal can't make each other
+// prematurely re-show the page.
+
+import { pushHideActiveView, popHideActiveView } from './ViewOverlay.js';
 
 let container = null;
 let closeCurrent = null;
-// { el, anchor, fullWidth } for whatever's currently open — lets
+// { el, anchor } for whatever's currently open — lets
 // repositionCurrentPopup() (below) re-run the same position/clamp logic
 // later, when a popover's content changes size after it was first shown.
 let currentPosition = null;
@@ -18,22 +32,6 @@ function ensureContainer() {
   container.id = 'popup-root';
   document.body.appendChild(container);
   return container;
-}
-
-// A BrowserView always paints above the chrome window's own content, so a
-// popup that spilled past the sidebar/rail's right edge would render
-// invisibly behind the active tab's page. Rather than hiding the page's
-// BrowserView for every popup (which blanks the page the user is looking
-// at, just to show a small menu), positionWithinViewport() below keeps
-// every popup's right edge within the chrome area — every caller in this
-// app anchors its popup from inside that area to begin with (a tab row,
-// a group's color dot, the rail glyph), so this never has to clip an
-// anchor that's genuinely further right.
-function getChromeWidth() {
-  const styles = getComputedStyle(document.documentElement);
-  const railW = parseFloat(styles.getPropertyValue('--rail-w')) || 64;
-  const tabPanelW = parseFloat(styles.getPropertyValue('--tab-panel-w')) || 200;
-  return railW + tabPanelW;
 }
 
 /**
@@ -66,26 +64,17 @@ export function showContextMenu(items, anchor) {
   }
 
   root.appendChild(menu);
+  pushHideActiveView();
   positionWithinViewport(menu, anchor);
   wireDismiss(menu);
-  currentPosition = { el: menu, anchor, fullWidth: false };
+  currentPosition = { el: menu, anchor };
 }
 
 /**
  * A custom popover content builder (e.g. a color palette or the profile
  * list) instead of a plain item list. `build(container)` fills the popup.
- *
- * `fullWidth: true` skips the sidebar-width clamp below — only correct
- * for a caller that has *also* detached the active tab's BrowserView for
- * as long as the popover is open (see components/ViewOverlay.js), since
- * without that the view would occlude anything positioned past the
- * sidebar the moment it dips below the toolbar. The permission prompt
- * (PermissionPrompt.js, anchored at the address bar's security icon) is
- * the only caller that needs this; every other popover in this app
- * anchors from inside the sidebar already, where the default clamp is
- * exactly what keeps it clear of the BrowserView.
  */
-export function showPopover(build, anchor, { className = '', fullWidth = false } = {}) {
+export function showPopover(build, anchor, { className = '' } = {}) {
   closePopup();
   const root = ensureContainer();
 
@@ -94,9 +83,10 @@ export function showPopover(build, anchor, { className = '', fullWidth = false }
   const buildResult = build(popover);
 
   root.appendChild(popover);
-  positionWithinViewport(popover, anchor, { fullWidth });
+  pushHideActiveView();
+  positionWithinViewport(popover, anchor);
   wireDismiss(popover);
-  currentPosition = { el: popover, anchor, fullWidth };
+  currentPosition = { el: popover, anchor };
 
   // `build` can be async (History.js/Downloads.js await an IPC round
   // trip — HISTORY_LIST/DOWNLOADS_LIST — before their real rows exist in
@@ -126,27 +116,21 @@ export function showPopover(build, anchor, { className = '', fullWidth = false }
 // popover anymore (closed/replaced by something else in the meantime).
 export function repositionCurrentPopup() {
   if (!currentPosition || !currentPosition.el.isConnected) return;
-  positionWithinViewport(currentPosition.el, currentPosition.anchor, { fullWidth: currentPosition.fullWidth });
+  positionWithinViewport(currentPosition.el, currentPosition.anchor);
 }
 
 export function closePopup() {
   if (closeCurrent) closeCurrent();
 }
 
-function positionWithinViewport(el, anchor, { fullWidth = false } = {}) {
-  // Render first (off-screen concerns aside) so we can measure it, then
-  // clamp into the chrome area (never the BrowserView's region — see
-  // getChromeWidth above) and the window's bottom edge. `fullWidth`
-  // callers have already taken the BrowserView out of the picture
-  // entirely (see showPopover's doc comment above), so they clamp to the
-  // real window edge instead.
+function positionWithinViewport(el, anchor) {
+  // Render first, then clamp fully within the window itself — the active
+  // view is hidden for as long as any popup from this module is open
+  // (see the file-level comment), so there's no sidebar/BrowserView
+  // boundary left to avoid spilling past; the only remaining constraint
+  // is the window's own edges.
   const { innerWidth, innerHeight } = window;
-  const maxRight = (fullWidth ? innerWidth : getChromeWidth()) - 8;
-  // The tab panel is user-resizable (§8.11), so the chrome area isn't
-  // always at least as wide as .popup-menu's CSS max-width (248px) —
-  // cap the popup's own width to whatever's actually available too, not
-  // just its position, or a narrowed panel could still let it spill
-  // into the BrowserView despite the position clamp below.
+  const maxRight = innerWidth - 8;
   el.style.maxWidth = `${Math.max(140, maxRight - 8)}px`;
   const rect = el.getBoundingClientRect();
   let x = anchor.x;
@@ -197,5 +181,6 @@ function wireDismiss(menu) {
     menu.remove();
     closeCurrent = null;
     if (currentPosition && currentPosition.el === menu) currentPosition = null;
+    popHideActiveView();
   };
 }

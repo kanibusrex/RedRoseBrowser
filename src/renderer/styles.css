@@ -1447,10 +1447,11 @@ button {
   position: absolute;
   pointer-events: auto;
   min-width: 180px;
-  /* Chrome area (rail + tab panel) is 264px wide (--rail-w + --tab-panel-w)
-     — every popup anchors from inside it, so this keeps popups from ever
-     needing to spill into the BrowserView's region (see ContextMenu.js
-     positionWithinViewport). */
+  /* A fallback only — ContextMenu.js's positionWithinViewport always sets
+     its own inline max-width (based on the full window now, §8.27, not
+     just the sidebar), which overrides this. Individual popover classes
+     (.bookmarks-popover, .history-popover, ...) set their own, more
+     specific max-width for plain content-driven sizing. */
   max-width: 248px;
   background: var(--paper);
   border: 1px solid var(--line);
@@ -1984,11 +1985,10 @@ button {
 }
 
 /* ---- permission prompt (§8.16) ----
-   Anchored at the address bar's security icon via showPopover's
-   `fullWidth` option (ContextMenu.js) instead of the sidebar-width clamp
-   every other popup uses — safe here specifically because
-   PermissionPrompt.js detaches the active tab's BrowserView for as long
-   as this is open, so there's nothing for it to spill past. */
+   Anchored at the address bar's security icon — every popup ContextMenu.js
+   shows (this one included, §8.27) detaches the active tab's BrowserView
+   for as long as it's open, so there's nothing for this to spill past
+   regardless of where it's anchored. */
 
 .permission-popover {
   min-width: 240px;

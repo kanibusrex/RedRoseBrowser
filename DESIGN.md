@@ -2101,3 +2101,69 @@ footer visible and the popover still fitting after a real, live
 `downloads:changed` push arrives while it's open); and a regression pass
 confirming the synchronous Bookmarks popover (no search box, no footer,
 unaffected by either bug) still behaves exactly as before.
+
+### 8.27 Popovers can now render over the main window
+
+Asked plainly: "make the popover menus be able to show over the main
+window? There's no reason they should go under the main window." Fair —
+every popover `ContextMenu.js` manages (bookmarks, history, downloads,
+extensions, the profile switcher, the tab/group-color context menus)
+used to be squeezed into a `getChromeWidth()`-derived clamp (rail + tab
+panel width, 264px by default) purely because a `BrowserView` always
+paints above the chrome window's own content (§2.3) — a popover
+positioned past that boundary would render invisibly *behind* the
+active tab's page, not in front of it. The permission prompt
+(§8.16) was already the one exception, since it separately detached the
+active view for as long as it was open and passed `fullWidth: true` to
+skip that clamp.
+
+**The fix generalizes what the permission prompt already did, to every
+popup this module shows.** `showContextMenu`/`showPopover` now call
+`pushHideActiveView()` (ViewOverlay.js) right after appending the popup
+to the DOM, and the shared dismiss handler (`wireDismiss`'s
+`closeCurrent`) calls `popHideActiveView()` whenever a popup actually
+closes — covering every path that ends a popup's life (an item's own
+`onClick`, an outside click, Escape, or one popup replacing another via
+`showPopover`'s/`showContextMenu`'s own `closePopup()` call at the top).
+Going through `ViewOverlay.js`'s reference count (not
+`window.browserAPI.hideActiveView` directly) is what keeps this correct
+when a permission prompt happens to overlap a popover, or one popover
+replaces another — the view only actually re-attaches once *every*
+caller that asked for it hidden has released it, never prematurely
+mid-overlap.
+
+With the view now always hidden while any of these are open, the
+`getChromeWidth()` clamp had no reason left to exist — `fullWidth` is
+gone as a concept entirely (there's only one behavior now), and
+`positionWithinViewport` clamps position/width/height against the real
+window edges (`window.innerWidth`/`innerHeight`) rather than the old
+sidebar boundary. `PermissionPrompt.js` dropped its own now-redundant
+`pushHideActiveView`/`popHideActiveView` calls and its `fullWidth: true`
+option, since `ContextMenu.js` handles both for it automatically now,
+the same as everything else.
+
+One incidental side effect worth naming: `.popup-menu`'s base CSS
+`max-width: 248px` and each popover's own more specific `max-width`
+(220–320px, `.history-popover`/`.downloads-popover`/etc.) were always
+being silently overridden by `positionWithinViewport`'s own inline
+`style.maxWidth` (which computed to roughly the same ~248px anyway,
+purely by coincidence of the old sidebar width) — now that the inline
+value is window-width-derived (typically 1000px+), those per-popover
+CSS rules actually take effect for the first time, rather than every
+popover being invisibly capped to ~248px regardless of what its own
+class asked for.
+
+**Verified**: every popup type (a `showPopover` one — bookmarks — and a
+`showContextMenu` one — the tab right-click menu) detaches the active
+BrowserView the instant it opens and reattaches it the instant it
+closes, via any dismissal path (item click, outside click); a popover
+can now genuinely render with its right edge past the old 264px sidebar
+boundary, into where the page content would otherwise be; opening a
+second popover while a first is still open never lets the view flash
+back into view in the gap between them (checked via `win.getBrowserViews()
+.length` staying at 0 throughout, not just before and after); and the
+permission prompt — now relying entirely on `ContextMenu.js`'s handling
+instead of its own — still correctly hides/shows across both an
+explicit Allow/Block click and an outside-click dismiss, with the
+underlying page's permission request still resolving correctly
+(`granted`/`denied`) either way.
