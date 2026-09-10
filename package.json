@@ -1,6 +1,6 @@
 {
   "name": "vellum-browser",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Vellum — a minimal, secure, Chromium-based desktop browser built with Electron.",
   "author": "Michael Alexander",
   "license": "GPL-3.0",
@@ -20,7 +20,7 @@
     "update-adblock-lists": "node scripts/update-adblock-lists.js"
   },
   "devDependencies": {
-    "electron": "^43.6.0",
+    "electron": "^43.7.0",
     "electron-builder": "^25.0.0"
   },
   "build": {
